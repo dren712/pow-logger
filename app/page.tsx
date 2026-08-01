@@ -144,7 +144,11 @@ function LoggerApp() {
       const result = await submitVerifiedLog(signMessage, walletAddress, logContent)
 
       if (result.success && result.log) {
-        setLogs([result.log, ...logs])
+        const fullLog = {
+          ...result.log,
+          irys_tx_id: result.log.irys_tx_id || result.irysTxId,
+        }
+        setLogs([fullLog, ...logs])
         setLog('')
         setStatusStep('success')
         setStatusMsg('✓ Cryptographically verified & stored permanently on Irys!')
