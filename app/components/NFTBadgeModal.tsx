@@ -1,30 +1,79 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface NFTBadgeModalProps {
   isOpen: boolean
   onClose: () => void
   svgString: string
   title?: string
+  logId?: number
+  logContent?: string
+  irysTxId?: string
 }
 
-export default function NFTBadgeModal({ isOpen, onClose, svgString, title = 'PoWL NFT Proof Badge' }: NFTBadgeModalProps) {
+export default function NFTBadgeModal({
+  isOpen,
+  onClose,
+  svgString,
+  title = 'PROVN NFT Proof Badge 🗿',
+  logId,
+  logContent = '',
+  irysTxId,
+}: NFTBadgeModalProps) {
   const [copied, setCopied] = useState(false)
+  const [pngDataUrl, setPngDataUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!svgString || typeof window === 'undefined') return
+
+    const img = new Image()
+    const encodedSvg = encodeURIComponent(svgString)
+    const dataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = 1280
+        canvas.height = 760
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, 1280, 760)
+          setPngDataUrl(canvas.toDataURL('image/png'))
+        }
+      } catch (err) {
+        console.error('SVG to PNG conversion error:', err)
+      }
+    }
+    img.src = dataUrl
+  }, [svgString])
 
   if (!isOpen) return null
 
   const encodedSvg = encodeURIComponent(svgString)
-  const dataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`
+  const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`
+  const displayImage = pngDataUrl || svgDataUrl
 
-  const handleOpenNewTab = () => {
-    const newWindow = window.open()
-    if (newWindow) {
-      newWindow.document.write(`<body style="margin:0;background:#060709;display:flex;justify-content:center;align-items:center;min-height:100vh;">${svgString}</body>`)
-      newWindow.document.title = title
-    } else {
-      window.location.href = dataUrl
-    }
+  const handleDownloadAndShare = () => {
+    // 1. Download PNG or SVG image
+    const downloadLink = document.createElement('a')
+    downloadLink.href = displayImage
+    downloadLink.download = `provn-proof-${logId || 'card'}.${pngDataUrl ? 'png' : 'svg'}`
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
+
+    // 2. Open Twitter Intent with pre-filled text
+    const previewText = logContent.length > 80 ? `${logContent.slice(0, 80)}...` : logContent
+    const gatewayUrl = irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : 'https://pow-logger.vercel.app'
+    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${gatewayUrl}\nBuild your reputation: pow-logger.vercel.app\n#PROVN #Solana #BuildInPublic`
+
+    const tweetIntent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
+    
+    // Direct navigation safe for Phantom Mobile WebView
+    setTimeout(() => {
+      window.location.href = tweetIntent
+    }, 500)
   }
 
   const handleCopySvg = () => {
@@ -41,9 +90,9 @@ export default function NFTBadgeModal({ isOpen, onClose, svgString, title = 'PoW
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'rgba(6, 7, 9, 0.85)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        background: 'rgba(6, 7, 9, 0.88)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -60,7 +109,7 @@ export default function NFTBadgeModal({ isOpen, onClose, svgString, title = 'PoW
           padding: '24px',
           maxWidth: '680px',
           width: '100%',
-          boxShadow: '0 0 40px rgba(0, 255, 136, 0.15)',
+          boxShadow: '0 0 40px rgba(0, 255, 136, 0.18)',
           fontFamily: 'var(--font-geist-mono), monospace',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -85,23 +134,24 @@ export default function NFTBadgeModal({ isOpen, onClose, svgString, title = 'PoW
           </button>
         </div>
 
-        {/* Mobile Guidance Banner */}
+        {/* X Attachment Instruction Banner */}
         <div
           style={{
-            background: 'rgba(0, 229, 255, 0.08)',
-            border: '1px solid rgba(0, 229, 255, 0.25)',
-            color: '#00e5ff',
+            background: 'rgba(0, 255, 136, 0.08)',
+            border: '1px solid rgba(0, 255, 136, 0.25)',
+            color: '#00ff88',
             borderRadius: '8px',
-            padding: '8px 12px',
+            padding: '10px 14px',
             marginBottom: '16px',
             fontSize: '11px',
+            lineHeight: '1.5',
             textAlign: 'center',
           }}
         >
-          📱 <strong>Mobile / Phantom Browser:</strong> Long press badge image below to <strong>Save to Photos</strong> or tap <strong>Open in New Tab</strong>.
+          🐦 <strong>Share on X:</strong> Tapping <strong>Download Badge &amp; Share</strong> saves your PNG proof card and opens X. Simply attach the downloaded badge image to your tweet manually!
         </div>
 
-        {/* SVG Display Image */}
+        {/* Display Image (Converted PNG or SVG) */}
         <div
           style={{
             display: 'flex',
@@ -116,14 +166,12 @@ export default function NFTBadgeModal({ isOpen, onClose, svgString, title = 'PoW
           }}
         >
           <img
-            src={dataUrl}
-            alt="PoWL NFT Proof Badge"
+            src={displayImage}
+            alt="PROVN NFT Proof Badge"
             style={{
               maxWidth: '100%',
               height: 'auto',
               borderRadius: '8px',
-              userSelect: 'auto',
-              WebkitUserSelect: 'auto',
             }}
           />
         </div>
@@ -131,18 +179,19 @@ export default function NFTBadgeModal({ isOpen, onClose, svgString, title = 'PoW
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
-            onClick={handleOpenNewTab}
+            onClick={handleDownloadAndShare}
             className="btn-primary"
             style={{
-              flex: 1,
+              flex: 2,
               fontSize: '12px',
-              padding: '10px',
-              borderColor: '#00ff88',
-              color: '#00ff88',
+              padding: '12px',
+              background: '#00ff88',
+              color: '#060709',
+              fontWeight: 800,
               justifyContent: 'center',
             }}
           >
-            🔗 Open Badge in New Tab ↗
+            🚀 Download Badge &amp; Share on X 🗿
           </button>
 
           <button
@@ -151,7 +200,7 @@ export default function NFTBadgeModal({ isOpen, onClose, svgString, title = 'PoW
             style={{
               flex: 1,
               fontSize: '12px',
-              padding: '10px',
+              padding: '12px',
               borderColor: '#00e5ff',
               color: '#00e5ff',
               justifyContent: 'center',

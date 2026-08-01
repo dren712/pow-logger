@@ -30,7 +30,10 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalSvg, setModalSvg] = useState('')
-  const [modalTitle, setModalTitle] = useState('PoWL NFT Proof Badge')
+  const [modalTitle, setModalTitle] = useState('PROVN NFT Proof Badge 🗿')
+  const [modalLogId, setModalLogId] = useState<number | undefined>(undefined)
+  const [modalLogContent, setModalLogContent] = useState<string>('')
+  const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
 
   const walletShort = useMemo(() => {
     return wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
@@ -478,7 +481,10 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                         l.irys_tx_id
                       )
                       setModalSvg(svg)
-                      setModalTitle(`PoWL Proof Entry #${logNumber}`)
+                      setModalTitle(`PROVN Proof Entry #${logNumber}`)
+                      setModalLogId(l.id)
+                      setModalLogContent(l.content)
+                      setModalIrysTxId(l.irys_tx_id)
                       setModalOpen(true)
                     }}
                     style={{
@@ -542,6 +548,9 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         onClose={() => setModalOpen(false)}
         svgString={modalSvg}
         title={modalTitle}
+        logId={modalLogId}
+        logContent={modalLogContent}
+        irysTxId={modalIrysTxId}
       />
     </main>
   )

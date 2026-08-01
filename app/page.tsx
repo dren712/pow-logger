@@ -46,7 +46,10 @@ function LoggerApp() {
   const [verifyWalletInput, setVerifyWalletInput] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalSvg, setModalSvg] = useState('')
-  const [modalTitle, setModalTitle] = useState('PoWL NFT Proof Badge')
+  const [modalTitle, setModalTitle] = useState('PROVN NFT Proof Badge 🗿')
+  const [modalLogId, setModalLogId] = useState<number | undefined>(undefined)
+  const [modalLogContent, setModalLogContent] = useState<string>('')
+  const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
@@ -871,7 +874,10 @@ function LoggerApp() {
                       l.irys_tx_id
                     )
                     setModalSvg(svg)
-                    setModalTitle(`PoWL Proof Entry #${l.id}`)
+                    setModalTitle(`PROVN Proof Entry #${l.id}`)
+                    setModalLogId(l.id)
+                    setModalLogContent(l.content)
+                    setModalIrysTxId(l.irys_tx_id)
                     setModalOpen(true)
                   }}
                   style={{
@@ -952,6 +958,9 @@ function LoggerApp() {
         onClose={() => setModalOpen(false)}
         svgString={modalSvg}
         title={modalTitle}
+        logId={modalLogId}
+        logContent={modalLogContent}
+        irysTxId={modalIrysTxId}
       />
     </main>
   )
