@@ -21,7 +21,8 @@ export default function NFTBadgeModal({
   logContent = '',
   irysTxId,
 }: NFTBadgeModalProps) {
-  const [copied, setCopied] = useState(false)
+  const [copiedSvg, setCopiedSvg] = useState(false)
+  const [copiedImage, setCopiedImage] = useState(false)
   const [pngDataUrl, setPngDataUrl] = useState<string | null>(null)
   const [canWebShareFiles, setCanWebShareFiles] = useState(false)
 
@@ -43,7 +44,7 @@ export default function NFTBadgeModal({
           const pngUrl = canvas.toDataURL('image/png')
           setPngDataUrl(pngUrl)
 
-          // Check if device supports Web Share API with files (Spotify style)
+          // Check if device supports Web Share API with files (iOS/Android native share)
           if (typeof navigator !== 'undefined' && 'canShare' in navigator) {
             fetch(pngUrl)
               .then((res) => res.blob())
@@ -69,12 +70,12 @@ export default function NFTBadgeModal({
   const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`
   const displayImage = pngDataUrl || svgDataUrl
 
-  const handleShareSpotifyStyle = async () => {
+  const handleShareSeamless = async () => {
     const previewText = logContent.length > 80 ? `${logContent.slice(0, 80)}...` : logContent
     const gatewayUrl = irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : 'https://pow-logger.vercel.app'
     const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${gatewayUrl}\nBuild your reputation: pow-logger.vercel.app\n#PROVN #Solana #BuildInPublic`
 
-    // 1. Native Web Share API (Spotify Lyrics Card Sharing Pattern)
+    // 1. Mobile Web Share API (Spotify Lyrics Card Pattern — Auto Attaches Image)
     if (pngDataUrl && typeof navigator !== 'undefined' && 'share' in navigator) {
       try {
         const res = await fetch(pngDataUrl)
@@ -90,28 +91,48 @@ export default function NFTBadgeModal({
           return
         }
       } catch (err) {
-        console.error('Native Web Share cancelled or unhandled, triggering fallback:', err)
+        console.error('Native Web Share cancelled or unhandled:', err)
       }
     }
 
-    // 2. Desktop Fallback (Download PNG + Launch Twitter Intent)
-    const downloadLink = document.createElement('a')
-    downloadLink.href = displayImage
-    downloadLink.download = `provn-proof-${logId || 'card'}.${pngDataUrl ? 'png' : 'svg'}`
-    document.body.appendChild(downloadLink)
-    downloadLink.click()
-    document.body.removeChild(downloadLink)
+    // 2. Desktop Seamless UX (Auto Copy PNG Image to Clipboard + Open X)
+    let copiedToClipboard = false
+    if (pngDataUrl && typeof window !== 'undefined' && typeof ClipboardItem !== 'undefined') {
+      try {
+        const res = await fetch(pngDataUrl)
+        const blob = await res.blob()
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ])
+        copiedToClipboard = true
+        setCopiedImage(true)
+        setTimeout(() => setCopiedImage(false), 4000)
+      } catch (err) {
+        console.warn('Clipboard image copy not supported by browser, falling back to download:', err)
+      }
+    }
 
+    // If clipboard copy wasn't supported, trigger fallback download
+    if (!copiedToClipboard) {
+      const downloadLink = document.createElement('a')
+      downloadLink.href = displayImage
+      downloadLink.download = `provn-proof-${logId || 'card'}.${pngDataUrl ? 'png' : 'svg'}`
+      document.body.appendChild(downloadLink)
+      downloadLink.click()
+      document.body.removeChild(downloadLink)
+    }
+
+    // Open X Intent
     const tweetIntent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
     setTimeout(() => {
       window.location.href = tweetIntent
-    }, 500)
+    }, 400)
   }
 
   const handleCopySvg = () => {
     navigator.clipboard.writeText(svgString)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopiedSvg(true)
+    setTimeout(() => setCopiedSvg(false), 2000)
   }
 
   return (
@@ -166,7 +187,7 @@ export default function NFTBadgeModal({
           </button>
         </div>
 
-        {/* Spotify-style Instruction Banner */}
+        {/* Seamless Share Guidance Banner */}
         <div
           style={{
             background: 'rgba(0, 255, 136, 0.08)',
@@ -180,7 +201,13 @@ export default function NFTBadgeModal({
             textAlign: 'center',
           }}
         >
-          🎵 <strong>Spotify-Style Image Sharing:</strong> Tap <strong>Share Card to X</strong> below to attach your PNG proof card image directly to your post on X / Twitter!
+          {canWebShareFiles ? (
+            <>📲 <strong>Mobile Web Share:</strong> Tapping <strong>Share Badge Card to X</strong> auto-attaches your PNG card image directly to your post on X!</>
+          ) : copiedImage ? (
+            <>✓ <strong>PNG Card Copied to Clipboard!</strong> Press <strong>Cmd+V (or Ctrl+V)</strong> in the X composer to paste your proof image instantly.</>
+          ) : (
+            <>✨ <strong>Seamless 1-Click Sharing:</strong> Tapping <strong>Share Badge Card to X</strong> auto-copies the PNG proof card to your clipboard and opens X!</>
+          )}
         </div>
 
         {/* Display Image (Converted PNG or SVG) */}
@@ -211,7 +238,7 @@ export default function NFTBadgeModal({
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
-            onClick={handleShareSpotifyStyle}
+            onClick={handleShareSeamless}
             className="btn-primary"
             style={{
               flex: 2,
@@ -223,7 +250,7 @@ export default function NFTBadgeModal({
               justifyContent: 'center',
             }}
           >
-            {canWebShareFiles ? '📲 Share Card to X (Attach PNG Image) 🗿' : '🚀 Share Card Image to X 🗿'}
+            {canWebShareFiles ? '📲 Share Card to X (Auto-Attach PNG) 🗿' : copiedImage ? '✓ PNG Copied! Opening X...' : '🚀 Share Badge Card to X 🗿'}
           </button>
 
           <button
@@ -238,7 +265,7 @@ export default function NFTBadgeModal({
               justifyContent: 'center',
             }}
           >
-            {copied ? '✓ SVG Copied!' : '📋 Copy SVG Code'}
+            {copiedSvg ? '✓ SVG Copied!' : '📋 Copy SVG Code'}
           </button>
         </div>
       </div>
