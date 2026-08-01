@@ -1,3 +1,4 @@
+<!-- PoWL Protocol v1.0 -->
 # PoWL — Proof-of-Work Logger 🗿
 
 **Cryptographically verified, permanent builder reputation protocol on Solana.**
