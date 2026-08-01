@@ -8,7 +8,8 @@ Log daily work → verify via Ed25519 signature → store permanently on Arweave
 > *"Your work, permanently on-chain."*
 
 **Live Protocol App:** [pow-logger.vercel.app](https://pow-logger.vercel.app)  
-**GitHub:** [github.com/dren712/pow-logger](https://github.com/dren712/pow-logger)
+**GitHub:** [github.com/dren712/pow-logger](https://github.com/dren712/pow-logger)  
+**License:** [![License: MIT](https://img.shields.io/badge/License-MIT-00ff88.svg)](LICENSE)
 
 ---
 
@@ -202,3 +203,9 @@ npm run dev
 
 **Darshan Gaikwad** — [GitHub (@dren712)](https://github.com/dren712)  
 Built for the Solana builder community. 🗿
+
+---
+
+## 📄 License
+
+This project is open-source software licensed under the [MIT License](LICENSE). Feel free to use, modify, and build upon it!
