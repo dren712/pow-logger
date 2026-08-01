@@ -20,15 +20,15 @@ export async function createCNFTMetadata(
       : walletAddress
 
   return {
-    name: `PoWL Proof #${streak}d — ${shortWallet}`,
-    symbol: 'POWL',
+    name: `PROVN Proof #${streak}d — ${shortWallet} 🗿`,
+    symbol: 'PROVN',
     description: `Cryptographically verified proof-of-work log on Solana: "${logContent.slice(0, 100)}${logContent.length > 100 ? '...' : ''}"`,
     external_url: `https://pow-logger.vercel.app/u/${walletAddress}`,
     attributes: [
       { trait_type: 'Builder', value: walletAddress },
       { trait_type: 'Streak Milestone', value: `${streak} Days` },
       { trait_type: 'Irys Gateway Proof', value: irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : 'N/A' },
-      { trait_type: 'Protocol', value: 'PoWL Metaplex Bubblegum' },
+      { trait_type: 'Protocol', value: 'PROVN Metaplex Bubblegum' },
     ],
   }
 }
@@ -50,14 +50,14 @@ export async function mintProofCNFT(
     // Generate deterministic simulated Merkle asset ID based on wallet + timestamp
     const simulatedAssetId = `cnft_${ownerPublicKey.toBase58().slice(0, 8)}_${Date.now().toString(36)}`
 
-    console.log(`[PoWL cNFT Engine] Simulated Bubblegum cNFT mint for ${walletAddress}:`, simulatedAssetId)
+    console.log(`[PROVN cNFT Engine] Simulated Bubblegum cNFT mint for ${walletAddress}:`, simulatedAssetId)
 
     return {
       success: true,
       assetId: simulatedAssetId,
     }
   } catch (err: any) {
-    console.error('[PoWL cNFT Engine] Mint error:', err)
+    console.error('[PROVN cNFT Engine] Mint error:', err)
     return {
       success: false,
       error: err.message || 'Failed to mint cNFT',

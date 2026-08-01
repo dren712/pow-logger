@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>
-          Last Updated: August 1, 2026 • PoWL Protocol (Version 1.0)
+          Last Updated: August 1, 2026 • PROVN Protocol (Version 1.0)
         </p>
       </div>
 
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>1. Overview</h2>
           <p style={{ color: '#ccc', margin: 0 }}>
-            PoWL (&quot;Proof-of-Work Logger&quot;) is a decentralized builder reputation protocol built on Solana and Arweave. We respect your privacy and are committed to maintaining zero covert tracking, zero user profiling, and zero third-party data monetization.
+            PROVN (&quot;Proof-of-Work Logger&quot;) is a decentralized builder reputation protocol built on Solana and Arweave. We respect your privacy and are committed to maintaining zero covert tracking, zero user profiling, and zero third-party data monetization.
           </p>
         </section>
 
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
               <strong style={{ color: '#ffb800' }}>Public Wallet Addresses:</strong> When you connect your wallet (Phantom, Backpack, Solflare), your public Base58 address is processed to authenticate log submissions and render your 365-day contribution heatmap.
             </li>
             <li>
-              <strong style={{ color: '#ffb800' }}>Work Logs &amp; Cryptographic Signatures:</strong> Text entries submitted via PoWL are signed offline using Ed25519 Sign-In With Solana (SIWS) signatures. Verified logs are archived permanently on Arweave via Irys Node #1 and indexed in Supabase (PostgreSQL).
+              <strong style={{ color: '#ffb800' }}>Work Logs &amp; Cryptographic Signatures:</strong> Text entries submitted via PROVN are signed offline using Ed25519 Sign-In With Solana (SIWS) signatures. Verified logs are archived permanently on Arweave via Irys Node #1 and indexed in Supabase (PostgreSQL).
             </li>
             <li>
               <strong style={{ color: '#ffb800' }}>No Private Keys:</strong> Your private keys never leave your browser. All authentication takes place via offline Ed25519 message signing in your wallet.
@@ -64,14 +64,14 @@ export default function PrivacyPage() {
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>3. Decentralized Immutability Notice</h2>
           <p style={{ color: '#ccc', margin: 0 }}>
-            PoWL archives verified log entries on Arweave, a decentralized permanent blockweave storage network. Once a log is published to Arweave, it becomes permanent and immutable. Please do not submit confidential information, API keys, or personally identifiable info (PII) in your daily log entries.
+            PROVN archives verified log entries on Arweave, a decentralized permanent blockweave storage network. Once a log is published to Arweave, it becomes permanent and immutable. Please do not submit confidential information, API keys, or personally identifiable info (PII) in your daily log entries.
           </p>
         </section>
 
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>4. Third-Party Infrastructure</h2>
           <p style={{ color: '#ccc', margin: '0 0 10px 0' }}>
-            PoWL utilizes trusted infrastructure providers:
+            PROVN utilizes trusted infrastructure providers:
           </p>
           <ul style={{ color: '#ccc', paddingLeft: '20px', margin: 0, display: 'grid', gap: '6px' }}>
             <li><strong>Solana Network:</strong> Public RPC endpoints (Helius / Solana Labs).</li>
@@ -84,7 +84,7 @@ export default function PrivacyPage() {
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>5. Cookies &amp; Tracking</h2>
           <p style={{ color: '#ccc', margin: 0 }}>
-            PoWL does not use tracking cookies, analytics scripts, advertising pixels, or invasive surveillance tools.
+            PROVN does not use tracking cookies, analytics scripts, advertising pixels, or invasive surveillance tools.
           </p>
         </section>
 

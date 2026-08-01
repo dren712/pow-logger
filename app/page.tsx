@@ -478,7 +478,7 @@ function LoggerApp() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ color: '#00ff88', fontSize: '13px', fontWeight: 700 }}>
-              powl@{shortAddress || 'guest'}:~$
+              provn@{shortAddress || 'guest'}:~$
             </span>
             <span style={{ color: '#888', fontSize: '12px' }}>log --create</span>
           </div>

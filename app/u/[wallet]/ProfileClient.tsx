@@ -177,7 +177,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             padding: '6px 14px',
           }}
         >
-          ← Back to PoWL Terminal
+          ← Back to PROVN Terminal 🗿
         </a>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -185,7 +185,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             onClick={() => {
               const svg = generateNFTBadgeSVG(wallet, streakCount)
               setModalSvg(svg)
-              setModalTitle(`PoWL Builder NFT — ${walletShort}`)
+              setModalTitle(`PROVN Builder NFT — ${walletShort}`)
               setModalOpen(true)
             }}
             className="btn-primary"
