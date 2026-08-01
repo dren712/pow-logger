@@ -232,7 +232,7 @@ function LoggerApp() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{ color: '#00ff88', margin: 0, fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
-              PoWL
+              PROVN
             </h1>
             <span
               style={{
@@ -247,7 +247,7 @@ function LoggerApp() {
             </span>
           </div>
           <p style={{ color: '#666', margin: '6px 0 0 0', fontSize: '12px', letterSpacing: '0.2px' }}>
-            Proof-of-Work Logger • Decentralized Builder Reputation Foundry
+            PROVN — Proof-of-Work Logger • Decentralized Builder Reputation Foundry
           </p>
         </div>
         <WalletMultiButton />

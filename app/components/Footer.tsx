@@ -30,7 +30,7 @@ export default function Footer() {
           {/* Brand Info */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <span style={{ color: '#00ff88', fontWeight: 800, fontSize: '16px' }}>PoWL</span>
+              <span style={{ color: '#00ff88', fontWeight: 800, fontSize: '16px' }}>PROVN</span>
               <span style={{ fontSize: '14px' }}>🗿</span>
             </div>
             <p style={{ margin: 0, fontSize: '11px', color: '#666', lineHeight: '1.5' }}>
@@ -135,7 +135,7 @@ export default function Footer() {
           }}
         >
           <div>Built on Solana · Stored on Arweave · For Web3 Builders</div>
-          <div>© {new Date().getFullYear()} PoWL Protocol</div>
+          <div>© {new Date().getFullYear()} PROVN Protocol 🗿</div>
         </div>
       </div>
     </footer>

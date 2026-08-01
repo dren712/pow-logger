@@ -45,18 +45,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${walletShort}'s PoWL Profile — ${streak} day streak 🔥`,
+    title: `${walletShort}'s PROVN Profile — ${streak} day streak 🔥`,
     description: `${count} verified work logs permanently stored on Arweave. Builder reputation on Solana.`,
     openGraph: {
-      title: `${walletShort}'s PoWL Profile — ${streak} day streak 🔥`,
+      title: `${walletShort}'s PROVN Profile — ${streak} day streak 🔥`,
       description: `${count} verified work logs permanently stored on Arweave.`,
       url: `https://pow-logger.vercel.app/u/${wallet}`,
-      siteName: 'PoWL',
+      siteName: 'PROVN',
       type: 'profile',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${walletShort}'s PoWL Profile — ${streak} day streak 🔥`,
+      title: `${walletShort}'s PROVN Profile — ${streak} day streak 🔥`,
       description: `${count} verified work logs permanently stored on Arweave. 🗿`,
     },
   }

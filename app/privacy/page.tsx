@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — PoWL Protocol 🗿',
-  description: 'Privacy Policy and data governance specs for PoWL Proof-of-Work Logger.',
+  title: 'Privacy Policy — PROVN — Proof-of-Work Logger 🗿',
+  description: 'Privacy Policy and data governance specs for PROVN — Proof-of-Work Logger.',
 }
 
 export default function PrivacyPage() {
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
             marginBottom: '20px',
           }}
         >
-          ← Back to PoWL Terminal
+          ← Back to PROVN Terminal 🗿
         </a>
 
         <h1 style={{ color: '#00ff88', fontSize: '2.2rem', fontWeight: 900, margin: '0 0 10px 0', letterSpacing: '-0.8px' }}>

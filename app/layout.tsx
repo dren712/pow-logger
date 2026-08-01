@@ -4,19 +4,19 @@ import Footer from "./components/Footer";
 import WalletContextProvider from "./providers/WalletProvider";
 
 export const metadata: Metadata = {
-  title: "PoWL — Proof-of-Work Logger",
+  title: "PROVN — Proof-of-Work Logger 🗿",
   description: "Cryptographically verified daily work logs on Solana. Build your on-chain builder reputation.",
   metadataBase: new URL('https://pow-logger.vercel.app'),
   openGraph: {
-    title: 'PoWL — Proof-of-Work Logger',
+    title: 'PROVN — Proof-of-Work Logger 🗿',
     description: 'Cryptographically verified daily work logs on Solana. Build your on-chain builder reputation.',
     url: 'https://pow-logger.vercel.app',
-    siteName: 'PoWL',
+    siteName: 'PROVN',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PoWL — Proof-of-Work Logger',
+    title: 'PROVN — Proof-of-Work Logger 🗿',
     description: 'Your work, permanently on-chain. 🗿',
   },
   other: {
