@@ -91,7 +91,7 @@ export default function PrivacyPage() {
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>6. Contact &amp; Security Inquiries</h2>
           <p style={{ color: '#ccc', margin: 0 }}>
-            For privacy queries or security disclosures, reach out directly to <strong>darshangaikwad712@gmail.com</strong> or via GitHub <a href="https://github.com/dren712" target="_blank" rel="noopener noreferrer" style={{ color: '#00ff88' }}>@dren712</a>.
+            For privacy queries or security disclosures, reach out directly to <strong>darshangaikwad712@gmail.com</strong> or via GitHub <a href="https://github.com/dren712" rel="noopener noreferrer" style={{ color: '#00ff88' }}>@dren712</a>.
           </p>
         </section>
       </div>

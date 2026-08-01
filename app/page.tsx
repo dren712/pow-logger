@@ -181,8 +181,9 @@ function LoggerApp() {
 
   const shareOnTwitter = (logText: string, txId?: string) => {
     const irysUrl = txId ? `https://gateway.irys.xyz/${txId}` : 'https://pow-logger.vercel.app'
-    const tweetText = `Just logged my proof of work on @PoWL_xyz 🗿\n\nVerify: ${irysUrl}`
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank')
+    const previewText = logText.length > 80 ? `${logText.slice(0, 80)}...` : logText
+    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${irysUrl}\nBuild your reputation: pow-logger.vercel.app\n#PROVN #Solana #BuildInPublic`
+    window.location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
   }
 
   const shortAddress = publicKey
@@ -845,7 +846,6 @@ function LoggerApp() {
               <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
                 <a
                   href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
-                  target="_blank"
                   rel="noopener noreferrer"
                   style={{
                     color: '#00ff88',

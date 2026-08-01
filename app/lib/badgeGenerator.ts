@@ -190,13 +190,7 @@ export function triggerSVGDownload(svgString: string, filename: string) {
     // Mobile WebKit / Phantom Browser Fallback
     const encodedSvg = encodeURIComponent(svgString)
     const dataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`
-    const win = window.open()
-    if (win) {
-      win.document.write(`<body style="margin:0;background:#060709;display:flex;justify-content:center;align-items:center;min-height:100vh;">${svgString}</body>`)
-      win.document.title = filename
-    } else {
-      window.location.href = dataUrl
-    }
+    window.location.href = dataUrl
   } else {
     // Desktop Programmatic Anchor Download
     const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })

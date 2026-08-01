@@ -46,7 +46,6 @@ export default function Footer() {
             <div style={{ display: 'grid', gap: '6px' }}>
               <a
                 href="https://github.com/dren712/pow-logger"
-                target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#00ff88', textDecoration: 'none' }}
               >
@@ -54,7 +53,6 @@ export default function Footer() {
               </a>
               <a
                 href="https://gateway.irys.xyz"
-                target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#00ff88', textDecoration: 'none' }}
               >
@@ -62,7 +60,6 @@ export default function Footer() {
               </a>
               <a
                 href="https://explorer.solana.com"
-                target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#00ff88', textDecoration: 'none' }}
               >
@@ -85,7 +82,6 @@ export default function Footer() {
             <div style={{ display: 'grid', gap: '6px' }}>
               <a
                 href="/api/verify/demo"
-                target="_blank"
                 style={{ color: '#00e5ff', textDecoration: 'none' }}
               >
                 Verification API (/api/verify/[wallet])
@@ -102,7 +98,6 @@ export default function Footer() {
             <div style={{ display: 'grid', gap: '6px' }}>
               <a
                 href="https://india.superteam.fun"
-                target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#ffb800', textDecoration: 'none' }}
               >
@@ -110,7 +105,6 @@ export default function Footer() {
               </a>
               <a
                 href="https://solana.com"
-                target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#ffb800', textDecoration: 'none' }}
               >

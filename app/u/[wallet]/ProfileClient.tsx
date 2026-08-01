@@ -360,7 +360,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                 {l.irys_tx_id ? (
                   <a
                     href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
-                    target="_blank"
                     rel="noopener noreferrer"
                     style={{
                       background: 'rgba(0, 255, 136, 0.08)',
@@ -458,7 +457,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <a
                     href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
-                    target="_blank"
                     rel="noopener noreferrer"
                     style={{
                       color: '#00ff88',
