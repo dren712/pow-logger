@@ -1,0 +1,250 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+:root {
+  --font-geist-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --background: #060709;
+  --foreground: #f0f3f8;
+  --accent: #00ff88;
+  --accent-cyan: #00e5ff;
+  --accent-amber: #ffb800;
+  --accent-glow: rgba(0, 255, 136, 0.15);
+  --card-bg: #0d0f14;
+  --card-border: #1a1e28;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-mono);
+  min-height: 100vh;
+  margin: 0;
+  background-image: 
+    linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.08) 0%, transparent 65%),
+    radial-gradient(circle at 100% 100%, rgba(0, 229, 255, 0.05) 0%, transparent 55%);
+  background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+  background-attachment: fixed;
+}
+
+/* Glassmorphic Cards */
+.glass-card {
+  background: rgba(12, 14, 18, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 255, 136, 0.12);
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
+}
+.glass-card:hover {
+  border-color: rgba(0, 255, 136, 0.25);
+}
+
+/* Primary Button Styling */
+.btn-primary {
+  background: transparent;
+  border: 1px solid #00ff88;
+  color: #00ff88;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-family: var(--font-geist-mono), monospace;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-primary:hover {
+  background: #00ff88;
+  color: #060709;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.25);
+}
+
+/* Hero Radial Glow */
+.hero-glow {
+  background: radial-gradient(
+    ellipse at 50% -20%,
+    rgba(0, 255, 136, 0.08) 0%,
+    transparent 60%
+  );
+}
+
+/* Micro-Neon Borders on Stat Cards */
+.stat-card {
+  border: 1px solid rgba(0, 255, 136, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(12, 14, 18, 0.6);
+  position: relative;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(0,255,136,0.2), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Custom Wallet Adapter Button Override */
+.wallet-adapter-button {
+  background-color: #12151c !important;
+  color: #00ff88 !important;
+  border: 1px solid rgba(0, 255, 136, 0.3) !important;
+  border-radius: 8px !important;
+  font-family: var(--font-geist-mono), monospace !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  height: 42px !important;
+  padding: 0 18px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+.wallet-adapter-button:hover {
+  background-color: rgba(0, 255, 136, 0.12) !important;
+  border-color: #00ff88 !important;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.25) !important;
+  transform: translateY(-1px);
+}
+
+.wallet-adapter-button-trigger {
+  background-color: #12151c !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: #0d0f14 !important;
+  border: 1px solid #1a1e28 !important;
+  border-radius: 12px !important;
+  color: #fff !important;
+  font-family: var(--font-geist-mono), monospace !important;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8) !important;
+}
+
+.wallet-adapter-modal-button-close {
+  background: #181c26 !important;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.animate-blink {
+  animation: blink 1.2s infinite ease-in-out;
+}
+
+.terminal-card {
+  background: #0c0e12;
+  border: 1px solid #1a1e28;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.terminal-card:hover {
+  border-color: rgba(0, 255, 136, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 255, 136, 0.05);
+}
+
+/* Neon Corner Accents */
+.corner-accent {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-color: #00ff88;
+}
+
+.corner-top-left {
+  top: 0;
+  left: 0;
+  border-top: 2px solid #00ff88;
+  border-left: 2px solid #00ff88;
+}
+
+.corner-top-right {
+  top: 0;
+  right: 0;
+  border-top: 2px solid #00ff88;
+  border-right: 2px solid #00ff88;
+}
+
+.corner-bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 2px solid #00ff88;
+  border-left: 2px solid #00ff88;
+}
+
+.corner-bottom-right {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid #00ff88;
+  border-right: 2px solid #00ff88;
+}
+
+@media (max-width: 640px) {
+  .stats-grid { grid-template-columns: 1fr !important; }
+  .telemetry-bar { flex-direction: column; gap: 8px; text-align: center; }
+  .telemetry-right { flex-direction: column; gap: 4px; }
+  .header-bar { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .log-footer { flex-direction: column; gap: 10px; align-items: flex-start !important; }
+  .pipeline-steps { flex-direction: column; gap: 6px; }
+  .submit-row { flex-direction: column; gap: 12px; align-items: stretch; }
+  .hero-buttons { flex-direction: column; width: 100%; }
+  .hero-buttons > * { width: 100%; justify-content: center; }
+}
+
+button:focus-visible, a:focus-visible, textarea:focus-visible {
+  outline: 2px solid #00ff88;
+  outline-offset: 2px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink, .animate-fade-in { animation: none; }
+  .terminal-card { transition: none; }
+}
+
+/* Selection Highlight */
+::selection {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.mobile-wallet-banner {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(0, 255, 136, 0.08));
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.mobile-wallet-banner a {
+  color: #00e5ff;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #060709; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 136, 0.3);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 136, 0.6);
+}
