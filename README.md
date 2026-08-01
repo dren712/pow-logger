@@ -18,14 +18,14 @@ Log daily work → verify via Ed25519 signature → store permanently on Arweave
 ### The Problem
 Solana builders, bounty hunters, and hackathon participants complete daily work but lack a **portable, tamper-proof, on-chain proof of consistent effort**. GitHub records code pushes; bounty platforms show payouts. Nothing verifies the daily builder streak with cryptographic proof.
 
-### The Solution: PoWL Protocol
+### The Solution: PROVN Protocol 🗿
 1. **Cryptographic Verification**: Builders sign daily work logs using Ed25519 wallet signatures (anti-spoofing). Zero gas fees for users.
 2. **Permanent Arweave Storage**: Decentralized immutable archiving via Irys (`gateway.irys.xyz/<tx_id>`) with 100% SHA-256 proof hash fallback coverage.
 3. **Automated Skill Classification**: Zero-cost rule engine categorizing work into 16 skills, 14 protocols, and 10 work categories.
 4. **Metaplex Bubblegum cNFTs**: Low-cost compressed NFT credentials (~$0.000005/mint) representing verified builder proof entries and active streaks.
 5. **Pixel-Perfect GitHub 365-Day Contribution Heatmap**: Complete 52-week × 7-day grid (`app/components/ContributionHeatmap.tsx`) with month headers (`Jan`..`Dec`), day-of-week labels (`Mon`, `Wed`, `Fri`), 5-level green scale (`#161b22` → `#39d353`), and interactive tooltips.
-6. **1-Click SVG NFT Proof Badges**: High-res vector cards with SVG `<tspan>` multi-line text wrapping and mobile WebKit / Phantom Browser modal support (`app/components/NFTBadgeModal.tsx`).
-7. **Mobile Universal Deep Links**: 1-tap launchers for Phantom, Solflare, and Backpack to connect directly from mobile Safari, Chrome, and Brave.
+6. **1-Click PNG/SVG Proof Badge Generator & Twitter Share**: High-res vector cards converted to PNG via HTML5 Canvas with 1-tap download and Twitter intent pre-filled sharing (`app/components/NFTBadgeModal.tsx`).
+7. **Mobile Universal Deep Links & Direct Navigation**: 1-tap launchers for Phantom, Solflare, and Backpack to connect directly from mobile Safari, Chrome, and Brave without WebView link-swallowing.
 8. **Public Verification API**: Read-only JSON endpoint (`/api/verify/[wallet]`) for DAOs, grant committees, and hiring platforms.
 
 ---
