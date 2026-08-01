@@ -23,6 +23,7 @@ export default function NFTBadgeModal({
 }: NFTBadgeModalProps) {
   const [copied, setCopied] = useState(false)
   const [pngDataUrl, setPngDataUrl] = useState<string | null>(null)
+  const [canWebShareFiles, setCanWebShareFiles] = useState(false)
 
   useEffect(() => {
     if (!svgString || typeof window === 'undefined') return
@@ -39,7 +40,21 @@ export default function NFTBadgeModal({
         const ctx = canvas.getContext('2d')
         if (ctx) {
           ctx.drawImage(img, 0, 0, 1280, 760)
-          setPngDataUrl(canvas.toDataURL('image/png'))
+          const pngUrl = canvas.toDataURL('image/png')
+          setPngDataUrl(pngUrl)
+
+          // Check if device supports Web Share API with files (Spotify style)
+          if (typeof navigator !== 'undefined' && 'canShare' in navigator) {
+            fetch(pngUrl)
+              .then((res) => res.blob())
+              .then((blob) => {
+                const file = new File([blob], 'provn-card.png', { type: 'image/png' })
+                if (navigator.canShare({ files: [file] })) {
+                  setCanWebShareFiles(true)
+                }
+              })
+              .catch(() => {})
+          }
         }
       } catch (err) {
         console.error('SVG to PNG conversion error:', err)
@@ -54,8 +69,32 @@ export default function NFTBadgeModal({
   const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`
   const displayImage = pngDataUrl || svgDataUrl
 
-  const handleDownloadAndShare = () => {
-    // 1. Download PNG or SVG image
+  const handleShareSpotifyStyle = async () => {
+    const previewText = logContent.length > 80 ? `${logContent.slice(0, 80)}...` : logContent
+    const gatewayUrl = irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : 'https://pow-logger.vercel.app'
+    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${gatewayUrl}\nBuild your reputation: pow-logger.vercel.app\n#PROVN #Solana #BuildInPublic`
+
+    // 1. Native Web Share API (Spotify Lyrics Card Sharing Pattern)
+    if (pngDataUrl && typeof navigator !== 'undefined' && 'share' in navigator) {
+      try {
+        const res = await fetch(pngDataUrl)
+        const blob = await res.blob()
+        const file = new File([blob], `provn-proof-${logId || 'card'}.png`, { type: 'image/png' })
+
+        if ('canShare' in navigator && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'PROVN Proof Entry 🗿',
+            text: tweetText,
+            files: [file],
+          })
+          return
+        }
+      } catch (err) {
+        console.error('Native Web Share cancelled or unhandled, triggering fallback:', err)
+      }
+    }
+
+    // 2. Desktop Fallback (Download PNG + Launch Twitter Intent)
     const downloadLink = document.createElement('a')
     downloadLink.href = displayImage
     downloadLink.download = `provn-proof-${logId || 'card'}.${pngDataUrl ? 'png' : 'svg'}`
@@ -63,14 +102,7 @@ export default function NFTBadgeModal({
     downloadLink.click()
     document.body.removeChild(downloadLink)
 
-    // 2. Open Twitter Intent with pre-filled text
-    const previewText = logContent.length > 80 ? `${logContent.slice(0, 80)}...` : logContent
-    const gatewayUrl = irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : 'https://pow-logger.vercel.app'
-    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${gatewayUrl}\nBuild your reputation: pow-logger.vercel.app\n#PROVN #Solana #BuildInPublic`
-
     const tweetIntent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
-    
-    // Direct navigation safe for Phantom Mobile WebView
     setTimeout(() => {
       window.location.href = tweetIntent
     }, 500)
@@ -134,7 +166,7 @@ export default function NFTBadgeModal({
           </button>
         </div>
 
-        {/* X Attachment Instruction Banner */}
+        {/* Spotify-style Instruction Banner */}
         <div
           style={{
             background: 'rgba(0, 255, 136, 0.08)',
@@ -148,7 +180,7 @@ export default function NFTBadgeModal({
             textAlign: 'center',
           }}
         >
-          🐦 <strong>Share on X:</strong> Tapping <strong>Download Badge &amp; Share</strong> saves your PNG proof card and opens X. Simply attach the downloaded badge image to your tweet manually!
+          🎵 <strong>Spotify-Style Image Sharing:</strong> Tap <strong>Share Card to X</strong> below to attach your PNG proof card image directly to your post on X / Twitter!
         </div>
 
         {/* Display Image (Converted PNG or SVG) */}
@@ -179,7 +211,7 @@ export default function NFTBadgeModal({
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
-            onClick={handleDownloadAndShare}
+            onClick={handleShareSpotifyStyle}
             className="btn-primary"
             style={{
               flex: 2,
@@ -191,7 +223,7 @@ export default function NFTBadgeModal({
               justifyContent: 'center',
             }}
           >
-            🚀 Download Badge &amp; Share on X 🗿
+            {canWebShareFiles ? '📲 Share Card to X (Attach PNG Image) 🗿' : '🚀 Share Card Image to X 🗿'}
           </button>
 
           <button
