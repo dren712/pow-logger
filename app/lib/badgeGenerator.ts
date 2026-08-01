@@ -50,7 +50,7 @@ export function generateNFTBadgeSVG(
   <path d="M 576 316 L 576 328 L 564 328" stroke="#00ff88" stroke-width="3" fill="none"/>
 
   <!-- Top Header -->
-  <text x="36" y="44" fill="#00ff88" font-family="monospace" font-size="16" font-weight="800" letter-spacing="1">PoWL PROTOCOL 🗿</text>
+  <text x="36" y="44" fill="#00ff88" font-family="monospace" font-size="16" font-weight="800" letter-spacing="1">PROVN PROTOCOL 🗿</text>
   <text x="564" y="44" fill="#00e5ff" font-family="monospace" font-size="11" text-anchor="end" font-weight="700">VERIFIED cNFT PROOF</text>
 
   <!-- Divider -->
@@ -145,7 +145,7 @@ export function generateSingleLogNFTBadgeSVG(
   <path d="M 626 352 L 626 366 L 612 366" stroke="${catColor}" stroke-width="3" fill="none"/>
 
   <!-- Top Header Bar -->
-  <text x="36" y="44" fill="#00ff88" font-family="monospace" font-size="16" font-weight="900" letter-spacing="1">PoWL PROOF ENTRY #${logId} 🗿</text>
+  <text x="36" y="44" fill="#00ff88" font-family="monospace" font-size="16" font-weight="900" letter-spacing="1">PROVN PROOF ENTRY #${logId} 🗿</text>
   <text x="604" y="44" fill="#00e5ff" font-family="monospace" font-size="11" text-anchor="end" font-weight="700">Ed25519 VERIFIED cNFT</text>
 
   <line x1="36" y1="58" x2="604" y2="58" stroke="#1a202c" stroke-width="1"/>
