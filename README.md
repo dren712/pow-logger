@@ -199,6 +199,26 @@ npm run dev
 
 ---
 
+## 🤝 Contributing
+
+Contributions from the Solana builder community are welcome!
+
+1. **Fork the repository** and create a feature branch (`git checkout -b feature/amazing-feature`).
+2. **Install dependencies**: `npm install`.
+3. **Run local dev server**: `npm run dev`.
+4. **Verify TypeScript compilation**: `npx tsc --noEmit`.
+5. **Commit your changes**: `git commit -m "feat: add amazing feature"`.
+6. **Open a Pull Request** describing your changes.
+
+---
+
+## 🛡️ Security Policy
+
+### Responsible Disclosure
+If you discover a potential security issue, Ed25519 signature bypass, or vulnerability within PoWL, please report it responsibly by emailing **darshangaikwad712@gmail.com** or reaching out directly on GitHub [@dren712](https://github.com/dren712). Please avoid public disclosure until the issue has been investigated and patched.
+
+---
+
 ## 👨‍💻 Author
 
 **Darshan Gaikwad** — [GitHub (@dren712)](https://github.com/dren712)  
