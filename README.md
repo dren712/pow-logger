@@ -82,6 +82,8 @@ Solana builders, bounty hunters, and hackathon participants complete daily work 
   Server reconstructs and verifies the payload using `tweetnacl`. Invalid signatures return `401 Unauthorized`.
 - **Replay Attack Defense**: Submissions check timestamp freshness (`< 900,000ms drift`).
 - **DoS Rate Limiting**: Rate limiting (10 requests/hr per wallet) triggers *before* signature verification.
+- **CORS API Security**: Configured CORS policies in `next.config.ts` restricting `/api/log-submit` to internal POST execution and allowing public read-only GET requests on `/api/verify/[wallet]`.
+- **Privacy Policy**: Transparent zero-tracking privacy specs published at [`/privacy`](https://pow-logger.vercel.app/privacy).
 - **Serverless Secrets**: `SUPABASE_SERVICE_ROLE_KEY` and `IRYS_PRIVATE_KEY` are kept strictly server-side.
 - **Production Headers**: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and `Permissions-Policy`.
 
@@ -156,6 +158,8 @@ pow-logger/
 │   │   └── irys.ts               # Client cryptographic submission helper
 │   ├── providers/
 │   │   └── WalletProvider.tsx    # Solana wallet context provider
+│   ├── privacy/
+│   │   └── page.tsx              # Static Privacy Policy page
 │   ├── u/[wallet]/               # Public builder profiles & 365-day heatmaps
 │   │   ├── page.tsx              # Server component with dynamic OG tags
 │   │   └── ProfileClient.tsx     # Client heatmap, streak stats, & timeline
