@@ -194,6 +194,8 @@ NEXT_PUBLIC_SUPABASE_URL="https://your-supabase-url.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
 SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-role-key"
 IRYS_PRIVATE_KEY="[your_solana_private_key_json_array]"
+NEXT_PUBLIC_CNFT_ENABLED="false"
+# SOLANA_MERKLE_TREE_PUBKEY="your_merkle_tree_pubkey"
 ```
 
 Run dev server:
@@ -219,7 +221,7 @@ Contributions from the Solana builder community are welcome!
 ## 🛡️ Security Policy
 
 ### Responsible Disclosure
-If you discover a potential security issue, Ed25519 signature bypass, or vulnerability within PoWL, please report it responsibly by emailing **darshangaikwad712@gmail.com** or reaching out directly on GitHub [@dren712](https://github.com/dren712). Please avoid public disclosure until the issue has been investigated and patched.
+If you discover a potential security issue, Ed25519 signature bypass, or vulnerability within PROVN, please report it responsibly by emailing **darshangaikwad712@gmail.com** or reaching out directly on GitHub [@dren712](https://github.com/dren712). Please avoid public disclosure until the issue has been investigated and patched.
 
 ---
 
