@@ -68,6 +68,12 @@ export default function Footer() {
               >
                 Solana Explorer ↗
               </a>
+              <a
+                href="/privacy"
+                style={{ color: '#00ff88', textDecoration: 'none', fontWeight: 600 }}
+              >
+                Privacy Policy 🔒
+              </a>
             </div>
           </div>
 
