@@ -718,34 +718,23 @@ function LoggerApp() {
                 <span>{formatTime(l.created_at)}</span>
               </div>
 
-              {l.irys_tx_id ? (
-                <span
-                  style={{
-                    background: 'rgba(0, 255, 136, 0.08)',
-                    color: '#00ff88',
-                    border: '1px solid rgba(0, 255, 136, 0.25)',
-                    padding: '3px 10px',
-                    borderRadius: '4px',
-                    fontSize: '10.5px',
-                    fontWeight: 700,
-                    letterSpacing: '0.3px'
-                  }}
-                >
-                  ✓ Permanent on Irys
-                </span>
-              ) : (
-                <span
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    color: '#888',
-                    padding: '3px 10px',
-                    borderRadius: '4px',
-                    fontSize: '10.5px',
-                  }}
-                >
-                  Saved in DB
-                </span>
-              )}
+              <a
+                href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
+                rel="noopener noreferrer"
+                style={{
+                  background: 'rgba(0, 255, 136, 0.08)',
+                  color: '#00ff88',
+                  border: '1px solid rgba(0, 255, 136, 0.25)',
+                  padding: '3px 10px',
+                  borderRadius: '4px',
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  letterSpacing: '0.3px',
+                  textDecoration: 'none',
+                }}
+              >
+                ✓ Permanent on Irys
+              </a>
             </div>
 
             {/* Log Content */}

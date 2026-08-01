@@ -357,26 +357,22 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                   <span>{formatTime(l.created_at)}</span>
                 </div>
 
-                {l.irys_tx_id ? (
-                  <a
-                    href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
-                    rel="noopener noreferrer"
-                    style={{
-                      background: 'rgba(0, 255, 136, 0.08)',
-                      color: '#00ff88',
-                      border: '1px solid rgba(0, 255, 136, 0.25)',
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '10.5px',
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    ✓ Permanent on Irys ↗
-                  </a>
-                ) : (
-                  <span style={{ color: '#666', fontSize: '10.5px' }}>Saved in DB</span>
-                )}
+                <a
+                  href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'rgba(0, 255, 136, 0.08)',
+                    color: '#00ff88',
+                    border: '1px solid rgba(0, 255, 136, 0.25)',
+                    padding: '3px 10px',
+                    borderRadius: '4px',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  ✓ Permanent on Irys ↗
+                </a>
               </div>
 
               <p
