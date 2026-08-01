@@ -197,16 +197,19 @@ export async function POST(req: NextRequest) {
       .update({ irys_tx_id: irysTxId })
       .eq('id', savedLog.id)
 
-    // 7. Mint Compressed NFT (cNFT) Proof Badge
+    // 7. Mint Compressed NFT (cNFT) Proof Badge (only if Merkle Tree configured)
     let cnftAssetId: string | null = null
-    try {
-      const { mintProofCNFT } = await import('@/app/lib/cnft')
-      const cnftResult = await mintProofCNFT(walletAddress, content, irysTxId || undefined)
-      if (cnftResult.success && cnftResult.assetId) {
-        cnftAssetId = cnftResult.assetId
+    const hasMerkleTree = !!process.env.SOLANA_MERKLE_TREE_PUBKEY
+    if (hasMerkleTree) {
+      try {
+        const { mintProofCNFT } = await import('@/app/lib/cnft')
+        const cnftResult = await mintProofCNFT(walletAddress, content, irysTxId || undefined)
+        if (cnftResult.success && cnftResult.assetId) {
+          cnftAssetId = cnftResult.assetId
+        }
+      } catch (cnftErr) {
+        console.error('cNFT minting error (non-fatal):', cnftErr)
       }
-    } catch (cnftErr) {
-      console.error('cNFT minting error:', cnftErr)
     }
 
     return NextResponse.json({

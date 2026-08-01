@@ -578,7 +578,7 @@ function LoggerApp() {
               <span style={{ color: statusStep === 'storing' ? '#00e5ff' : '#444' }}>
                 2. Irys Permanent {statusStep === 'storing' ? '⏳' : statusStep === 'success' ? '✓' : '○'}
               </span>
-              {hasMerkleTree && (
+              {(process.env.NEXT_PUBLIC_CNFT_ENABLED === 'true' || hasMerkleTree) && (
                 <span style={{ color: statusStep === 'success' ? '#00ff88' : '#444' }}>
                   3. cNFT Mint ✓
                 </span>

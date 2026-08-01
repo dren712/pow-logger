@@ -39,6 +39,10 @@ export async function mintProofCNFT(
   irysTxId?: string,
   streak: number = 1
 ): Promise<{ success: boolean; assetId?: string; error?: string }> {
+  if (!process.env.SOLANA_MERKLE_TREE_PUBKEY) {
+    return { success: false, error: 'Tree not configured' }
+  }
+
   try {
     const endpoint =
       process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('devnet')
