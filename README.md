@@ -7,7 +7,7 @@ Log daily work → verify via Ed25519 signature → store permanently on Arweave
 
 > *"Your work, permanently on-chain."*
 
-**Live Protocol App:** [pow-logger.vercel.app](https://pow-logger.vercel.app)  
+**Live Protocol App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)  
 **GitHub:** [github.com/dren712/pow-logger](https://github.com/dren712/pow-logger)  
 **License:** [![License: MIT](https://img.shields.io/badge/License-MIT-00ff88.svg)](LICENSE)
 
@@ -78,12 +78,12 @@ Solana builders, bounty hunters, and hackathon participants complete daily work 
 ## 🛡 Cryptographic Security & System Guarantees
 
 - **Ed25519 Anti-Spoofing**: Submissions require a signed SIWS message:
-  `pow-logger.vercel.app wants you to sign in with your Solana account: <pubkey>...`
+  `provn-sol.vercel.app wants you to sign in with your Solana account: <pubkey>...`
   Server reconstructs and verifies the payload using `tweetnacl`. Invalid signatures return `401 Unauthorized`.
 - **Replay Attack Defense**: Submissions check timestamp freshness (`< 900,000ms drift`).
 - **DoS Rate Limiting**: Rate limiting (10 requests/hr per wallet) triggers *before* signature verification.
 - **CORS API Security**: Configured CORS policies in `next.config.ts` restricting `/api/log-submit` to internal POST execution and allowing public read-only GET requests on `/api/verify/[wallet]`.
-- **Privacy Policy**: Transparent zero-tracking privacy specs published at [`/privacy`](https://pow-logger.vercel.app/privacy).
+- **Privacy Policy**: Transparent zero-tracking privacy specs published at [`/privacy`](https://provn-sol.vercel.app/privacy).
 - **Serverless Secrets**: `SUPABASE_SERVICE_ROLE_KEY` and `IRYS_PRIVATE_KEY` are kept strictly server-side.
 - **Production Headers**: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and `Permissions-Policy`.
 

@@ -34,7 +34,7 @@ export async function submitVerifiedLog(
   content: string
 ): Promise<SubmitLogResponse> {
   const timestamp = new Date().toISOString()
-  const messageText = `pow-logger.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
+  const messageText = `provn-sol.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
   const messageBytes = new TextEncoder().encode(messageText)
 
   // 1. Request wallet signature from Phantom/Backpack/Solflare

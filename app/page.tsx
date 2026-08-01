@@ -184,9 +184,9 @@ function LoggerApp() {
   }
 
   const shareOnTwitter = (logText: string, txId?: string) => {
-    const irysUrl = txId ? `https://gateway.irys.xyz/${txId}` : 'https://pow-logger.vercel.app'
+    const irysUrl = txId ? `https://gateway.irys.xyz/${txId}` : 'https://provn-sol.vercel.app'
     const previewText = logText.length > 80 ? `${logText.slice(0, 80)}...` : logText
-    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${irysUrl}\nBuild your reputation: pow-logger.vercel.app\n#PROVN #Solana #BuildInPublic`
+    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${irysUrl}\nBuild your reputation: provn-sol.vercel.app\n#PROVN #Solana #BuildInPublic`
     window.location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
   }
 
@@ -367,7 +367,7 @@ function LoggerApp() {
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <a
-              href="https://phantom.app/ul/browse/https%3A%2F%2Fpow-logger.vercel.app"
+              href="https://phantom.app/ul/browse/https%3A%2F%2Fprovn-sol.vercel.app"
               className="btn-primary"
               style={{
                 fontSize: '12px',
@@ -381,7 +381,7 @@ function LoggerApp() {
             </a>
 
             <a
-              href="https://solflare.com/ul/v1/browse/https%3A%2F%2Fpow-logger.vercel.app"
+              href="https://solflare.com/ul/v1/browse/https%3A%2F%2Fprovn-sol.vercel.app"
               className="btn-primary"
               style={{
                 fontSize: '12px',
@@ -395,7 +395,7 @@ function LoggerApp() {
             </a>
 
             <a
-              href="https://backpack.app/ul/browse/https%3A%2F%2Fpow-logger.vercel.app"
+              href="https://backpack.app/ul/browse/https%3A%2F%2Fprovn-sol.vercel.app"
               className="btn-primary"
               style={{
                 fontSize: '12px',

@@ -172,7 +172,7 @@ export function generateSingleLogNFTBadgeSVG(
   <line x1="36" y1="306" x2="604" y2="306" stroke="#161b26" stroke-width="1"/>
   <text x="36" y="336" fill="#666666" font-family="monospace" font-size="10">IMMUTABLE PROOF: Solana &amp; Arweave (Irys)</text>
   <text x="604" y="336" fill="#00e5ff" font-family="monospace" font-size="10" text-anchor="end">PROOF_TX: ${txShort}</text>
-  <text x="36" y="356" fill="#444444" font-family="monospace" font-size="9">VERIFY LIVE: pow-logger.vercel.app/u/${walletAddress}</text>
+  <text x="36" y="356" fill="#444444" font-family="monospace" font-size="9">VERIFY LIVE: provn-sol.vercel.app/u/${walletAddress}</text>
 
   <defs>
     <radialGradient id="log_bg_grad" cx="50%" cy="0%" r="90%">

@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: `${walletShort}'s PROVN Profile — ${streak} day streak 🔥`,
       description: `${count} verified work logs permanently stored on Arweave.`,
-      url: `https://pow-logger.vercel.app/u/${wallet}`,
+      url: `https://provn-sol.vercel.app/u/${wallet}`,
       siteName: 'PROVN',
       type: 'profile',
     },
@@ -103,7 +103,7 @@ export default async function ProfilePage({ params }: PageProps) {
               display: 'inline-flex',
             }}
           >
-            Start building your proof of work at pow-logger.vercel.app →
+            Start building your proof of work at provn-sol.vercel.app →
           </a>
         </div>
       </main>

@@ -6,11 +6,11 @@ import WalletContextProvider from "./providers/WalletProvider";
 export const metadata: Metadata = {
   title: "PROVN — Proof-of-Work Logger 🗿",
   description: "Cryptographically verified daily work logs on Solana. Build your on-chain builder reputation.",
-  metadataBase: new URL('https://pow-logger.vercel.app'),
+  metadataBase: new URL('https://provn-sol.vercel.app'),
   openGraph: {
     title: 'PROVN — Proof-of-Work Logger 🗿',
     description: 'Cryptographically verified daily work logs on Solana. Build your on-chain builder reputation.',
-    url: 'https://pow-logger.vercel.app',
+    url: 'https://provn-sol.vercel.app',
     siteName: 'PROVN',
     type: 'website',
   },

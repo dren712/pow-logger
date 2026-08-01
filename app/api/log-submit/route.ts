@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Cryptographic Signature Verification
-    const expectedMessageText = `pow-logger.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
+    const expectedMessageText = `provn-sol.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
     const messageBytes = new TextEncoder().encode(expectedMessageText)
 
     let signatureBytes: Uint8Array

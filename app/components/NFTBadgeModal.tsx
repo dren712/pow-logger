@@ -72,8 +72,8 @@ export default function NFTBadgeModal({
 
   const handleShareSeamless = async () => {
     const previewText = logContent.length > 80 ? `${logContent.slice(0, 80)}...` : logContent
-    const gatewayUrl = irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : 'https://pow-logger.vercel.app'
-    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${gatewayUrl}\nBuild your reputation: pow-logger.vercel.app\n#PROVN #Solana #BuildInPublic`
+    const gatewayUrl = irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : 'https://provn-sol.vercel.app'
+    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${gatewayUrl}\nBuild your reputation: provn-sol.vercel.app\n#PROVN #Solana #BuildInPublic`
 
     // 1. Mobile Web Share API (Spotify Lyrics Card Pattern — Auto Attaches Image)
     if (pngDataUrl && typeof navigator !== 'undefined' && 'share' in navigator) {

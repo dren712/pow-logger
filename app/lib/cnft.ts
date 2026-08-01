@@ -23,7 +23,7 @@ export async function createCNFTMetadata(
     name: `PROVN Proof #${streak}d — ${shortWallet} 🗿`,
     symbol: 'PROVN',
     description: `Cryptographically verified proof-of-work log on Solana: "${logContent.slice(0, 100)}${logContent.length > 100 ? '...' : ''}"`,
-    external_url: `https://pow-logger.vercel.app/u/${walletAddress}`,
+    external_url: `https://provn-sol.vercel.app/u/${walletAddress}`,
     attributes: [
       { trait_type: 'Builder', value: walletAddress },
       { trait_type: 'Streak Milestone', value: `${streak} Days` },
