@@ -215,6 +215,7 @@ export async function POST(req: NextRequest) {
       classification,
       irysTxId,
       cnftAssetId,
+      hasMerkleTree: !!process.env.SOLANA_MERKLE_TREE_PUBKEY,
       gatewayUrl: irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : null,
     })
   } catch (error: any) {

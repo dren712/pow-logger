@@ -50,6 +50,7 @@ function LoggerApp() {
   const [modalLogId, setModalLogId] = useState<number | undefined>(undefined)
   const [modalLogContent, setModalLogContent] = useState<string>('')
   const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
+  const [hasMerkleTree, setHasMerkleTree] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
@@ -147,6 +148,9 @@ function LoggerApp() {
       const result = await submitVerifiedLog(signMessage, walletAddress, logContent)
 
       if (result.success && result.log) {
+        if (typeof result.hasMerkleTree === 'boolean') {
+          setHasMerkleTree(result.hasMerkleTree)
+        }
         const fullLog = {
           ...result.log,
           irys_tx_id: result.log.irys_tx_id || result.irysTxId,
@@ -569,14 +573,16 @@ function LoggerApp() {
           >
             <div className="pipeline-steps" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
               <span style={{ color: statusStep === 'saving' ? '#00ff88' : '#888' }}>
-                1. Signature & DB {statusStep !== 'saving' ? '✓' : '⏳'}
+                1. Signature &amp; DB {statusStep !== 'saving' ? '✓' : '⏳'}
               </span>
               <span style={{ color: statusStep === 'storing' ? '#00e5ff' : '#444' }}>
                 2. Irys Permanent {statusStep === 'storing' ? '⏳' : statusStep === 'success' ? '✓' : '○'}
               </span>
-              <span style={{ color: '#444' }}>
-                3. cNFT Mint (Soon)
-              </span>
+              {hasMerkleTree && (
+                <span style={{ color: statusStep === 'success' ? '#00ff88' : '#444' }}>
+                  3. cNFT Mint ✓
+                </span>
+              )}
             </div>
           </div>
         )}

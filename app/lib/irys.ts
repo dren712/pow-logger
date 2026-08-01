@@ -12,6 +12,8 @@ export interface SubmitLogResponse {
   log: any
   irysTxId: string | null
   gatewayUrl: string | null
+  cnftAssetId?: string | null
+  hasMerkleTree?: boolean
 }
 
 /**
