@@ -103,24 +103,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Execute Retry Upload to Irys Node #1
-    const privateKey = process.env.IRYS_PRIVATE_KEY
-    if (!privateKey) {
-      return NextResponse.json({ error: 'Irys node authority keypair not configured' }, { status: 503 })
-    }
-
-    const { Uploader } = await import('@irys/upload')
-    const { Solana } = await import('@irys/upload-solana')
-
-    let rawKey = privateKey.trim()
-    if (rawKey.startsWith('"') && rawKey.endsWith('"')) rawKey = rawKey.slice(1, -1)
-    let walletKey: string | Uint8Array = rawKey
-    try {
-      const parsedKey = JSON.parse(rawKey)
-      if (Array.isArray(parsedKey)) walletKey = new Uint8Array(parsedKey)
-    } catch {}
-
-    const uploader = await (Uploader(Solana) as unknown as { withWallet: (key: string | Uint8Array) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withWallet(walletKey)
-
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
       version: 1,
@@ -147,20 +129,12 @@ export async function POST(req: NextRequest) {
     if (logRow.evidence_url) tags.push({ name: 'Evidence-URL', value: logRow.evidence_url })
     if (logRow.github_url) tags.push({ name: 'GitHub-URL', value: logRow.github_url })
 
-    const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
+    const { uploadEnvelopeToIrys } = await import('@/app/lib/irysUploader')
+    const irysTxId = await uploadEnvelopeToIrys(structuredEnvelope, tags)
 
-    if (!uploadReceipt || !uploadReceipt.id) {
-      try {
-        await supabase
-          .from('logs')
-          .update({ archival_state: 'failed' })
-          .eq('id', logId)
-      } catch {}
-
-      return NextResponse.json({ error: 'Archival retry failed: Irys node returned empty receipt' }, { status: 502 })
+    if (!irysTxId) {
+      return NextResponse.json({ error: 'Archival retry failed: Irys node upload unconfirmed' }, { status: 502 })
     }
-
-    const irysTxId = uploadReceipt.id
     let updateErr = (await supabase
       .from('logs')
       .update({

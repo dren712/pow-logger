@@ -214,62 +214,34 @@ export async function POST(req: NextRequest) {
     let archivalState: ArchivalState = 'pending'
 
     // 9. Permanent Storage Upload of Envelope to Arweave (Irys Node #1)
-    const privateKey = process.env.IRYS_PRIVATE_KEY
-    if (privateKey) {
-      try {
-        const { Uploader } = await import('@irys/upload')
-        const { Solana } = await import('@irys/upload-solana')
+    const structuredEnvelope = JSON.stringify({
+      app: 'PROVN',
+      version: 1,
+      logId: savedLog.id,
+      walletAddress,
+      timestamp,
+      content: content.trim(),
+      signature,
+      evidenceUrl: cleanEvidenceUrl,
+      githubUrl: cleanGithubUrl,
+      classification,
+    }, null, 2)
 
-        let rawKey = privateKey.trim()
-        if (rawKey.startsWith('"') && rawKey.endsWith('"')) rawKey = rawKey.slice(1, -1)
-        let walletKey: string | Uint8Array = rawKey
-        try {
-          const parsedKey = JSON.parse(rawKey)
-          if (Array.isArray(parsedKey)) walletKey = new Uint8Array(parsedKey)
-        } catch {}
+    const tags = [
+      { name: 'App-Name', value: 'PROVN' },
+      { name: 'Content-Type', value: 'application/json' },
+      { name: 'Builder-Address', value: walletAddress },
+      { name: 'Proof-Type', value: 'Ed25519-Signed-Log' },
+      { name: 'Timestamp', value: timestamp },
+      { name: 'Category', value: classification.category },
+    ]
 
-        const uploader = await (Uploader(Solana) as unknown as { withWallet: (key: string | Uint8Array) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withWallet(walletKey)
+    if (cleanEvidenceUrl) tags.push({ name: 'Evidence-URL', value: cleanEvidenceUrl })
+    if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
 
-        const structuredEnvelope = JSON.stringify({
-          app: 'PROVN',
-          version: 1,
-          logId: savedLog.id,
-          walletAddress,
-          timestamp,
-          content: content.trim(),
-          signature,
-          evidenceUrl: cleanEvidenceUrl,
-          githubUrl: cleanGithubUrl,
-          classification,
-        }, null, 2)
-
-        const tags = [
-          { name: 'App-Name', value: 'PROVN' },
-          { name: 'Content-Type', value: 'application/json' },
-          { name: 'Builder-Address', value: walletAddress },
-          { name: 'Proof-Type', value: 'Ed25519-Signed-Log' },
-          { name: 'Timestamp', value: timestamp },
-          { name: 'Category', value: classification.category },
-        ]
-
-        if (cleanEvidenceUrl) tags.push({ name: 'Evidence-URL', value: cleanEvidenceUrl })
-        if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
-
-        const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
-
-        if (uploadReceipt && uploadReceipt.id) {
-          irysTxId = uploadReceipt.id
-          archivalState = 'archived'
-        } else {
-          archivalState = 'failed'
-        }
-      } catch (irysErr) {
-        console.error('Irys upload failed:', irysErr)
-        archivalState = 'failed'
-      }
-    } else {
-      archivalState = 'failed'
-    }
+    const { uploadEnvelopeToIrys } = await import('@/app/lib/irysUploader')
+    irysTxId = await uploadEnvelopeToIrys(structuredEnvelope, tags)
+    archivalState = irysTxId ? 'archived' : 'pending'
 
     // Update DB row with confirmed irys_tx_id and archival_state
     if (irysTxId) {
