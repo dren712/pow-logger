@@ -5,7 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
 import WalletMultiButton from './components/WalletButton'
 import NetworkBanner from './components/NetworkBanner'
-import { submitVerifiedLog } from './lib/irys'
+import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
 import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
 import NFTBadgeModal from './components/NFTBadgeModal'
@@ -58,15 +58,14 @@ function LoggerApp() {
   const [hasMerkleTree, setHasMerkleTree] = useState(false)
 
   const retryArchival = async (logId: number) => {
-    if (!connected || !publicKey) return
+    if (!connected || !publicKey || !signMessage) return
     setRetryingLogId(logId)
     try {
-      const res = await fetch('/api/archival-retry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ logId, walletAddress: publicKey.toBase58() }),
-      })
-      const data = await res.json()
+      const data = await requestAuthorizedArchivalRetry(
+        signMessage,
+        publicKey.toBase58(),
+        logId
+      )
       if (data.success && data.irysTxId) {
         setLogs((prev) =>
           prev.map((l) =>
@@ -76,8 +75,10 @@ function LoggerApp() {
           )
         )
       }
-    } catch (e) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Signature rejected'
       console.error('Retry error:', e)
+      alert(`Archival Retry Failed: ${msg}`)
     } finally {
       setRetryingLogId(null)
     }

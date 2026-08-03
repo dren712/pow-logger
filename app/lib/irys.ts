@@ -1,11 +1,15 @@
 /**
  * Cryptographic Log Submission Client Helper
  *
- * Prompts the user's Solana wallet to sign a structured authentication message,
- * encodes the signature in Base58, and sends it to the verified /api/log-submit route.
+ * Prompts the user's Solana wallet to sign structured SIWS messages,
+ * encodes signatures in Base58, and communicates with verified API routes.
  */
 
 import bs58 from 'bs58'
+import {
+  buildCanonicalSubmitMessage,
+  buildCanonicalRetryMessage,
+} from './canonicalMessage'
 
 export type ArchivalState = 'pending' | 'archived' | 'failed' | 'legacy_unverified'
 
@@ -35,11 +39,27 @@ export interface SubmitLogResponse {
   hasMerkleTree?: boolean
 }
 
+export interface RetryArchivalResponse {
+  success: boolean
+  archivalState: ArchivalState
+  irysTxId: string
+  gatewayUrl: string
+}
+
 const encodeBase58 = (bytes: Uint8Array): string => {
   const bs58Obj = bs58 as unknown as { encode?: (bytes: Uint8Array) => string; default?: { encode: (bytes: Uint8Array) => string } }
   const fn = bs58Obj.encode || bs58Obj.default?.encode
   if (!fn) throw new Error('Base58 encoder unavailable')
   return fn(bytes)
+}
+
+function generateNonce(): string {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = new Uint8Array(16)
+    crypto.getRandomValues(bytes)
+    return encodeBase58(bytes)
+  }
+  return Math.random().toString(36).substring(2, 15)
 }
 
 export async function submitVerifiedLog(
@@ -50,10 +70,21 @@ export async function submitVerifiedLog(
   githubUrl?: string
 ): Promise<SubmitLogResponse> {
   const timestamp = new Date().toISOString()
-  const messageText = `provn-sol.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
+  const nonce = generateNonce()
+
+  // 1. Build canonical SIWS message cryptographically binding content AND evidence URLs
+  const messageText = buildCanonicalSubmitMessage({
+    walletAddress,
+    timestamp,
+    nonce,
+    content,
+    evidenceUrl,
+    githubUrl,
+  })
+
   const messageBytes = new TextEncoder().encode(messageText)
 
-  // 1. Request wallet signature from Phantom/Backpack/Solflare
+  // 2. Request wallet signature from Phantom/Backpack/Solflare
   const rawSigResult: unknown = await signMessage(messageBytes)
   let rawSig = rawSigResult
   if (rawSig && typeof rawSig === 'object' && 'signature' in rawSig) {
@@ -62,7 +93,7 @@ export async function submitVerifiedLog(
   const signatureBytes = rawSig instanceof Uint8Array ? rawSig : new Uint8Array(rawSig as ArrayBuffer)
   const signatureBase58 = encodeBase58(signatureBytes)
 
-  // 2. Send payload to verified backend endpoint
+  // 3. Send payload to verified backend endpoint
   const response = await fetch('/api/log-submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -70,6 +101,7 @@ export async function submitVerifiedLog(
       content: content.trim(),
       walletAddress,
       timestamp,
+      nonce,
       signature: signatureBase58,
       evidenceUrl: evidenceUrl?.trim() || null,
       githubUrl: githubUrl?.trim() || null,
@@ -89,6 +121,58 @@ export async function submitVerifiedLog(
     } catch {
       // fallback
     }
+    throw new Error(errorMsg)
+  }
+
+  return await response.json()
+}
+
+export async function requestAuthorizedArchivalRetry(
+  signMessage: (message: Uint8Array) => Promise<Uint8Array>,
+  walletAddress: string,
+  logId: number
+): Promise<RetryArchivalResponse> {
+  const timestamp = new Date().toISOString()
+  const nonce = generateNonce()
+
+  // 1. Build canonical retry message
+  const messageText = buildCanonicalRetryMessage({
+    walletAddress,
+    logId,
+    timestamp,
+    nonce,
+  })
+
+  const messageBytes = new TextEncoder().encode(messageText)
+
+  // 2. Request wallet signature
+  const rawSigResult: unknown = await signMessage(messageBytes)
+  let rawSig = rawSigResult
+  if (rawSig && typeof rawSig === 'object' && 'signature' in rawSig) {
+    rawSig = (rawSig as { signature: unknown }).signature
+  }
+  const signatureBytes = rawSig instanceof Uint8Array ? rawSig : new Uint8Array(rawSig as ArrayBuffer)
+  const signatureBase58 = encodeBase58(signatureBytes)
+
+  // 3. Call secure retry endpoint
+  const response = await fetch('/api/archival-retry', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      logId,
+      walletAddress,
+      timestamp,
+      nonce,
+      signature: signatureBase58,
+    }),
+  })
+
+  if (!response.ok) {
+    let errorMsg = `Retry error (HTTP ${response.status})`
+    try {
+      const json = await response.json()
+      if (json.error) errorMsg = json.error
+    } catch {}
     throw new Error(errorMsg)
   }
 

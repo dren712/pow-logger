@@ -15,10 +15,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const resolvedParams = await params
     const wallet = resolvedParams.wallet
 
-    if (!wallet || typeof wallet !== 'string' || wallet.trim().length === 0) {
+    if (!wallet || typeof wallet !== 'string' || wallet.trim().length < 32 || wallet.trim().length > 44) {
       return NextResponse.json(
-        { verified: false, message: 'Wallet parameter is required' },
-        { status: 200, headers: { 'Cache-Control': 'public, max-age=60' } }
+        { verified: false, message: 'Valid Solana wallet parameter is required (32-44 characters)' },
+        { status: 400, headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' } }
       )
     }
 
@@ -30,10 +30,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     if (error || !logs || logs.length === 0) {
       return NextResponse.json(
-        { verified: false, message: 'Builder not found' },
+        { verified: false, message: 'Builder profile not found' },
         {
-          status: 200,
-          headers: { 'Cache-Control': 'public, max-age=60' },
+          status: 444,
+          headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' },
         }
       )
     }
@@ -86,12 +86,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const walletShort =
       wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
 
+    // Only count entries with real Irys receipts and confirmed 'archived' state
+    const confirmedArchivedLogs = logs.filter(
+      (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && l.archival_state === 'archived'
+    )
+
     return NextResponse.json(
       {
+        verified: true,
         wallet: walletShort,
         wallet_full: wallet,
         streak,
         total_logs: logs.length,
+        irys_archived_count: confirmedArchivedLogs.length,
         member_since: new Date(logs[logs.length - 1].created_at)
           .toISOString()
           .split('T')[0],
@@ -104,13 +111,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           category: l.category,
           skills: l.skills,
           created_at: l.created_at,
-          irys_url: l.irys_tx_id ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
+          archival_state: l.archival_state || 'pending',
+          evidence_url: l.evidence_url || null,
+          github_url: l.github_url || null,
+          irys_url: l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
         })),
-        on_chain_proof_count: logs.filter((l) => l.irys_tx_id).length,
-        verified: true,
       },
       {
-        headers: { 'Cache-Control': 'public, max-age=60' },
+        headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' },
       }
     )
   } catch (error) {

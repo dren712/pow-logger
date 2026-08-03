@@ -6,7 +6,8 @@
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx tsc --skipLibCheck tests/protocol.test.ts --module commonjs --target es2020 --moduleResolution node --esModuleInterop && node tests/protocol.test.js && rm -f tests/protocol.test.js"
   },
   "dependencies": {
     "@irys/upload": "^0.0.15",

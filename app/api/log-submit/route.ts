@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
 import { classifyLog } from '@/app/lib/classifier'
-import { LogRecord, ArchivalState } from '@/app/lib/irys'
+import { ArchivalState } from '@/app/lib/irys'
+import { buildCanonicalSubmitMessage, validateAndNormalizeUrl } from '@/app/lib/canonicalMessage'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey =
@@ -18,8 +19,6 @@ const MAX_REQUESTS_PER_HOUR = 10
 function checkRateLimit(key: string): boolean {
   const now = Date.now()
   const timestamps = rateLimitMap.get(key) || []
-
-  // Filter out timestamps older than 1 hour
   const validTimestamps = timestamps.filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS)
 
   if (validTimestamps.length >= MAX_REQUESTS_PER_HOUR) {
@@ -41,7 +40,14 @@ const decodeBase58 = (str: string): Uint8Array => {
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, walletAddress, timestamp, signature, evidenceUrl, githubUrl } = await req.json()
+    let body: Record<string, unknown>
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid or malformed JSON payload' }, { status: 400 })
+    }
+
+    const { content, walletAddress, timestamp, nonce, signature, evidenceUrl, githubUrl } = body
 
     // 1. Input Validation
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
@@ -52,8 +58,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Log entry exceeds maximum limit of 500 characters' }, { status: 400 })
     }
 
-    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32) {
-      return NextResponse.json({ error: 'Valid Base58 wallet address is required' }, { status: 400 })
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32 || walletAddress.length > 44) {
+      return NextResponse.json({ error: 'Valid Base58 Solana wallet address is required (32-44 chars)' }, { status: 400 })
     }
 
     if (!signature || typeof signature !== 'string') {
@@ -64,9 +70,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ISO timestamp is required' }, { status: 400 })
     }
 
-    // Optional Evidence URLs sanity check
-    const cleanEvidenceUrl = evidenceUrl && typeof evidenceUrl === 'string' && evidenceUrl.startsWith('http') ? evidenceUrl.trim() : null
-    const cleanGithubUrl = githubUrl && typeof githubUrl === 'string' && githubUrl.startsWith('http') ? githubUrl.trim() : null
+    // URL Normalization & Validation
+    const cleanGithubUrl = validateAndNormalizeUrl(typeof githubUrl === 'string' ? githubUrl : null, 'github')
+    const cleanEvidenceUrl = validateAndNormalizeUrl(typeof evidenceUrl === 'string' ? evidenceUrl : null, 'evidence')
 
     // 2. Pre-verification Rate Limiting Check (IP / Wallet)
     const clientIp = req.headers.get('x-forwarded-for') || walletAddress
@@ -84,8 +90,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attack rejected.' }, { status: 401 })
     }
 
-    // 4. Cryptographic Signature Verification
-    const expectedMessageText = `provn-sol.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
+    // 4. Reconstruct Canonical SIWS Message & Cryptographic Signature Verification
+    const expectedMessageText = buildCanonicalSubmitMessage({
+      walletAddress,
+      timestamp,
+      nonce: typeof nonce === 'string' ? nonce : 'legacy',
+      content,
+      githubUrl: cleanGithubUrl,
+      evidenceUrl: cleanEvidenceUrl,
+    })
+
     const messageBytes = new TextEncoder().encode(expectedMessageText)
 
     let signatureBytes: Uint8Array
@@ -102,26 +116,37 @@ export async function POST(req: NextRequest) {
 
     if (!isSignatureValid) {
       return NextResponse.json(
-        { error: 'Cryptographic signature verification failed. Unauthorized payload rejected.' },
+        { error: 'Cryptographic signature verification failed. Tampered or unauthorized payload rejected.' },
         { status: 401 }
       )
     }
 
-    // 5. Server-Side Daily Log Quota Check (Max 3 logs per 24 hours per wallet in DB)
+    // 5. Server-Side Daily Log Quota Check via Atomic RPC / Query
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
 
-    const { data: todayLogs, error: countError } = await supabase
-      .from('logs')
-      .select('id, created_at')
-      .eq('wallet_address', walletAddress)
-      .gte('created_at', startOfDay.toISOString())
+    let todayCount = 0
+    const { data: rpcCount, error: rpcError } = await supabase
+      .rpc('get_daily_log_count', {
+        p_wallet: walletAddress,
+        p_start_time: startOfDay.toISOString()
+      })
 
-    if (countError) {
-      console.error('Supabase count error:', countError)
+    if (!rpcError && typeof rpcCount === 'number') {
+      todayCount = rpcCount
+    } else {
+      const { data: todayLogs, error: countError } = await supabase
+        .from('logs')
+        .select('id')
+        .eq('wallet_address', walletAddress)
+        .gte('created_at', startOfDay.toISOString())
+
+      if (!countError && todayLogs) {
+        todayCount = todayLogs.length
+      }
     }
 
-    if (!countError && todayLogs && todayLogs.length >= 3) {
+    if (todayCount >= 3) {
       return NextResponse.json(
         { error: 'Daily log quota reached (3/3 logs submitted today). Come back tomorrow 🗿' },
         { status: 429 }
@@ -136,7 +161,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle()
 
     if (sigCheckError) {
-      console.warn('Signature lookup error:', sigCheckError.message)
+      console.warn('Signature lookup warning:', sigCheckError.message)
     }
 
     if (existingSig) {
@@ -149,12 +174,8 @@ export async function POST(req: NextRequest) {
     // 7. Classify Log Content
     const classification = classifyLog(content.trim())
 
-    // 8. Initial Database Save (Supabase) with archival_state: 'pending'
-    let dbData: LogRecord[] | null = null
-    let dbError: { message: string } | null = null
-
-    // Try full insert with classification, signature, and evidence links
-    const fullRes = await supabase
+    // 8. Database Save (Supabase) with archival_state: 'pending'
+    const insertRes = await supabase
       .from('logs')
       .insert([{
         content: content.trim(),
@@ -170,55 +191,48 @@ export async function POST(req: NextRequest) {
       }])
       .select()
 
-    dbData = fullRes.data as LogRecord[] | null
-    dbError = fullRes.error
-
-    // Fallback: If new columns do not exist in Supabase yet, retry with base schema
-    if (dbError) {
-      console.warn('Full insert failed, retrying base schema insert:', dbError.message)
-      const baseRes = await supabase
-        .from('logs')
-        .insert([{
-          content: content.trim(),
-          wallet_address: walletAddress,
-          created_at: timestamp,
-        }])
-        .select()
-      dbData = baseRes.data as LogRecord[] | null
-      dbError = baseRes.error
+    if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
+      console.error('Supabase insert error:', insertRes.error)
+      return NextResponse.json({ error: `Failed to save log to database: ${insertRes.error?.message || 'Unknown database error'}` }, { status: 500 })
     }
 
-    if (dbError || !dbData || dbData.length === 0) {
-      console.error('Supabase insert error:', dbError)
-      return NextResponse.json({ error: `Failed to save log to database: ${dbError?.message || 'Unknown error'}` }, { status: 500 })
-    }
-
-    const savedLog = dbData[0]
+    const savedLog = insertRes.data[0]
     let irysTxId: string | null = null
     let archivalState: ArchivalState = 'pending'
 
-    // 9. Permanent Storage Upload to Arweave (Irys)
+    // 9. Permanent Storage Upload of Envelope to Arweave (Irys Node #1)
     const privateKey = process.env.IRYS_PRIVATE_KEY
     if (privateKey) {
       try {
         const { Uploader } = await import('@irys/upload')
         const { Solana } = await import('@irys/upload-solana')
 
-        let walletKey: string | Uint8Array = privateKey
+        let rawKey = privateKey.trim()
+        if (rawKey.startsWith('"') && rawKey.endsWith('"')) rawKey = rawKey.slice(1, -1)
+        let walletKey: string | Uint8Array = rawKey
         try {
-          const parsedKey = JSON.parse(privateKey)
-          if (Array.isArray(parsedKey)) {
-            walletKey = new Uint8Array(parsedKey)
-          }
-        } catch {
-          // Plain secret key string
-        }
+          const parsedKey = JSON.parse(rawKey)
+          if (Array.isArray(parsedKey)) walletKey = new Uint8Array(parsedKey)
+        } catch {}
 
         const uploader = await (Uploader(Solana) as unknown as { withWallet: (key: string | Uint8Array) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withWallet(walletKey)
 
+        const structuredEnvelope = JSON.stringify({
+          app: 'PROVN',
+          version: 1,
+          logId: savedLog.id,
+          walletAddress,
+          timestamp,
+          content: content.trim(),
+          signature,
+          evidenceUrl: cleanEvidenceUrl,
+          githubUrl: cleanGithubUrl,
+          classification,
+        }, null, 2)
+
         const tags = [
           { name: 'App-Name', value: 'PROVN' },
-          { name: 'Content-Type', value: 'text/plain' },
+          { name: 'Content-Type', value: 'application/json' },
           { name: 'Builder-Address', value: walletAddress },
           { name: 'Proof-Type', value: 'Ed25519-Signed-Log' },
           { name: 'Timestamp', value: timestamp },
@@ -228,12 +242,11 @@ export async function POST(req: NextRequest) {
         if (cleanEvidenceUrl) tags.push({ name: 'Evidence-URL', value: cleanEvidenceUrl })
         if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
 
-        const uploadReceipt = await uploader.upload(content.trim(), { tags })
+        const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
 
         if (uploadReceipt && uploadReceipt.id) {
           irysTxId = uploadReceipt.id
           archivalState = 'archived'
-          console.log(`[Irys Gateway] Log ${savedLog.id} uploaded permanently to Arweave: https://gateway.irys.xyz/${irysTxId}`)
         } else {
           archivalState = 'failed'
         }
@@ -245,7 +258,7 @@ export async function POST(req: NextRequest) {
       archivalState = 'failed'
     }
 
-    // Update database row with confirmed irys_tx_id and archival_state
+    // Update DB row with confirmed irys_tx_id and archival_state
     const { error: updateError } = await supabase
       .from('logs')
       .update({
@@ -276,7 +289,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error: unknown) {
     console.error('Log submission API error:', error)
-    const detail = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Internal server error'
+    const detail = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json({ error: detail }, { status: 500 })
   }
 }
