@@ -174,8 +174,8 @@ export async function POST(req: NextRequest) {
     // 7. Classify Log Content
     const classification = classifyLog(content.trim())
 
-    // 8. Database Save (Supabase) with archival_state: 'pending'
-    const insertRes = await supabase
+    // 8. Database Save (Supabase)
+    let insertRes = await supabase
       .from('logs')
       .insert([{
         content: content.trim(),
@@ -190,6 +190,19 @@ export async function POST(req: NextRequest) {
         archival_state: 'pending',
       }])
       .select()
+
+    // Fallback: If live DB schema does not have new columns yet, save with basic schema
+    if (insertRes.error) {
+      console.warn('Full schema insert warning. Falling back to basic schema:', insertRes.error.message)
+      insertRes = await supabase
+        .from('logs')
+        .insert([{
+          content: content.trim(),
+          wallet_address: walletAddress,
+          created_at: timestamp,
+        }])
+        .select()
+    }
 
     if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
       console.error('Supabase insert error:', insertRes.error)
@@ -259,16 +272,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Update DB row with confirmed irys_tx_id and archival_state
-    const { error: updateError } = await supabase
-      .from('logs')
-      .update({
-        irys_tx_id: irysTxId,
-        archival_state: archivalState
-      })
-      .eq('id', savedLog.id)
+    if (irysTxId) {
+      let updateRes = await supabase
+        .from('logs')
+        .update({
+          irys_tx_id: irysTxId,
+          archival_state: archivalState
+        })
+        .eq('id', savedLog.id)
 
-    if (updateError) {
-      console.error('Supabase update error:', updateError.message)
+      if (updateRes.error) {
+        // Fallback update if archival_state column is missing on live DB
+        updateRes = await supabase
+          .from('logs')
+          .update({
+            irys_tx_id: irysTxId,
+          })
+          .eq('id', savedLog.id)
+      }
     }
 
     return NextResponse.json({

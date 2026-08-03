@@ -145,8 +145,9 @@ async function backfillIrysArchives() {
         console.error(`  ❌ Empty receipt returned for log #${log.id}`)
         failCount++
       }
-    } catch (err: any) {
-      console.error(`  ❌ Upload error for log #${log.id}:`, err.message || err)
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      console.error(`  ❌ Upload error for log #${log.id}:`, errMsg)
       failCount++
     }
   }

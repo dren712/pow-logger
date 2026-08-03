@@ -1,0 +1,9 @@
+# Explicit GitHub Linguist Configuration
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+*.css linguist-language=CSS
+*.json linguist-language=JSON
+*.sql linguist-language=SQL
+*.md linguist-documentation
+tests/* linguist-documentation
+scripts/* linguist-documentation

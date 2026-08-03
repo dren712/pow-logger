@@ -150,22 +150,34 @@ export async function POST(req: NextRequest) {
     const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
 
     if (!uploadReceipt || !uploadReceipt.id) {
-      await supabase
-        .from('logs')
-        .update({ archival_state: 'failed' })
-        .eq('id', logId)
+      try {
+        await supabase
+          .from('logs')
+          .update({ archival_state: 'failed' })
+          .eq('id', logId)
+      } catch {}
 
       return NextResponse.json({ error: 'Archival retry failed: Irys node returned empty receipt' }, { status: 502 })
     }
 
     const irysTxId = uploadReceipt.id
-    const { error: updateErr } = await supabase
+    let updateErr = (await supabase
       .from('logs')
       .update({
         irys_tx_id: irysTxId,
         archival_state: 'archived',
       })
-      .eq('id', logId)
+      .eq('id', logId)).error
+
+    if (updateErr) {
+      // Fallback update if archival_state column is missing on live DB
+      updateErr = (await supabase
+        .from('logs')
+        .update({
+          irys_tx_id: irysTxId,
+        })
+        .eq('id', logId)).error
+    }
 
     if (updateErr) {
       console.error('Supabase retry update error:', updateErr.message)
