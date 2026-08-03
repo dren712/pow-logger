@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ['@irys/upload', '@irys/upload-solana'],
+  transpilePackages: ['@irys/upload', '@irys/upload-solana', 'rpc-websockets'],
   async headers() {
     return [
       {
