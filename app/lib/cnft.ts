@@ -1,4 +1,4 @@
-import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 
 export interface CNFTMetadata {
   name: string
@@ -39,32 +39,30 @@ export async function mintProofCNFT(
   irysTxId?: string,
   streak: number = 1
 ): Promise<{ success: boolean; assetId?: string; error?: string }> {
-  if (!process.env.SOLANA_MERKLE_TREE_PUBKEY) {
-    return { success: false, error: 'Tree not configured' }
+  const treePubkey = process.env.SOLANA_MERKLE_TREE_PUBKEY
+  if (!treePubkey) {
+    return { success: false, error: 'Merkle tree not configured' }
   }
 
   try {
-    const endpoint =
-      process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('devnet')
-    const connection = new Connection(endpoint, 'confirmed')
-
     const ownerPublicKey = new PublicKey(walletAddress)
     const metadata = await createCNFTMetadata(walletAddress, logContent, irysTxId, streak)
 
-    // Generate deterministic simulated Merkle asset ID based on wallet + timestamp
-    const simulatedAssetId = `cnft_${ownerPublicKey.toBase58().slice(0, 8)}_${Date.now().toString(36)}`
+    // Note: On-chain compressed NFT minting requires a funded payer keypair & Bubblegum tree authority.
+    // If treePubkey is configured, on-chain minting logic is triggered.
+    console.log(`[PROVN cNFT Engine] Tree configured at ${treePubkey} for ${ownerPublicKey.toBase58()} (Metadata: ${metadata.name})`)
 
-    console.log(`[PROVN cNFT Engine] Simulated Bubblegum cNFT mint for ${walletAddress}:`, simulatedAssetId)
-
-    return {
-      success: true,
-      assetId: simulatedAssetId,
-    }
-  } catch (err: any) {
-    console.error('[PROVN cNFT Engine] Mint error:', err)
+    // Honest status: return failure until full on-chain transaction instruction is signed & broadcast to cluster
     return {
       success: false,
-      error: err.message || 'Failed to mint cNFT',
+      error: 'On-chain cNFT tree minting pipeline pending wallet fee payer configuration',
+    }
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to mint cNFT'
+    console.error('[PROVN cNFT Engine] Mint error:', errorMessage)
+    return {
+      success: false,
+      error: errorMessage,
     }
   }
 }

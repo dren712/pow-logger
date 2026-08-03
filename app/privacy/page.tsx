@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy — PROVN — Proof-of-Work Logger 🗿',
@@ -17,7 +18,7 @@ export default function PrivacyPage() {
       }}
     >
       <div style={{ marginBottom: '32px' }}>
-        <a
+        <Link
           href="/"
           className="btn-primary"
           style={{
@@ -28,7 +29,7 @@ export default function PrivacyPage() {
           }}
         >
           ← Back to PROVN Terminal 🗿
-        </a>
+        </Link>
 
         <h1 style={{ color: '#00ff88', fontSize: '2.2rem', fontWeight: 900, margin: '0 0 10px 0', letterSpacing: '-0.8px' }}>
           Privacy Policy

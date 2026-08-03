@@ -12,17 +12,23 @@ export default function NetworkBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    if (!connected) {
-      setIsMainnet(null)
-      setDismissed(false)
-      return
-    }
+    let isCancelled = false
+
+    if (!connected) return
 
     connection.getGenesisHash().then((hash) => {
-      setIsMainnet(hash === MAINNET_GENESIS_HASH)
+      if (!isCancelled) {
+        setIsMainnet(hash === MAINNET_GENESIS_HASH)
+      }
     }).catch(() => {
-      setIsMainnet(null)
+      if (!isCancelled) {
+        setIsMainnet(null)
+      }
     })
+
+    return () => {
+      isCancelled = true
+    }
   }, [connected, connection])
 
   // Don't show if wallet not connected, network checking, or user dismissed

@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react'
 interface LogEntry {
   id: number
   created_at: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface ContributionHeatmapProps {

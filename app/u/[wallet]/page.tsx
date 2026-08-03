@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import ProfileClient from './ProfileClient'
 
@@ -96,7 +97,7 @@ export default async function ProfilePage({ params }: PageProps) {
           <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>
             No verified proof logs recorded for wallet <code style={{ color: '#ffb800' }}>{wallet}</code> yet.
           </p>
-          <a
+          <Link
             href="/"
             className="btn-primary"
             style={{
@@ -104,7 +105,7 @@ export default async function ProfilePage({ params }: PageProps) {
             }}
           >
             Start building your proof of work at provn-sol.vercel.app →
-          </a>
+          </Link>
         </div>
       </main>
     )

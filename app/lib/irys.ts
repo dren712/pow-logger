@@ -7,9 +7,20 @@
 
 import bs58 from 'bs58'
 
+export interface LogRecord {
+  id: number
+  wallet_address: string
+  content: string
+  category?: string
+  skills?: string[]
+  protocols?: string[]
+  created_at: string
+  irys_tx_id?: string | null
+}
+
 export interface SubmitLogResponse {
   success: boolean
-  log: any
+  log: LogRecord
   irysTxId: string | null
   gatewayUrl: string | null
   cnftAssetId?: string | null
@@ -24,7 +35,9 @@ export interface SubmitLogResponse {
  * @param content - Log text entry
  */
 const encodeBase58 = (bytes: Uint8Array): string => {
-  const fn = (bs58 as any).encode || (bs58 as any).default?.encode
+  const bs58Obj = bs58 as unknown as { encode?: (bytes: Uint8Array) => string; default?: { encode: (bytes: Uint8Array) => string } }
+  const fn = bs58Obj.encode || bs58Obj.default?.encode
+  if (!fn) throw new Error('Base58 encoder unavailable')
   return fn(bytes)
 }
 
@@ -38,11 +51,12 @@ export async function submitVerifiedLog(
   const messageBytes = new TextEncoder().encode(messageText)
 
   // 1. Request wallet signature from Phantom/Backpack/Solflare
-  let rawSig: any = await signMessage(messageBytes)
+  const rawSigResult: unknown = await signMessage(messageBytes)
+  let rawSig = rawSigResult
   if (rawSig && typeof rawSig === 'object' && 'signature' in rawSig) {
-    rawSig = rawSig.signature
+    rawSig = (rawSig as { signature: unknown }).signature
   }
-  const signatureBytes = rawSig instanceof Uint8Array ? rawSig : new Uint8Array(rawSig)
+  const signatureBytes = rawSig instanceof Uint8Array ? rawSig : new Uint8Array(rawSig as ArrayBuffer)
   const signatureBase58 = encodeBase58(signatureBytes)
 
   // 2. Send payload to verified backend endpoint
@@ -75,4 +89,3 @@ export async function submitVerifiedLog(
 
   return await response.json()
 }
-

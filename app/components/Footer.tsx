@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 export default function Footer() {
   return (
     <footer
@@ -22,26 +24,25 @@ export default function Footer() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: '24px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '28px',
             marginBottom: '32px',
           }}
         >
-          {/* Brand Info */}
+          {/* Protocol Info */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <span style={{ color: '#00ff88', fontWeight: 800, fontSize: '16px' }}>PROVN</span>
-              <span style={{ fontSize: '14px' }}>🗿</span>
+            <div style={{ color: '#00ff88', fontWeight: 800, fontSize: '14px', marginBottom: '8px' }}>
+              PROVN 🗿
             </div>
-            <p style={{ margin: 0, fontSize: '11px', color: '#666', lineHeight: '1.5' }}>
-              Decentralized Builder Reputation Foundry on Solana.
+            <p style={{ margin: 0, lineHeight: '1.6', fontSize: '11px', color: '#666' }}>
+              Proof-of-Work Logger for Solana builders. Permanently archived on Arweave via Irys Node #1.
             </p>
           </div>
 
-          {/* Resources */}
+          {/* Core Links */}
           <div>
             <div style={{ color: '#aaa', fontWeight: 700, marginBottom: '10px', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.5px' }}>
-              Resources
+              Ecosystem
             </div>
             <div style={{ display: 'grid', gap: '6px' }}>
               <a
@@ -65,12 +66,12 @@ export default function Footer() {
               >
                 Solana Explorer ↗
               </a>
-              <a
+              <Link
                 href="/privacy"
                 style={{ color: '#00ff88', textDecoration: 'none', fontWeight: 600 }}
               >
                 Privacy Policy 🔒
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -80,12 +81,12 @@ export default function Footer() {
               Developer Tools
             </div>
             <div style={{ display: 'grid', gap: '6px' }}>
-              <a
+              <Link
                 href="/api/verify/demo"
                 style={{ color: '#00e5ff', textDecoration: 'none' }}
               >
                 Verification API (/api/verify/[wallet])
-              </a>
+              </Link>
               <span style={{ color: '#555' }}>Ed25519 Anti-Spoofing</span>
             </div>
           </div>
