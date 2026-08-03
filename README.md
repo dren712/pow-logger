@@ -266,7 +266,36 @@ npm test
 
 ---
 
-## 💻 10. Local Development & Installation
+## 🛠️ 10. Tech Stack & Production Dependency Reference
+
+| Package / Library | Version | Category | Architectural Role & Purpose |
+|---|---|---|---|
+| **`next`** | `^16.2.12` | Framework | Next.js 16 App Router fullstack engine with Turbopack. |
+| **`react` / `react-dom`** | `19.2.4` | UI Library | React 19 concurrent client components. |
+| **`@solana/wallet-adapter-react`** | `^0.15.39` | Web3 Wallet | Wallet connection state context (`useWallet`). |
+| **`@solana/wallet-adapter-react-ui`** | `^0.9.39` | Web3 Wallet | Wallet modal & connect button UI components. |
+| **`@solana/wallet-adapter-wallets`** | `^0.16.9` | Web3 Wallet | Universal wallet standard adapters (Phantom, Solflare, Backpack). |
+| **`@solana/web3.js`** | `^1.98.4` | Web3 Core | Solana RPC connections, PublicKeys, and Transaction helpers. |
+| **`tweetnacl`** | `^1.0.3` | Cryptography | Ed25519 off-chain SIWS signature verification (`nacl.sign.detached.verify`). |
+| **`bs58`** | `^6.0.0` | Encoding | Base58 public key & signature encoding/decoding. |
+| **`@irys/upload`** | `^0.0.15` | Archival | Decentralized Arweave upload client (`Uploader(Solana).withWallet`). |
+| **`@irys/upload-solana`** | `^0.1.8` | Archival | Solana token adapter plugin for Irys Uploader. |
+| **`@supabase/supabase-js`** | `^2.110.2` | Database | PostgreSQL client with RLS security policies & RPC calls. |
+| **`tailwindcss`** | `^4` | Styling | Glassmorphic CSS design system. |
+
+---
+
+## ⏳ 11. Pending Engineering Tasks & Action Items
+
+| Task | Priority | Component | Action Item & Status |
+|---|---|---|---|
+| **Production Supabase Migration** | **P0** | Database | Run [`supabase/migrations/20260803_provn_security_hardening.sql`](file:///Users/darshangaikwad/pow-logger/supabase/migrations/20260803_provn_security_hardening.sql) in the live Supabase SQL editor to enforce RLS and create the `get_daily_log_count` RPC. |
+| **On-Chain Merkle Tree (cNFTs)** | **P1** | Metaplex | Create a 14-depth Concurrent Merkle Tree on Solana Devnet/Mainnet via Metaplex CLI, set `SOLANA_MERKLE_TREE_PUBKEY`, and set `NEXT_PUBLIC_CNFT_ENABLED="true"`. |
+| **Builder Beta Recruitment** | **P1** | Growth | Onboard 10–20 active Solana builders from Superteam India, hackathons, or bounties to build initial verifiable portfolios (Days 15–45). |
+
+---
+
+## 💻 12. Local Development & Installation
 
 ```bash
 # 1. Clone repository
