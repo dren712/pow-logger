@@ -32,10 +32,12 @@ const formatTime = (dateStr?: string) => {
     : d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
+import { LogItem } from '@/app/u/[wallet]/ProfileClient'
+
 function LoggerApp() {
   const { publicKey, connected, signMessage } = useWallet()
   const [log, setLog] = useState('')
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<LogItem[]>([])
   const [loading, setLoading] = useState(false)
   const [statusStep, setStatusStep] = useState<'idle' | 'saving' | 'storing' | 'success' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
@@ -46,7 +48,7 @@ function LoggerApp() {
   const [verifyWalletInput, setVerifyWalletInput] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalSvg, setModalSvg] = useState('')
-  const [modalTitle, setModalTitle] = useState('PROVN NFT Proof Badge 🗿')
+  const [modalTitle, setModalTitle] = useState('PROVN Proof Card 🗿')
   const [modalLogId, setModalLogId] = useState<number | undefined>(undefined)
   const [modalLogContent, setModalLogContent] = useState<string>('')
   const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
@@ -59,11 +61,9 @@ function LoggerApp() {
 
   // Fetch logs when wallet connects
   useEffect(() => {
-    if (!connected || !publicKey) {
-      setLogs([])
-      return
-    }
+    if (!connected || !publicKey) return
 
+    let active = true
     const fetchLogs = async () => {
       try {
         setFetchError(false)
@@ -74,13 +74,15 @@ function LoggerApp() {
           .eq('wallet_address', walletAddress)
           .order('created_at', { ascending: false })
           .limit(30)
-        if (data) setLogs(data)
+        if (data && active) setLogs(data as LogItem[])
       } catch {
-        setFetchError(true)
+        if (active) setFetchError(true)
       }
     }
-
     fetchLogs()
+    return () => {
+      active = false
+    }
   }, [connected, publicKey])
 
   // Calculate streak count (consecutive days with logs)
@@ -163,10 +165,11 @@ function LoggerApp() {
         setStatusStep('error')
         setStatusMsg('Verification or upload failed.')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Signature rejected or verification failed'
       console.error('Submission error:', err)
       setStatusStep('error')
-      setStatusMsg(err.message || 'Signature rejected or verification failed')
+      setStatusMsg(errorMsg)
     } finally {
       setTimeout(() => {
         setStatusStep('idle')
@@ -718,23 +721,55 @@ function LoggerApp() {
                 <span>{formatTime(l.created_at)}</span>
               </div>
 
-              <a
-                href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
-                rel="noopener noreferrer"
-                style={{
-                  background: 'rgba(0, 255, 136, 0.08)',
-                  color: '#00ff88',
-                  border: '1px solid rgba(0, 255, 136, 0.25)',
-                  padding: '3px 10px',
-                  borderRadius: '4px',
-                  fontSize: '10.5px',
-                  fontWeight: 700,
-                  letterSpacing: '0.3px',
-                  textDecoration: 'none',
-                }}
-              >
-                ✓ Permanent on Irys
-              </a>
+              {l.irys_tx_id && (l.archival_state === 'archived' || !l.archival_state) ? (
+                <a
+                  href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'rgba(0, 255, 136, 0.08)',
+                    color: '#00ff88',
+                    border: '1px solid rgba(0, 255, 136, 0.25)',
+                    padding: '3px 10px',
+                    borderRadius: '4px',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    letterSpacing: '0.3px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  ✓ Archived on Irys ↗
+                </a>
+              ) : l.archival_state === 'failed' ? (
+                <span
+                  style={{
+                    background: 'rgba(255, 184, 0, 0.08)',
+                    color: '#ffb800',
+                    border: '1px solid rgba(255, 184, 0, 0.25)',
+                    padding: '3px 10px',
+                    borderRadius: '4px',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    letterSpacing: '0.3px',
+                  }}
+                >
+                  Stored in DB (Archival Failed)
+                </span>
+              ) : (
+                <span
+                  style={{
+                    background: 'rgba(0, 229, 255, 0.08)',
+                    color: '#00e5ff',
+                    border: '1px solid rgba(0, 229, 255, 0.25)',
+                    padding: '3px 10px',
+                    borderRadius: '4px',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    letterSpacing: '0.3px',
+                  }}
+                >
+                  Stored in DB (Archival Pending)
+                </span>
+              )}
             </div>
 
             {/* Log Content */}
@@ -756,7 +791,6 @@ function LoggerApp() {
               const c = (l.skills && l.protocols && l.category)
                 ? { skills: l.skills, protocols: l.protocols, category: l.category }
                 : classifyLog(l.content)
-              const hasTags = c.skills.length > 0 || c.protocols.length > 0
               return (
                 <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                   <span style={{
@@ -839,20 +873,22 @@ function LoggerApp() {
               }}
             >
               <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                <a
-                  href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
-                  rel="noopener noreferrer"
-                  style={{
-                    color: '#00ff88',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontWeight: 700,
-                  }}
-                >
-                  🔗 View on Gateway ↗
-                </a>
+                {l.irys_tx_id && (
+                  <a
+                    href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#00ff88',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    🔗 View on Gateway ↗
+                  </a>
+                )}
 
                 <button
                   onClick={() => {
@@ -866,13 +902,13 @@ function LoggerApp() {
                       c.category,
                       c.skills,
                       formatDate(l.created_at),
-                      l.irys_tx_id
+                      l.irys_tx_id || undefined
                     )
                     setModalSvg(svg)
-                    setModalTitle(`PROVN Proof Entry #${l.id}`)
+                    setModalTitle(`PROVN Proof Card #${l.id} 🗿`)
                     setModalLogId(l.id)
                     setModalLogContent(l.content)
-                    setModalIrysTxId(l.irys_tx_id)
+                    setModalIrysTxId(l.irys_tx_id || undefined)
                     setModalOpen(true)
                   }}
                   style={{
@@ -887,7 +923,7 @@ function LoggerApp() {
                     fontWeight: 700,
                   }}
                 >
-                  🖼️ View Log NFT
+                  🖼️ View Proof Card 🗿
                 </button>
 
                 <button
@@ -910,7 +946,7 @@ function LoggerApp() {
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {l.irys_tx_id && (
                   <button
-                    onClick={() => copyIrysLink(l.irys_tx_id, l.id)}
+                    onClick={() => copyIrysLink(l.irys_tx_id!, l.id)}
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -926,7 +962,7 @@ function LoggerApp() {
                 )}
 
                 <button
-                  onClick={() => shareOnTwitter(l.content, l.irys_tx_id)}
+                  onClick={() => shareOnTwitter(l.content, l.irys_tx_id || undefined)}
                   style={{
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid #1a202c',

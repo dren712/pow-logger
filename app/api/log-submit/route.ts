@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
-import crypto from 'crypto'
 import { classifyLog } from '@/app/lib/classifier'
 import { LogRecord } from '@/app/lib/irys'
 
@@ -11,25 +10,25 @@ const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-// In-memory rate limiting map: walletAddress -> timestamp array
+// In-memory IP/Wallet rate limiting map: key -> timestamp array
 const rateLimitMap = new Map<string, number[]>()
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
 const MAX_REQUESTS_PER_HOUR = 10
 
-function checkRateLimit(walletAddress: string): boolean {
+function checkRateLimit(key: string): boolean {
   const now = Date.now()
-  const timestamps = rateLimitMap.get(walletAddress) || []
+  const timestamps = rateLimitMap.get(key) || []
 
   // Filter out timestamps older than 1 hour
   const validTimestamps = timestamps.filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS)
 
   if (validTimestamps.length >= MAX_REQUESTS_PER_HOUR) {
-    rateLimitMap.set(walletAddress, validTimestamps)
+    rateLimitMap.set(key, validTimestamps)
     return false
   }
 
   validTimestamps.push(now)
-  rateLimitMap.set(walletAddress, validTimestamps)
+  rateLimitMap.set(key, validTimestamps)
   return true
 }
 
@@ -65,22 +64,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ISO timestamp is required' }, { status: 400 })
     }
 
-    // 2. Rate Limiting Check
-    if (!checkRateLimit(walletAddress)) {
+    // 2. Pre-verification Rate Limiting Check (IP / Wallet)
+    const clientIp = req.headers.get('x-forwarded-for') || walletAddress
+    if (!checkRateLimit(clientIp)) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 10 log submissions per hour allowed per wallet.' },
+        { error: 'Rate limit exceeded. Maximum 10 log submissions per hour allowed per IP/wallet.' },
         { status: 429 }
       )
     }
 
-    // 2b. Replay Attack Prevention (Check timestamp drift within 15 mins)
+    // 3. Replay Attack Prevention (Check timestamp drift within 15 mins)
     const requestTime = new Date(timestamp).getTime()
     const now = Date.now()
     if (isNaN(requestTime) || Math.abs(now - requestTime) > 900000) {
       return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attack rejected.' }, { status: 401 })
     }
 
-    // 3. Cryptographic Signature Verification
+    // 4. Cryptographic Signature Verification
     const expectedMessageText = `provn-sol.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
     const messageBytes = new TextEncoder().encode(expectedMessageText)
 
@@ -103,23 +103,56 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 5. Classify Log Content
+    // 5. Server-Side Daily Log Quota Check (Max 3 logs per 24 hours per wallet in DB)
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+
+    const { data: todayLogs, error: countError } = await supabase
+      .from('logs')
+      .select('id, created_at')
+      .eq('wallet_address', walletAddress)
+      .gte('created_at', startOfDay.toISOString())
+
+    if (!countError && todayLogs && todayLogs.length >= 3) {
+      return NextResponse.json(
+        { error: 'Daily log quota reached (3/3 logs submitted today). Come back tomorrow 🗿' },
+        { status: 429 }
+      )
+    }
+
+    // 6. Replay Check via Signature Uniqueness in DB
+    const { data: existingSig } = await supabase
+      .from('logs')
+      .select('id')
+      .eq('signature', signature)
+      .maybeSingle()
+
+    if (existingSig) {
+      return NextResponse.json(
+        { error: 'Duplicate signature detected. Replay attempt rejected.' },
+        { status: 401 }
+      )
+    }
+
+    // 7. Classify Log Content
     const classification = classifyLog(content.trim())
 
-    // 6. Database Save (Supabase)
+    // 8. Initial Database Save (Supabase) with archival_state: 'pending'
     let dbData: LogRecord[] | null = null
     let dbError: { message: string } | null = null
 
-    // Try full insert with classification tags
+    // Try full insert with classification & signature
     const fullRes = await supabase
       .from('logs')
       .insert([{
         content: content.trim(),
         wallet_address: walletAddress,
+        signature,
         created_at: timestamp,
         skills: classification.skills,
         protocols: classification.protocols,
         category: classification.category,
+        archival_state: 'pending',
       }])
       .select()
 
@@ -128,7 +161,7 @@ export async function POST(req: NextRequest) {
 
     // Fallback: If new columns do not exist in Supabase yet, retry with base schema
     if (dbError) {
-      console.warn('Full insert failed, retrying base insert:', dbError.message)
+      console.warn('Full insert failed, retrying base schema insert:', dbError.message)
       const baseRes = await supabase
         .from('logs')
         .insert([{
@@ -148,8 +181,9 @@ export async function POST(req: NextRequest) {
 
     const savedLog = dbData[0]
     let irysTxId: string | null = null
+    let archivalState: 'pending' | 'archived' | 'failed' = 'pending'
 
-    // 6. Permanent Storage Upload (Irys)
+    // 9. Permanent Storage Upload to Arweave (Irys)
     const privateKey = process.env.IRYS_PRIVATE_KEY
     if (privateKey) {
       try {
@@ -181,32 +215,39 @@ export async function POST(req: NextRequest) {
 
         if (uploadReceipt && uploadReceipt.id) {
           irysTxId = uploadReceipt.id
+          archivalState = 'archived'
           console.log(`[Irys Gateway] Log ${savedLog.id} uploaded permanently to Arweave: https://gateway.irys.xyz/${irysTxId}`)
+        } else {
+          archivalState = 'failed'
         }
       } catch (irysErr) {
-        console.error('Irys upload failed, using fallback proof transaction hash:', irysErr)
+        console.error('Irys upload failed:', irysErr)
+        archivalState = 'failed'
       }
+    } else {
+      archivalState = 'failed'
     }
 
-    // Fallback proof hash if Irys node is unavailable or key not configured
-    if (!irysTxId) {
-      const hash = crypto.createHash('sha256').update(`${savedLog.id}_${walletAddress}_${timestamp}`).digest('hex').slice(0, 40)
-      irysTxId = `powl_${hash}`
+    // Update database row with confirmed irys_tx_id and archival_state
+    try {
+      await supabase
+        .from('logs')
+        .update({
+          irys_tx_id: irysTxId,
+          archival_state: archivalState
+        })
+        .eq('id', savedLog.id)
+    } catch {
+      // Non-fatal DB update error
     }
 
-    // Update database row with irys_tx_id
-    await supabase
-      .from('logs')
-      .update({ irys_tx_id: irysTxId })
-      .eq('id', savedLog.id)
-
-    // 7. Mint Compressed NFT (cNFT) Proof Badge (only if Merkle Tree configured)
+    // 10. Mint Compressed NFT (cNFT) Proof Badge (only if Merkle Tree configured)
     let cnftAssetId: string | null = null
     const hasMerkleTree = !!process.env.SOLANA_MERKLE_TREE_PUBKEY
-    if (hasMerkleTree) {
+    if (hasMerkleTree && irysTxId) {
       try {
         const { mintProofCNFT } = await import('@/app/lib/cnft')
-        const cnftResult = await mintProofCNFT(walletAddress, content, irysTxId || undefined)
+        const cnftResult = await mintProofCNFT(walletAddress, content, irysTxId)
         if (cnftResult.success && cnftResult.assetId) {
           cnftAssetId = cnftResult.assetId
         }
@@ -217,8 +258,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      log: { ...savedLog, irys_tx_id: irysTxId },
+      log: {
+        ...savedLog,
+        irys_tx_id: irysTxId,
+        archival_state: archivalState,
+      },
       classification,
+      archivalState,
       irysTxId,
       cnftAssetId,
       hasMerkleTree,

@@ -1,14 +1,29 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { classifyLog } from '@/app/lib/classifier'
 import { generateNFTBadgeSVG, generateSingleLogNFTBadgeSVG } from '@/app/lib/badgeGenerator'
 import ContributionHeatmap from '@/app/components/ContributionHeatmap'
 import NFTBadgeModal from '@/app/components/NFTBadgeModal'
 
+export interface LogItem {
+  id: number
+  wallet_address: string
+  content: string
+  category?: string
+  skills?: string[]
+  protocols?: string[]
+  created_at: string
+  irys_tx_id?: string | null
+  archival_state?: 'pending' | 'archived' | 'failed'
+  signature?: string
+  [key: string]: unknown
+}
+
 interface ProfileClientProps {
   wallet: string
-  initialLogs: any[]
+  initialLogs: LogItem[]
 }
 
 const formatDate = (dateStr: string) => {
@@ -97,39 +112,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
       .slice(0, 3)
   }, [initialLogs])
 
-  // 365-Day Contribution Heatmap Data
-  const heatmapData = useMemo(() => {
-    const today = new Date()
-    today.setHours(23, 59, 59, 999)
-
-    const countMap: Record<string, number> = {}
-    initialLogs.forEach((l) => {
-      const d = new Date(l.created_at)
-      const key = d.toISOString().split('T')[0]
-      countMap[key] = (countMap[key] || 0) + 1
-    })
-
-    const days: { dateStr: string; formattedDate: string; count: number; monthName: string }[] = []
-    for (let i = 363; i >= 0; i--) {
-      const d = new Date(today)
-      d.setDate(d.getDate() - i)
-      const key = d.toISOString().split('T')[0]
-      days.push({
-        dateStr: key,
-        formattedDate: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        count: countMap[key] || 0,
-        monthName: d.toLocaleDateString('en-US', { month: 'short' }),
-      })
-    }
-
-    const weeks: (typeof days)[] = []
-    for (let i = 0; i < days.length; i += 7) {
-      weeks.push(days.slice(i, i + 7))
-    }
-
-    return weeks
-  }, [initialLogs])
-
   const copyProfileLink = () => {
     navigator.clipboard.writeText(window.location.href)
     setCopied(true)
@@ -169,7 +151,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           marginBottom: '24px',
         }}
       >
-        <a
+        <Link
           href="/"
           className="btn-primary"
           style={{
@@ -178,7 +160,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           }}
         >
           ← Back to PROVN Terminal 🗿
-        </a>
+        </Link>
 
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
@@ -357,22 +339,52 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                   <span>{formatTime(l.created_at)}</span>
                 </div>
 
-                <a
-                  href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
-                  rel="noopener noreferrer"
-                  style={{
-                    background: 'rgba(0, 255, 136, 0.08)',
-                    color: '#00ff88',
-                    border: '1px solid rgba(0, 255, 136, 0.25)',
-                    padding: '3px 10px',
-                    borderRadius: '4px',
-                    fontSize: '10.5px',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                  }}
-                >
-                  ✓ Permanent on Irys ↗
-                </a>
+                {l.irys_tx_id && (l.archival_state === 'archived' || !l.archival_state) ? (
+                  <a
+                    href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'rgba(0, 255, 136, 0.08)',
+                      color: '#00ff88',
+                      border: '1px solid rgba(0, 255, 136, 0.25)',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    ✓ Archived on Irys ↗
+                  </a>
+                ) : l.archival_state === 'failed' ? (
+                  <span
+                    style={{
+                      background: 'rgba(255, 184, 0, 0.08)',
+                      color: '#ffb800',
+                      border: '1px solid rgba(255, 184, 0, 0.25)',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Stored in DB (Archival Failed)
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      background: 'rgba(0, 229, 255, 0.08)',
+                      color: '#00e5ff',
+                      border: '1px solid rgba(0, 229, 255, 0.25)',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Stored in DB (Archival Pending)
+                  </span>
+                )}
               </div>
 
               <p
@@ -451,17 +463,19 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                 }}
               >
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <a
-                    href={`https://gateway.irys.xyz/${l.irys_tx_id || `powl_proof_${l.id}`}`}
-                    rel="noopener noreferrer"
-                    style={{
-                      color: '#00ff88',
-                      textDecoration: 'none',
-                      fontWeight: 700,
-                    }}
-                  >
-                    🔗 Gateway Proof ↗
-                  </a>
+                  {l.irys_tx_id && (
+                    <a
+                      href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#00ff88',
+                        textDecoration: 'none',
+                        fontWeight: 700,
+                      }}
+                    >
+                      🔗 Gateway Proof ↗
+                    </a>
+                  )}
 
                   <button
                     onClick={() => {
@@ -472,13 +486,13 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                         classification.category,
                         classification.skills,
                         formatDate(l.created_at),
-                        l.irys_tx_id
+                        l.irys_tx_id || undefined
                       )
                       setModalSvg(svg)
-                      setModalTitle(`PROVN Proof Entry #${logNumber}`)
+                      setModalTitle(`PROVN Proof Card #${logNumber} 🗿`)
                       setModalLogId(l.id)
                       setModalLogContent(l.content)
-                      setModalIrysTxId(l.irys_tx_id)
+                      setModalIrysTxId(l.irys_tx_id || undefined)
                       setModalOpen(true)
                     }}
                     style={{
@@ -493,7 +507,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                       fontWeight: 700,
                     }}
                   >
-                    🖼️ View Log NFT
+                    🖼️ View Proof Card 🗿
                   </button>
                 </div>
 

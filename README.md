@@ -1,11 +1,11 @@
 <!-- PROVN Protocol v1.0 -->
 # PROVN — Proof-of-Work Logger 🗿
 
-**Cryptographically verified, permanent builder reputation protocol on Solana.**
+**Public, wallet-signed work logs and builder profiles for Solana builders.**
 
-Log daily work → verify via Ed25519 signature → store permanently on Arweave → auto-classify skills → mint as compressed NFT on Solana → showcase pixel-perfect GitHub 365-day contribution heatmap.
+Log daily work → sign canonical SIWS message → store in Supabase → archive signed evidence to Irys/Arweave upon confirmed receipt → auto-classify skills → generate shareable Proof Cards 🗿 → showcase pixel-perfect GitHub 365-day contribution heatmap.
 
-> *"Your work, permanently on-chain."*
+> *"Your work, signed by your wallet."*
 
 **Live Protocol App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)  
 **GitHub:** [github.com/dren712/pow-logger](https://github.com/dren712/pow-logger)  
@@ -16,15 +16,15 @@ Log daily work → verify via Ed25519 signature → store permanently on Arweave
 ## 💡 The Problem & Solution
 
 ### The Problem
-Solana builders, bounty hunters, and hackathon participants complete daily work but lack a **portable, tamper-proof, on-chain proof of consistent effort**. GitHub records code pushes; bounty platforms show payouts. Nothing verifies the daily builder streak with cryptographic proof.
+Solana builders, bounty hunters, and hackathon participants complete daily work but lack a **portable, tamper-proof, wallet-attested record of consistent effort**. GitHub records code pushes; bounty platforms show payouts. Nothing verifies the daily builder streak with canonical cryptographic signatures.
 
 ### The Solution: PROVN Protocol 🗿
-1. **Cryptographic Verification**: Builders sign daily work logs using Ed25519 wallet signatures (anti-spoofing). Zero gas fees for users.
-2. **Permanent Arweave Storage**: Decentralized immutable archiving via Irys (`gateway.irys.xyz/<tx_id>`) with 100% SHA-256 proof hash fallback coverage.
+1. **Wallet-Attested Cryptographic Signatures**: Builders sign daily work logs using Ed25519 wallet signatures (anti-spoofing). Zero gas fees for users.
+2. **Permanent Arweave Storage**: Decentralized immutable archiving via Irys (`gateway.irys.xyz/<tx_id>`) upon confirmed receipt, with explicit status tracking (`pending | archived | failed`).
 3. **Automated Skill Classification**: Zero-cost rule engine categorizing work into 16 skills, 14 protocols, and 10 work categories.
-4. **Metaplex Bubblegum cNFTs**: Low-cost compressed NFT credentials (~$0.000005/mint) representing verified builder proof entries and active streaks.
+4. **Metaplex Bubblegum cNFTs (Optional)**: On-chain compressed NFT credentials when configured with funded authority and confirmed transactions.
 5. **Pixel-Perfect GitHub 365-Day Contribution Heatmap**: Complete 52-week × 7-day grid (`app/components/ContributionHeatmap.tsx`) with month headers (`Jan`..`Dec`), day-of-week labels (`Mon`, `Wed`, `Fri`), 5-level green scale (`#161b22` → `#39d353`), and interactive tooltips.
-6. **1-Click PNG/SVG Proof Badge Generator & Twitter Share**: High-res vector cards converted to PNG via HTML5 Canvas with 1-tap download and Twitter intent pre-filled sharing (`app/components/NFTBadgeModal.tsx`).
+6. **1-Click Proof Card Generator & Twitter Share**: High-res vector Proof Cards converted to PNG via HTML5 Canvas with 1-tap download and Twitter intent pre-filled sharing (`app/components/NFTBadgeModal.tsx`).
 7. **Mobile Universal Deep Links & Direct Navigation**: 1-tap launchers for Phantom, Solflare, and Backpack to connect directly from mobile Safari, Chrome, and Brave without WebView link-swallowing.
 8. **Public Verification API**: Read-only JSON endpoint (`/api/verify/[wallet]`) for DAOs, grant committees, and hiring platforms.
 

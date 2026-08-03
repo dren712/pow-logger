@@ -32,7 +32,7 @@ export function generateNFTBadgeSVG(
     : 'Cryptographically verified Proof-of-Work Log on Solana & Arweave'
 
   const lines = wrapText(cleanContent, 55)
-  const txShort = irysTxId ? `${irysTxId.slice(0, 6)}...${irysTxId.slice(-6)}` : 'PERMANENT_DB'
+  const txShort = irysTxId ? `${irysTxId.slice(0, 6)}...${irysTxId.slice(-6)}` : 'ARWEAVE_PENDING'
 
   const textTspans = lines
     .map((line, i) => `<tspan x="56" dy="${i === 0 ? 0 : 20}">${line}</tspan>`)
@@ -51,7 +51,7 @@ export function generateNFTBadgeSVG(
 
   <!-- Top Header -->
   <text x="36" y="44" fill="#00ff88" font-family="monospace" font-size="16" font-weight="800" letter-spacing="1">PROVN PROTOCOL 🗿</text>
-  <text x="564" y="44" fill="#00e5ff" font-family="monospace" font-size="11" text-anchor="end" font-weight="700">VERIFIED cNFT PROOF</text>
+  <text x="564" y="44" fill="#00e5ff" font-family="monospace" font-size="11" text-anchor="end" font-weight="700">WALLET-ATTESTED PROOF</text>
 
   <!-- Divider -->
   <line x1="36" y1="58" x2="564" y2="58" stroke="#1a202c" stroke-width="1"/>
@@ -107,7 +107,7 @@ export function generateSingleLogNFTBadgeSVG(
     .replace(/"/g, '&quot;')
 
   const lines = wrapText(cleanContent, 60)
-  const txShort = irysTxId ? `${irysTxId.slice(0, 8)}...${irysTxId.slice(-6)}` : 'PERMANENT_DB'
+  const txShort = irysTxId ? `${irysTxId.slice(0, 8)}...${irysTxId.slice(-6)}` : 'ARWEAVE_PENDING'
 
   let catColor = '#00ff88'
   let catBg = 'rgba(0,255,136,0.1)'
@@ -145,8 +145,8 @@ export function generateSingleLogNFTBadgeSVG(
   <path d="M 626 352 L 626 366 L 612 366" stroke="${catColor}" stroke-width="3" fill="none"/>
 
   <!-- Top Header Bar -->
-  <text x="36" y="44" fill="#00ff88" font-family="monospace" font-size="16" font-weight="900" letter-spacing="1">PROVN PROOF ENTRY #${logId} 🗿</text>
-  <text x="604" y="44" fill="#00e5ff" font-family="monospace" font-size="11" text-anchor="end" font-weight="700">Ed25519 VERIFIED cNFT</text>
+  <text x="36" y="44" fill="#00ff88" font-family="monospace" font-size="16" font-weight="900" letter-spacing="1">PROVN PROOF CARD #${logId} 🗿</text>
+  <text x="604" y="44" fill="#00e5ff" font-family="monospace" font-size="11" text-anchor="end" font-weight="700">Ed25519 VERIFIED PROOF</text>
 
   <line x1="36" y1="58" x2="604" y2="58" stroke="#1a202c" stroke-width="1"/>
 
@@ -170,7 +170,7 @@ export function generateSingleLogNFTBadgeSVG(
 
   <!-- Footer Information -->
   <line x1="36" y1="306" x2="604" y2="306" stroke="#161b26" stroke-width="1"/>
-  <text x="36" y="336" fill="#666666" font-family="monospace" font-size="10">IMMUTABLE PROOF: Solana &amp; Arweave (Irys)</text>
+  <text x="36" y="336" fill="#666666" font-family="monospace" font-size="10">WALLET-ATTESTED PROOF: Solana &amp; Arweave (Irys)</text>
   <text x="604" y="336" fill="#00e5ff" font-family="monospace" font-size="10" text-anchor="end">PROOF_TX: ${txShort}</text>
   <text x="36" y="356" fill="#444444" font-family="monospace" font-size="9">VERIFY LIVE: provn-sol.vercel.app/u/${walletAddress}</text>
 
@@ -213,7 +213,7 @@ export function downloadNFTBadge(
   irysTxId?: string
 ) {
   const svgString = generateNFTBadgeSVG(walletAddress, streak, logContent, category, irysTxId)
-  triggerSVGDownload(svgString, `PoWL-NFT-Profile-${walletAddress.slice(0, 6)}.svg`)
+  triggerSVGDownload(svgString, `PROVN-ProofCard-${walletAddress.slice(0, 6)}.svg`)
 }
 
 export function downloadSingleLogNFT(
@@ -234,5 +234,5 @@ export function downloadSingleLogNFT(
     dateStr,
     irysTxId
   )
-  triggerSVGDownload(svgString, `PoWL-Log-${logId}-Proof.svg`)
+  triggerSVGDownload(svgString, `PROVN-ProofCard-${logId}.svg`)
 }

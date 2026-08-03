@@ -16,11 +16,14 @@ export interface LogRecord {
   protocols?: string[]
   created_at: string
   irys_tx_id?: string | null
+  archival_state?: 'pending' | 'archived' | 'failed'
+  signature?: string
 }
 
 export interface SubmitLogResponse {
   success: boolean
   log: LogRecord
+  archivalState?: 'pending' | 'archived' | 'failed'
   irysTxId: string | null
   gatewayUrl: string | null
   cnftAssetId?: string | null

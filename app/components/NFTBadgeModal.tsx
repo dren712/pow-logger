@@ -16,7 +16,7 @@ export default function NFTBadgeModal({
   isOpen,
   onClose,
   svgString,
-  title = 'PROVN NFT Proof Badge 🗿',
+  title = 'PROVN Proof Card 🗿',
   logId,
   logContent = '',
   irysTxId,
@@ -250,7 +250,7 @@ export default function NFTBadgeModal({
               justifyContent: 'center',
             }}
           >
-            {canWebShareFiles ? '📲 Share Card to X (Auto-Attach PNG) 🗿' : copiedImage ? '✓ PNG Copied! Opening X...' : '🚀 Share Badge Card to X 🗿'}
+            {canWebShareFiles ? '📲 Share Card to X (Auto-Attach PNG) 🗿' : copiedImage ? '✓ PNG Copied! Opening X...' : '🚀 Share Proof Card to X 🗿'}
           </button>
 
           <button
