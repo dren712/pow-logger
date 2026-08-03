@@ -1,3 +1,4 @@
+import { Keypair } from '@solana/web3.js'
 import bs58 from 'bs58'
 
 const decodeBase58 = (str: string): Uint8Array => {
@@ -5,6 +6,21 @@ const decodeBase58 = (str: string): Uint8Array => {
   const fn = bs58Obj.decode || bs58Obj.default?.decode
   if (!fn) throw new Error('Base58 decoder unavailable')
   return fn(str)
+}
+
+let cachedUploaderFn: ((adapter: unknown) => { withWallet: (key: unknown) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }) | null = null
+let cachedSolanaFn: unknown = null
+
+async function getIrysModules() {
+  if (cachedUploaderFn && cachedSolanaFn) {
+    return { UploaderFn: cachedUploaderFn, SolanaFn: cachedSolanaFn }
+  }
+  const irysUploadObj = (await import('@irys/upload')) as unknown as Record<string, unknown>
+  const irysSolanaObj = (await import('@irys/upload-solana')) as unknown as Record<string, unknown>
+
+  cachedUploaderFn = (irysUploadObj.Uploader || irysUploadObj.default || irysUploadObj) as (adapter: unknown) => { withWallet: (key: unknown) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }
+  cachedSolanaFn = irysSolanaObj.Solana || irysSolanaObj.default || irysSolanaObj
+  return { UploaderFn: cachedUploaderFn, SolanaFn: cachedSolanaFn }
 }
 
 export function parseIrysPrivateKey(privateKey: string): Uint8Array | string {
@@ -17,9 +33,9 @@ export function parseIrysPrivateKey(privateKey: string): Uint8Array | string {
     const parsed = JSON.parse(rawKey)
     if (Array.isArray(parsed)) {
       const numArr = parsed.map((x) => Number(x)).filter((x) => !isNaN(x))
-      if (numArr.length === 64) {
-        return new Uint8Array(numArr)
-      }
+      if (numArr.length === 64) return new Uint8Array(numArr)
+      if (numArr.length === 32) return Keypair.fromSeed(new Uint8Array(numArr)).secretKey
+      if (numArr.length > 0) return new Uint8Array(numArr)
     }
   } catch {}
 
@@ -27,9 +43,9 @@ export function parseIrysPrivateKey(privateKey: string): Uint8Array | string {
   try {
     if (rawKey.includes(',')) {
       const numArr = rawKey.replace(/[\[\]]/g, '').split(',').map((x) => Number(x.trim())).filter((x) => !isNaN(x))
-      if (numArr.length === 64) {
-        return new Uint8Array(numArr)
-      }
+      if (numArr.length === 64) return new Uint8Array(numArr)
+      if (numArr.length === 32) return Keypair.fromSeed(new Uint8Array(numArr)).secretKey
+      if (numArr.length > 0) return new Uint8Array(numArr)
     }
   } catch {}
 
@@ -38,6 +54,8 @@ export function parseIrysPrivateKey(privateKey: string): Uint8Array | string {
     if (typeof rawKey === 'string' && !rawKey.startsWith('[')) {
       const decoded = decodeBase58(rawKey)
       if (decoded && decoded.length === 64) return decoded
+      if (decoded && decoded.length === 32) return Keypair.fromSeed(decoded).secretKey
+      if (decoded && decoded.length > 0) return decoded
     }
   } catch {}
 
@@ -61,12 +79,8 @@ export async function uploadEnvelopeToIrys(
     return { success: false, error: msg }
   }
 
-  // Safe CJS/ESM module resolution under Next.js serverless bundlers
-  const irysUploadObj = (await import('@irys/upload')) as unknown as Record<string, unknown>
-  const irysSolanaObj = (await import('@irys/upload-solana')) as unknown as Record<string, unknown>
-
-  const UploaderFn = (irysUploadObj.Uploader || irysUploadObj.default || irysUploadObj) as (adapter: unknown) => { withWallet: (key: unknown) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }
-  const SolanaFn = irysSolanaObj.Solana || irysSolanaObj.default || irysSolanaObj
+  // Optimized module resolution with warm lambda caching
+  const { UploaderFn, SolanaFn } = await getIrysModules()
 
   if (typeof UploaderFn !== 'function' || !SolanaFn) {
     const msg = 'Irys SDK module exports unresolved in serverless bundle'

@@ -297,9 +297,10 @@ npm test
 
 | Task | Priority | Component | Action Item & Status |
 |---|---|---|---|
-| **Production Supabase Migration** | **P0** | Database | Run [`supabase/migrations/20260803_provn_security_hardening.sql`](file:///Users/darshangaikwad/pow-logger/supabase/migrations/20260803_provn_security_hardening.sql) in the live Supabase SQL editor to enforce RLS and create the `get_daily_log_count` RPC. |
+| **Atomic Arweave Archival Pipeline** | **DONE** | Storage Engine | Single-pass atomic Irys Node #1 upload & Supabase PostgreSQL insertion verified and deployed live (**Commit `e7e25b7`**). |
+| **Production Supabase Migration** | **P0** | Database | Run [`supabase/migrations/20260803_provn_security_hardening.sql`](file:///Users/darshangaikwad/pow-logger/supabase/migrations/20260803_provn_security_hardening.sql) in live Supabase SQL editor to enforce RLS and create the `get_daily_log_count` RPC. |
 | **On-Chain Merkle Tree (cNFTs)** | **P1** | Metaplex | Create a 14-depth Concurrent Merkle Tree on Solana Devnet/Mainnet via Metaplex CLI, set `SOLANA_MERKLE_TREE_PUBKEY`, and set `NEXT_PUBLIC_CNFT_ENABLED="true"`. |
-| **Builder Beta Recruitment** | **P1** | Growth | Onboard 10–20 active Solana builders from Superteam India, hackathons, or bounties to build initial verifiable portfolios (Days 15–45). |
+| **Builder Beta Recruitment** | **P1** | Growth | Onboard 10–20 active Solana builders from Superteam, hackathons, or bounties to build initial verifiable portfolios. |
 
 ---
 

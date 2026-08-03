@@ -342,7 +342,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                   <span>{formatTime(l.created_at)}</span>
                 </div>
 
-                {l.irys_tx_id && (l.archival_state === 'archived' || !l.archival_state) ? (
+                {l.irys_tx_id ? (
                   <a
                     href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
                     rel="noopener noreferrer"
