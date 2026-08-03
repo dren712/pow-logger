@@ -15,14 +15,29 @@ export function parseIrysPrivateKey(privateKey: string): Uint8Array | string {
   // 1. Try JSON array format [123, 45, ...]
   try {
     const parsed = JSON.parse(rawKey)
-    if (Array.isArray(parsed)) return new Uint8Array(parsed)
+    if (Array.isArray(parsed)) {
+      const numArr = parsed.map((x) => Number(x)).filter((x) => !isNaN(x))
+      if (numArr.length === 64) {
+        return new Uint8Array(numArr)
+      }
+    }
   } catch {}
 
-  // 2. Try Base58 format
+  // 2. Try comma-separated string format "123, 45, 67..."
+  try {
+    if (rawKey.includes(',')) {
+      const numArr = rawKey.replace(/[\[\]]/g, '').split(',').map((x) => Number(x.trim())).filter((x) => !isNaN(x))
+      if (numArr.length === 64) {
+        return new Uint8Array(numArr)
+      }
+    }
+  } catch {}
+
+  // 3. Try Base58 format
   try {
     if (typeof rawKey === 'string' && !rawKey.startsWith('[')) {
       const decoded = decodeBase58(rawKey)
-      if (decoded && decoded.length > 0) return decoded
+      if (decoded && decoded.length === 64) return decoded
     }
   } catch {}
 
@@ -46,22 +61,33 @@ export async function uploadEnvelopeToIrys(
     return { success: false, error: msg }
   }
 
-  try {
-    const walletKey = parseIrysPrivateKey(privateKey)
-    const { Uploader } = await import('@irys/upload')
-    const { Solana } = await import('@irys/upload-solana')
+  const { Uploader } = await import('@irys/upload')
+  const { Solana } = await import('@irys/upload-solana')
 
-    const uploader = await (Uploader(Solana) as unknown as { withWallet: (key: string | Uint8Array) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withWallet(walletKey)
+  const parsedKey = parseIrysPrivateKey(privateKey)
 
-    const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
-    if (uploadReceipt && uploadReceipt.id) {
-      console.log(`[PROVN Irys] Successfully archived to Arweave ID: ${uploadReceipt.id}`)
-      return { success: true, irysTxId: uploadReceipt.id }
-    }
-    return { success: false, error: 'Irys upload returned empty receipt' }
-  } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err)
-    console.error('[PROVN Irys Upload Failed]:', errMsg)
-    return { success: false, error: errMsg }
+  // Try multiple key representations for Irys uploader
+  const keyAttempts: (string | Uint8Array | number[])[] = [parsedKey]
+  if (parsedKey instanceof Uint8Array) {
+    keyAttempts.push(Array.from(parsedKey))
   }
+
+  let lastError = 'Upload unconfirmed'
+
+  for (const walletKey of keyAttempts) {
+    try {
+      const uploader = await (Uploader(Solana) as unknown as { withWallet: (key: unknown) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withWallet(walletKey)
+
+      const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
+      if (uploadReceipt && uploadReceipt.id) {
+        console.log(`[PROVN Irys] Successfully archived to Arweave ID: ${uploadReceipt.id}`)
+        return { success: true, irysTxId: uploadReceipt.id }
+      }
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err.message : String(err)
+      console.error('[PROVN Irys Key Attempt Failed]:', lastError)
+    }
+  }
+
+  return { success: false, error: lastError }
 }
