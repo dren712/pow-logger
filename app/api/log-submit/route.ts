@@ -174,50 +174,10 @@ export async function POST(req: NextRequest) {
     // 7. Classify Log Content
     const classification = classifyLog(content.trim())
 
-    // 8. Database Save (Supabase)
-    let insertRes = await supabase
-      .from('logs')
-      .insert([{
-        content: content.trim(),
-        wallet_address: walletAddress,
-        signature,
-        created_at: timestamp,
-        skills: classification.skills,
-        protocols: classification.protocols,
-        category: classification.category,
-        evidence_url: cleanEvidenceUrl,
-        github_url: cleanGithubUrl,
-        archival_state: 'pending',
-      }])
-      .select()
-
-    // Fallback: If live DB schema does not have new columns yet, save with basic schema
-    if (insertRes.error) {
-      console.warn('Full schema insert warning. Falling back to basic schema:', insertRes.error.message)
-      insertRes = await supabase
-        .from('logs')
-        .insert([{
-          content: content.trim(),
-          wallet_address: walletAddress,
-          created_at: timestamp,
-        }])
-        .select()
-    }
-
-    if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
-      console.error('Supabase insert error:', insertRes.error)
-      return NextResponse.json({ error: `Failed to save log to database: ${insertRes.error?.message || 'Unknown database error'}` }, { status: 500 })
-    }
-
-    const savedLog = insertRes.data[0]
-    let irysTxId: string | null = null
-    let archivalState: ArchivalState = 'pending'
-
-    // 9. Permanent Storage Upload of Envelope to Arweave (Irys Node #1)
+    // 8. Upload Envelope to Arweave via Irys Node #1 (Before DB Save)
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
       version: 1,
-      logId: savedLog.id,
       walletAddress,
       timestamp,
       content: content.trim(),
@@ -241,29 +201,47 @@ export async function POST(req: NextRequest) {
 
     const { uploadEnvelopeToIrys } = await import('@/app/lib/irysUploader')
     const uploadRes = await uploadEnvelopeToIrys(structuredEnvelope, tags)
-    irysTxId = uploadRes.irysTxId || null
-    archivalState = uploadRes.success && irysTxId ? 'archived' : 'pending'
+    const irysTxId = uploadRes.irysTxId || null
+    const archivalState: ArchivalState = uploadRes.success && irysTxId ? 'archived' : 'pending'
 
-    // Update DB row with confirmed irys_tx_id and archival_state
-    if (irysTxId) {
-      let updateRes = await supabase
+    // 9. Single Atomic Database Save (Supabase) WITH irys_tx_id INCLUDED!
+    let insertRes = await supabase
+      .from('logs')
+      .insert([{
+        content: content.trim(),
+        wallet_address: walletAddress,
+        signature,
+        created_at: timestamp,
+        skills: classification.skills,
+        protocols: classification.protocols,
+        category: classification.category,
+        evidence_url: cleanEvidenceUrl,
+        github_url: cleanGithubUrl,
+        irys_tx_id: irysTxId,
+        archival_state: archivalState,
+      }])
+      .select()
+
+    // Fallback: If live DB schema does not have new columns yet, insert with basic schema + irys_tx_id
+    if (insertRes.error) {
+      console.warn('Full schema insert warning. Falling back to basic schema:', insertRes.error.message)
+      insertRes = await supabase
         .from('logs')
-        .update({
+        .insert([{
+          content: content.trim(),
+          wallet_address: walletAddress,
+          created_at: timestamp,
           irys_tx_id: irysTxId,
-          archival_state: archivalState
-        })
-        .eq('id', savedLog.id)
-
-      if (updateRes.error) {
-        // Fallback update if archival_state column is missing on live DB
-        updateRes = await supabase
-          .from('logs')
-          .update({
-            irys_tx_id: irysTxId,
-          })
-          .eq('id', savedLog.id)
-      }
+        }])
+        .select()
     }
+
+    if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
+      console.error('Supabase insert error:', insertRes.error)
+      return NextResponse.json({ error: `Failed to save log to database: ${insertRes.error?.message || 'Unknown database error'}` }, { status: 500 })
+    }
+
+    const savedLog = insertRes.data[0]
 
     return NextResponse.json({
       success: true,
