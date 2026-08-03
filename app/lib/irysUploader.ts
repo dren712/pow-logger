@@ -29,14 +29,21 @@ export function parseIrysPrivateKey(privateKey: string): Uint8Array | string {
   return rawKey
 }
 
+export interface IrysUploadResult {
+  success: boolean
+  irysTxId?: string
+  error?: string
+}
+
 export async function uploadEnvelopeToIrys(
   structuredEnvelope: string,
   tags: { name: string; value: string }[]
-): Promise<string | null> {
+): Promise<IrysUploadResult> {
   const privateKey = process.env.IRYS_PRIVATE_KEY
   if (!privateKey) {
-    console.warn('[PROVN Irys] IRYS_PRIVATE_KEY is not configured in server environment variables.')
-    return null
+    const msg = 'IRYS_PRIVATE_KEY is not configured in Vercel Environment Variables'
+    console.warn('[PROVN Irys]', msg)
+    return { success: false, error: msg }
   }
 
   try {
@@ -49,12 +56,12 @@ export async function uploadEnvelopeToIrys(
     const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
     if (uploadReceipt && uploadReceipt.id) {
       console.log(`[PROVN Irys] Successfully archived to Arweave ID: ${uploadReceipt.id}`)
-      return uploadReceipt.id
+      return { success: true, irysTxId: uploadReceipt.id }
     }
+    return { success: false, error: 'Irys upload returned empty receipt' }
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err)
     console.error('[PROVN Irys Upload Failed]:', errMsg)
+    return { success: false, error: errMsg }
   }
-
-  return null
 }

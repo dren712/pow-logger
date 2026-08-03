@@ -240,8 +240,9 @@ export async function POST(req: NextRequest) {
     if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
 
     const { uploadEnvelopeToIrys } = await import('@/app/lib/irysUploader')
-    irysTxId = await uploadEnvelopeToIrys(structuredEnvelope, tags)
-    archivalState = irysTxId ? 'archived' : 'pending'
+    const uploadRes = await uploadEnvelopeToIrys(structuredEnvelope, tags)
+    irysTxId = uploadRes.irysTxId || null
+    archivalState = uploadRes.success && irysTxId ? 'archived' : 'pending'
 
     // Update DB row with confirmed irys_tx_id and archival_state
     if (irysTxId) {

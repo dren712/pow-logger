@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
       {
         source: '/api/log-submit',
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: 'https://provn-sol.vercel.app, http://127.0.0.1:3000' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'POST, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
         ],

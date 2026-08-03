@@ -130,11 +130,13 @@ export async function POST(req: NextRequest) {
     if (logRow.github_url) tags.push({ name: 'GitHub-URL', value: logRow.github_url })
 
     const { uploadEnvelopeToIrys } = await import('@/app/lib/irysUploader')
-    const irysTxId = await uploadEnvelopeToIrys(structuredEnvelope, tags)
+    const uploadRes = await uploadEnvelopeToIrys(structuredEnvelope, tags)
 
-    if (!irysTxId) {
-      return NextResponse.json({ error: 'Archival retry failed: Irys node upload unconfirmed' }, { status: 502 })
+    if (!uploadRes.success || !uploadRes.irysTxId) {
+      const errDetail = uploadRes.error || 'Irys node upload unconfirmed'
+      return NextResponse.json({ error: `Archival retry failed: ${errDetail}` }, { status: 502 })
     }
+    const irysTxId = uploadRes.irysTxId
     let updateErr = (await supabase
       .from('logs')
       .update({
