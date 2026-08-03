@@ -61,8 +61,18 @@ export async function uploadEnvelopeToIrys(
     return { success: false, error: msg }
   }
 
-  const { Uploader } = await import('@irys/upload')
-  const { Solana } = await import('@irys/upload-solana')
+  // Safe CJS/ESM module resolution under Next.js serverless bundlers
+  const irysUploadObj = (await import('@irys/upload')) as unknown as Record<string, unknown>
+  const irysSolanaObj = (await import('@irys/upload-solana')) as unknown as Record<string, unknown>
+
+  const UploaderFn = (irysUploadObj.Uploader || irysUploadObj.default || irysUploadObj) as (adapter: unknown) => { withWallet: (key: unknown) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }
+  const SolanaFn = irysSolanaObj.Solana || irysSolanaObj.default || irysSolanaObj
+
+  if (typeof UploaderFn !== 'function' || !SolanaFn) {
+    const msg = 'Irys SDK module exports unresolved in serverless bundle'
+    console.error('[PROVN Irys]', msg)
+    return { success: false, error: msg }
+  }
 
   const parsedKey = parseIrysPrivateKey(privateKey)
 
@@ -76,7 +86,7 @@ export async function uploadEnvelopeToIrys(
 
   for (const walletKey of keyAttempts) {
     try {
-      const uploader = await (Uploader(Solana) as unknown as { withWallet: (key: unknown) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withWallet(walletKey)
+      const uploader = await UploaderFn(SolanaFn).withWallet(walletKey)
 
       const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
       if (uploadReceipt && uploadReceipt.id) {
