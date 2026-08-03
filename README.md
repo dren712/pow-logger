@@ -60,41 +60,49 @@ Evidence URL: <normalized_evidence_url_or_none>
 ## 🏗️ 3. System Architecture & Data Pipeline
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                        User Browser (Client)                           │
-│  Solana Wallet ──► Write Log + Evidence ──► Sign SIWS (TweetNaCl)      │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-                                   ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                 Server API Engine (/api/log-submit)                    │
-│  ① Pre-Verification Rate Limiter (10 reqs/hr per IP/wallet)           │
-│  ② Replay Protection (15-min timestamp window & DB signature index)    │
-│  ③ Ed25519 Signature Verification (TweetNaCl)                          │
-│  ④ Atomic Quota Check (Supabase RPC: max 3 logs/day)                   │
-│  ⑤ Rule Classifier Engine (16 Skills, 14 Protocols, 10 Categories)     │
-└──────────────┬───────────────────┬───────────────────┬─────────────────┘
-               │                   │                   │
-               ▼                   ▼                   ▼
-┌──────────────────────┐┌──────────────────────┐┌────────────────────────┐
-│ ① Supabase (PostgreSQL)││ ② Irys (Arweave)     ││ ③ Metaplex cNFT Engine │
-│ RLS Read-Only Policy ││ Permanent JSON       ││ Compressed NFTs        │
-│ Public Anon Access   ││ Archival Envelope    ││ (Feature flagged)      │
-└──────────────────────┘└──────────────────────┘└────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 User Browser (Client)                                  │
+│  Solana Wallet ──► Write Log + Evidence URLs ──► Sign Canonical SIWS (TweetNaCl/Ed25519) │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ HTTP POST /api/log-submit
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        Next.js Server API Engine (/api/log-submit)                     │
+│  [Level 1] Rate Limiter Engine: 10 requests/hour per IP & Wallet Address               │
+│  [Level 2] URL Sanitizer & Validator: Enforces HTTPS & Restricts GitHub to github.com  │
+│  [Level 3] Timestamp Freshness Guard: Rejects payloads with >15 minute drift            │
+│  [Level 4] Ed25519 Cryptographic Verification: TweetNaCl verifies signature over SIWS │
+│  [Level 5] Supabase RPC Atomic Quota Check: Enforces max 3 logs/day (Race-safe)        │
+│  [Level 6] Auto Skill & Protocol Classifier Engine: Zero-cost keyword rule analyzer   │
+└───────────────┬───────────────────────────┬───────────────────────────┬────────────────┘
+                │                           │                           │
+                ▼                           ▼                           ▼
+┌───────────────────────────────┐ ┌───────────────────────────┐ ┌──────────────────────────┐
+│ ① Supabase (PostgreSQL DB)    │ │ ② Irys Node #1 (Arweave)  │ │ ③ Metaplex cNFT Engine   │
+│ [Level 7] RLS Security Policy │ │ Permanent Immutable JSON  │ │ [Feature Flagged: OFF]   │
+│ Public Anon Access: SELECT    │ │ Archival Envelope Storage │ │ Compressed NFTs via      │
+│ Direct Writes: DENIED         │ │ (Real Receipt ID Saved)   │ │ Bubblegum & Helius RPC   │
+│ [Level 8] Unique Index Guard  │ │ [Level 9] Auth Retry API  │ │ (Reserved for future)    │
+└───────────────────────────────┘ └───────────────────────────┘ └──────────────────────────┘
 ```
 
 ---
 
-## 🛡️ 4. Security Model & Row-Level Security (RLS)
+## 🛡️ 4. Multi-Layer Security Model & Enforcement Matrix
 
-| Vulnerability Vector | Defense Mechanism | Implementation Location |
-|---|---|---|
-| **Signature Spoofing** | Off-chain Ed25519 signature verification via TweetNaCl | `/api/log-submit/route.ts` |
-| **Direct DB Tampering** | RLS Policy restricts `anon` role to `SELECT` only. Direct `INSERT`, `UPDATE`, `DELETE` from browser clients are **denied by default**. | `supabase/migrations/20260803_provn_security_hardening.sql` |
-| **Replay Attacks** | `signature` TEXT NOT NULL UNIQUE index + 15-min timestamp drift window | `logs.signature` unique index |
-| **Quota Race Conditions** | Atomic PostgreSQL RPC `get_daily_log_count()` enforcing max 3 logs/day | Supabase RPC |
-| **Archival Retry Spam** | `/api/archival-retry` requires signed retry message from wallet owner | `/api/archival-retry/route.ts` |
-| **Phishing / Malicious URLs** | URL normalization enforcing `https:` scheme & restricting GitHub links to `github.com` | `app/lib/canonicalMessage.ts` |
+PROVN enforces **9 defense-in-depth security levels** across the entire stack:
+
+| Security Level | Vector / Threat | Defense Mechanism | Implementation File |
+|---|---|---|---|
+| **Level 1** | **DoS & Request Flooding** | Pre-verification rate limiter (10 requests/hour per IP & Wallet Address) | `app/api/log-submit/route.ts` |
+| **Level 2** | **URL Phishing & XSS Injection** | Strict URL sanitizer enforcing `https:` scheme & restricting GitHub links to `github.com` | `app/lib/canonicalMessage.ts` |
+| **Level 3** | **Replay & Timestamp Drift** | Rejects payloads older than 15 minutes (`Math.abs(now - ts) > 900,000ms`) | `app/api/log-submit/route.ts` |
+| **Level 4** | **Identity & Content Spoofing** | Off-chain Ed25519 signature verification over canonical SIWS message using TweetNaCl | `app/api/log-submit/route.ts` |
+| **Level 5** | **Quota Bypass Race Conditions** | Atomic PostgreSQL RPC `get_daily_log_count()` enforcing max 3 logs/day atomically | `supabase/migrations/20260803_provn_security_hardening.sql` |
+| **Level 6** | **Database Signature Replay** | Database `signature` TEXT NOT NULL UNIQUE index prevents reusing any signature | `supabase/migrations/20260803_provn_security_hardening.sql` |
+| **Level 7** | **Direct Database Write Tampering**| Row-Level Security (RLS) Policy restricts `anon` role to `SELECT` only. Direct client `INSERT`, `UPDATE`, `DELETE` are **DENIED by default**. | `supabase/migrations/20260803_provn_security_hardening.sql` |
+| **Level 8** | **Unauthenticated Archival Retries**| `/api/archival-retry` requires a newly signed SIWS retry message (`buildCanonicalRetryMessage`) from the log owner. | `app/api/archival-retry/route.ts` |
+| **Level 9** | **Clickjacking & MIME Sniffing** | HTTP security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, CORS rules) | `next.config.ts` |
 
 ---
 
