@@ -72,7 +72,7 @@ export default function PrivacyPage() {
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>4. Third-Party Infrastructure</h2>
           <p style={{ color: '#ccc', margin: '0 0 10px 0' }}>
-            PROVN utilizes trusted infrastructure providers:
+            PROVN utilizes reputable infrastructure providers:
           </p>
           <ul style={{ color: '#ccc', paddingLeft: '20px', margin: 0, display: 'grid', gap: '6px' }}>
             <li><strong>Solana Network:</strong> Public RPC endpoints (Helius / Solana Labs).</li>

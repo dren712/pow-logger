@@ -25,7 +25,7 @@ PROVN provides **verifiable builder portfolios**. A log entry proves that a spec
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ PROVN Cryptographic Trust Model:                                       │
+│ PROVN Cryptographic Verification Model:                                │
 │ A valid Ed25519 signature proves that the connected wallet signed      │
 │ the exact canonical payload. It proves wallet authorship & integrity;  │
 │ it does not independently verify external off-chain claims.            │
@@ -257,7 +257,7 @@ npm test
 
 ## 🗺️ 9. 90-Day Execution & Growth Roadmap
 
-### Days 1–14: Trust Foundation (Completed)
+### Days 1–14: Core Security Foundation (Completed)
 - ✅ Real Irys Archival Receipts & Explicit Archival States (`pending | archived | failed | legacy_unverified`).
 - ✅ Database Security Migrations & Replay Signature Uniqueness (`supabase/migrations/20260803_provn_security_hardening.sql`).
 - ✅ Evidence Links (`github_url`, `evidence_url`) and Authorized Archival Retry Worker (`/api/archival-retry`).
