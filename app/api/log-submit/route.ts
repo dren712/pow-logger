@@ -2,34 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
-import { classifyLog } from '@/app/lib/classifier'
-import { ArchivalState } from '@/app/lib/irys'
 import { buildCanonicalSubmitMessage, validateAndNormalizeUrl } from '@/app/lib/canonicalMessage'
+import { ArchivalState } from '@/app/lib/irys'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
-
-// In-memory IP/Wallet rate limiting map: key -> timestamp array
-const rateLimitMap = new Map<string, number[]>()
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
-const MAX_REQUESTS_PER_HOUR = 10
-
-function checkRateLimit(key: string): boolean {
-  const now = Date.now()
-  const timestamps = rateLimitMap.get(key) || []
-  const validTimestamps = timestamps.filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS)
-
-  if (validTimestamps.length >= MAX_REQUESTS_PER_HOUR) {
-    rateLimitMap.set(key, validTimestamps)
-    return false
-  }
-
-  validTimestamps.push(now)
-  rateLimitMap.set(key, validTimestamps)
-  return true
-}
 
 const decodeBase58 = (str: string): Uint8Array => {
   const bs58Obj = bs58 as unknown as { decode?: (s: string) => Uint8Array; default?: { decode: (s: string) => Uint8Array } }
@@ -38,64 +17,106 @@ const decodeBase58 = (str: string): Uint8Array => {
   return fn(str)
 }
 
+function classifyLog(content: string) {
+  const contentLower = content.toLowerCase()
+
+  const skillsMap: Record<string, string[]> = {
+    Solana: ['solana', 'anchor', 'web3.js', 'spl-token', 'spl', 'program', 'pda', 'cpi'],
+    TypeScript: ['typescript', 'ts', 'next.js', 'nextjs', 'react', 'node'],
+    Rust: ['rust', 'cargo', 'anchor-lang'],
+    Python: ['python', 'py', 'django', 'fastapi'],
+    Design: ['css', 'tailwind', 'ui', 'ux', 'figma'],
+  }
+
+  const protocolsMap: Record<string, string[]> = {
+    Anchor: ['anchor', 'anchor-lang'],
+    Irys: ['irys', 'arweave', 'bundlr'],
+    Metaplex: ['metaplex', 'token-metadata', 'cnft', 'bubblegum'],
+    Pyth: ['pyth', 'oracle'],
+    Jupiter: ['jupiter', 'jup', 'swap'],
+  }
+
+  const detectedSkills: string[] = []
+  for (const [skill, keywords] of Object.entries(skillsMap)) {
+    if (keywords.some((kw) => contentLower.includes(kw))) {
+      detectedSkills.push(skill)
+    }
+  }
+
+  const detectedProtocols: string[] = []
+  for (const [proto, keywords] of Object.entries(protocolsMap)) {
+    if (keywords.some((kw) => contentLower.includes(kw))) {
+      detectedProtocols.push(proto)
+    }
+  }
+
+  let category = 'Development'
+  if (contentLower.includes('design') || contentLower.includes('ui') || contentLower.includes('css')) {
+    category = 'Design'
+  } else if (contentLower.includes('deploy') || contentLower.includes('vercel') || contentLower.includes('release')) {
+    category = 'Deployment'
+  } else if (contentLower.includes('test') || contentLower.includes('audit')) {
+    category = 'Testing'
+  } else if (contentLower.includes('doc') || contentLower.includes('readme')) {
+    category = 'Documentation'
+  }
+
+  return {
+    skills: detectedSkills,
+    protocols: detectedProtocols,
+    category,
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     let body: Record<string, unknown>
     try {
       body = await req.json()
     } catch {
-      return NextResponse.json({ error: 'Invalid or malformed JSON payload' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid or malformed JSON body' }, { status: 400 })
     }
 
     const { content, walletAddress, timestamp, nonce, signature, evidenceUrl, githubUrl } = body
 
-    // 1. Input Validation
+    // 1. Mandatory Input Sanitization & Boundaries
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      return NextResponse.json({ error: 'Content is required and must be non-empty string' }, { status: 400 })
+      return NextResponse.json({ error: 'Log content cannot be empty' }, { status: 400 })
     }
 
-    if (content.trim().length > 500) {
-      return NextResponse.json({ error: 'Log entry exceeds maximum limit of 500 characters' }, { status: 400 })
+    if (content.trim().length > 280) {
+      return NextResponse.json({ error: 'Log content exceeds maximum length of 280 characters' }, { status: 400 })
     }
 
-    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32 || walletAddress.length > 44) {
-      return NextResponse.json({ error: 'Valid Base58 Solana wallet address is required (32-44 chars)' }, { status: 400 })
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32) {
+      return NextResponse.json({ error: 'Valid Base58 walletAddress is required' }, { status: 400 })
     }
 
     if (!signature || typeof signature !== 'string') {
-      return NextResponse.json({ error: 'Cryptographic signature is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Cryptographic wallet signature is required' }, { status: 401 })
     }
 
     if (!timestamp || typeof timestamp !== 'string') {
-      return NextResponse.json({ error: 'ISO timestamp is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Timestamp is required' }, { status: 400 })
     }
 
-    // URL Normalization & Validation
-    const cleanGithubUrl = validateAndNormalizeUrl(typeof githubUrl === 'string' ? githubUrl : null, 'github')
-    const cleanEvidenceUrl = validateAndNormalizeUrl(typeof evidenceUrl === 'string' ? evidenceUrl : null, 'evidence')
-
-    // 2. Pre-verification Rate Limiting Check (IP / Wallet)
-    const clientIp = req.headers.get('x-forwarded-for') || walletAddress
-    if (!checkRateLimit(clientIp)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 10 log submissions per hour allowed per IP/wallet.' },
-        { status: 429 }
-      )
-    }
-
-    // 3. Replay Attack Prevention (Check timestamp drift within 15 mins)
+    // 2. Strict Replay Attack Mitigation (15-min window limit)
     const requestTime = new Date(timestamp).getTime()
     const now = Date.now()
     if (isNaN(requestTime) || Math.abs(now - requestTime) > 900000) {
-      return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attack rejected.' }, { status: 401 })
+      return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
     }
 
-    // 4. Reconstruct Canonical SIWS Message & Cryptographic Signature Verification
+    // 3. Evidence URL Validation & Normalization
+    const cleanGithubUrl = validateAndNormalizeUrl(githubUrl as string | null, 'github')
+    const cleanEvidenceUrl = validateAndNormalizeUrl(evidenceUrl as string | null, 'evidence')
+
+    // 4. Cryptographic Ed25519 Signature Verification
     const expectedMessageText = buildCanonicalSubmitMessage({
       walletAddress,
       timestamp,
       nonce: typeof nonce === 'string' ? nonce : 'legacy',
-      content,
+      content: content.trim(),
       githubUrl: cleanGithubUrl,
       evidenceUrl: cleanEvidenceUrl,
     })
@@ -121,29 +142,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 5. Server-Side Daily Log Quota Check via Atomic RPC / Query
+    // 5. Daily Log Quota Check
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
 
     let todayCount = 0
-    const { data: rpcCount, error: rpcError } = await supabase
-      .rpc('get_daily_log_count', {
-        p_wallet: walletAddress,
-        p_start_time: startOfDay.toISOString()
-      })
+    const { data: todayLogs, error: countError } = await supabase
+      .from('logs')
+      .select('id')
+      .eq('wallet_address', walletAddress)
+      .gte('created_at', startOfDay.toISOString())
 
-    if (!rpcError && typeof rpcCount === 'number') {
-      todayCount = rpcCount
-    } else {
-      const { data: todayLogs, error: countError } = await supabase
-        .from('logs')
-        .select('id')
-        .eq('wallet_address', walletAddress)
-        .gte('created_at', startOfDay.toISOString())
-
-      if (!countError && todayLogs) {
-        todayCount = todayLogs.length
-      }
+    if (!countError && todayLogs) {
+      todayCount = todayLogs.length
     }
 
     if (todayCount >= 3) {
@@ -153,7 +164,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 6. Replay Check via Signature Uniqueness in DB
+    // 6. Signature Replay Check
     const { data: existingSig, error: sigCheckError } = await supabase
       .from('logs')
       .select('id')
@@ -166,8 +177,8 @@ export async function POST(req: NextRequest) {
 
     if (existingSig) {
       return NextResponse.json(
-        { error: 'Duplicate signature detected. Replay attempt rejected.' },
-        { status: 401 }
+        { error: 'Signature already submitted. Duplicate or replayed payload rejected.' },
+        { status: 409 }
       )
     }
 
@@ -204,7 +215,7 @@ export async function POST(req: NextRequest) {
     const irysTxId = uploadRes.irysTxId || null
     const archivalState: ArchivalState = uploadRes.success && irysTxId ? 'archived' : 'pending'
 
-    // 9. Single Atomic Database Save (Supabase) WITH irys_tx_id INCLUDED!
+    // 9. Single Atomic Database Save (Supabase) WITH irys_tx_id INCLUDED ATOMICALLY!
     let insertRes = await supabase
       .from('logs')
       .insert([{
@@ -218,13 +229,12 @@ export async function POST(req: NextRequest) {
         evidence_url: cleanEvidenceUrl,
         github_url: cleanGithubUrl,
         irys_tx_id: irysTxId,
-        archival_state: archivalState,
       }])
       .select()
 
     // Fallback: If live DB schema does not have new columns yet, insert with basic schema + irys_tx_id
     if (insertRes.error) {
-      console.warn('Full schema insert warning. Falling back to basic schema:', insertRes.error.message)
+      console.warn('Full schema insert warning. Falling back to base schema:', insertRes.error.message)
       insertRes = await supabase
         .from('logs')
         .insert([{
