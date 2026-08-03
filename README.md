@@ -1,7 +1,7 @@
 <!-- PROVN Protocol v1.0 Architectural Specification -->
 # PROVN — Proof-of-Work Logger 🗿
 
-**Verifiable builder portfolios for Solana grants, hackathons, bounties, and teams.**
+**Verifiable builder portfolios for Solana developers, hackathons, bounties, and engineering teams.**
 
 [![Build Status](https://img.shields.io/badge/Build-PASS-00ff88.svg)](https://github.com/dren712/pow-logger)
 [![Tests](https://img.shields.io/badge/Tests-13%2F13%20PASSED-00e5ff.svg)](https://github.com/dren712/pow-logger)
@@ -189,7 +189,7 @@ Requires wallet signature over SIWS retry prompt:
 
 ### 3. Public Verification Endpoint (`GET /api/verify/[wallet]`)
 
-Public read-only REST endpoint for grant committees, DAOs, and reviewer tooling.
+Public read-only REST endpoint for ecosystem reviewers, hackathons, DAOs, and engineering teams.
 
 **Response (HTTP 200 OK):**
 ```json
@@ -247,7 +247,7 @@ npm test
 
 ---
 
-## 🗺️ 9. 90-Day Execution Roadmap & Grant Verification
+## 🗺️ 9. 90-Day Execution & Growth Roadmap
 
 ### Days 1–14: Trust Foundation (Completed)
 - ✅ Real Irys Archival Receipts & Explicit Archival States (`pending | archived | failed | legacy_unverified`).
@@ -260,7 +260,7 @@ npm test
 - Conduct structured builder feedback interviews and publish weekly progress logs.
 
 ### Days 46–90: Prove Demand
-- Deliver reviewer-friendly public profile inspection tooling for grant committees.
+- Deliver reviewer-friendly public profile inspection tooling for ecosystem reviewers and hiring teams.
 - Measure verified builder metrics: active beta builders, wallet-attested entries, entries with external evidence links, confirmed Irys receipts.
 - Open-source fully documented reviewer SDK.
 
