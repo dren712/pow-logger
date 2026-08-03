@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       // Plain key string
     }
 
-    const uploader = await (Uploader(Solana) as unknown as { withKey: (key: string | Uint8Array) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withKey(walletKey)
+    const uploader = await (Uploader(Solana) as unknown as { withWallet: (key: string | Uint8Array) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }).withWallet(walletKey)
 
     const tags = [
       { name: 'App-Name', value: 'PROVN' },
