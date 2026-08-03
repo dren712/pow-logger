@@ -177,6 +177,29 @@ pow-logger/
 ## 🚀 Local Development
 
 ```bash
+## 🗺️ 90-Day Grant Execution Plan
+
+### Days 1–14: Trust Foundation
+- ✅ Real Irys Archival Receipts & Explicit Archival States (`pending | archived | failed | legacy_unverified`).
+- ✅ Database Migrations & Replay Signature Uniqueness (`supabase/migrations/20260803_provn_truth_schema.sql`).
+- ✅ Evidence Links (`github_url`, `evidence_url`) and Archival Retry Worker (`/api/archival-retry`).
+- ✅ Automated Test Suite covering signatures, replay rejection, state transitions, and quota logic.
+
+### Days 15–45: Evidence-First Beta
+- Deploy evidence-first builder profiles with GitHub PR & deployment verification.
+- Recruit 10–20 active Solana builders from Superteam India, hackathons, and bounties.
+- Conduct structured builder feedback interviews and publish weekly open progress logs.
+
+### Days 46–90: Prove Demand
+- Deliver reviewer-friendly public profile inspection tooling for grant committees.
+- Measure verified builder metrics: active beta builders, wallet-attested entries, entries with external evidence links, confirmed Irys receipts.
+- Open-source fully documented reviewer SDK.
+
+---
+
+## 💻 Local Development & Setup
+
+```bash
 # Clone
 git clone https://github.com/dren712/pow-logger.git
 cd pow-logger

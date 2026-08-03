@@ -37,8 +37,11 @@ import { LogItem } from '@/app/u/[wallet]/ProfileClient'
 function LoggerApp() {
   const { publicKey, connected, signMessage } = useWallet()
   const [log, setLog] = useState('')
+  const [evidenceUrl, setEvidenceUrl] = useState('')
+  const [githubUrl, setGithubUrl] = useState('')
   const [logs, setLogs] = useState<LogItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [retryingLogId, setRetryingLogId] = useState<number | null>(null)
   const [statusStep, setStatusStep] = useState<'idle' | 'saving' | 'storing' | 'success' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
   const [copiedId, setCopiedId] = useState<number | null>(null)
@@ -53,6 +56,32 @@ function LoggerApp() {
   const [modalLogContent, setModalLogContent] = useState<string>('')
   const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
   const [hasMerkleTree, setHasMerkleTree] = useState(false)
+
+  const retryArchival = async (logId: number) => {
+    if (!connected || !publicKey) return
+    setRetryingLogId(logId)
+    try {
+      const res = await fetch('/api/archival-retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logId, walletAddress: publicKey.toBase58() }),
+      })
+      const data = await res.json()
+      if (data.success && data.irysTxId) {
+        setLogs((prev) =>
+          prev.map((l) =>
+            l.id === logId
+              ? { ...l, irys_tx_id: data.irysTxId, archival_state: 'archived' }
+              : l
+          )
+        )
+      }
+    } catch (e) {
+      console.error('Retry error:', e)
+    } finally {
+      setRetryingLogId(null)
+    }
+  }
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
@@ -147,20 +176,18 @@ function LoggerApp() {
       setStatusStep('saving')
       setStatusMsg('Please sign the cryptographic prompt in your wallet...')
 
-      const result = await submitVerifiedLog(signMessage, walletAddress, logContent)
+      const result = await submitVerifiedLog(signMessage, walletAddress, logContent, evidenceUrl, githubUrl)
 
       if (result.success && result.log) {
         if (typeof result.hasMerkleTree === 'boolean') {
           setHasMerkleTree(result.hasMerkleTree)
         }
-        const fullLog = {
-          ...result.log,
-          irys_tx_id: result.log.irys_tx_id || result.irysTxId,
-        }
-        setLogs([fullLog, ...logs])
+        setLogs([result.log, ...logs])
         setLog('')
+        setEvidenceUrl('')
+        setGithubUrl('')
         setStatusStep('success')
-        setStatusMsg('✓ Cryptographically verified & stored permanently on Irys!')
+        setStatusMsg('✓ Wallet signature verified & stored in database!')
       } else {
         setStatusStep('error')
         setStatusMsg('Verification or upload failed.')
@@ -559,6 +586,44 @@ function LoggerApp() {
           </span>
         </div>
 
+        {/* Optional Evidence Links Input Row */}
+        {connected && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+            <input
+              type="text"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+              placeholder="🐙 Optional GitHub PR / Repo link (https://github.com/...)"
+              style={{
+                background: '#060709',
+                border: '1px solid #1a202c',
+                borderRadius: '6px',
+                color: '#e0e0e0',
+                padding: '8px 12px',
+                fontFamily: 'monospace',
+                fontSize: '11.5px',
+                outline: 'none',
+              }}
+            />
+            <input
+              type="text"
+              value={evidenceUrl}
+              onChange={(e) => setEvidenceUrl(e.target.value)}
+              placeholder="🔗 Optional Demo / Deployment link (https://...)"
+              style={{
+                background: '#060709',
+                border: '1px solid #1a202c',
+                borderRadius: '6px',
+                color: '#e0e0e0',
+                padding: '8px 12px',
+                fontFamily: 'monospace',
+                fontSize: '11.5px',
+                outline: 'none',
+              }}
+            />
+          </div>
+        )}
+
         {/* Pipeline Progress Status Widget */}
         {loading && (
           <div
@@ -740,19 +805,51 @@ function LoggerApp() {
                   ✓ Archived on Irys ↗
                 </a>
               ) : l.archival_state === 'failed' ? (
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span
+                    style={{
+                      background: 'rgba(255, 184, 0, 0.08)',
+                      color: '#ffb800',
+                      border: '1px solid rgba(255, 184, 0, 0.25)',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Archival Failed — Retry Available
+                  </span>
+                  <button
+                    onClick={() => retryArchival(l.id)}
+                    disabled={retryingLogId === l.id}
+                    style={{
+                      background: 'rgba(255, 184, 0, 0.15)',
+                      border: '1px solid rgba(255, 184, 0, 0.4)',
+                      color: '#ffb800',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      cursor: 'pointer',
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {retryingLogId === l.id ? 'Retrying...' : '🔄 Retry Archival'}
+                  </button>
+                </div>
+              ) : l.archival_state === 'legacy_unverified' ? (
                 <span
                   style={{
-                    background: 'rgba(255, 184, 0, 0.08)',
-                    color: '#ffb800',
-                    border: '1px solid rgba(255, 184, 0, 0.25)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: '#888',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     padding: '3px 10px',
                     borderRadius: '4px',
                     fontSize: '10.5px',
-                    fontWeight: 700,
-                    letterSpacing: '0.3px',
+                    fontWeight: 600,
                   }}
                 >
-                  Stored in DB (Archival Failed)
+                  Legacy Record — Archival Status Unverified
                 </span>
               ) : (
                 <span
@@ -764,10 +861,9 @@ function LoggerApp() {
                     borderRadius: '4px',
                     fontSize: '10.5px',
                     fontWeight: 700,
-                    letterSpacing: '0.3px',
                   }}
                 >
-                  Stored in DB (Archival Pending)
+                  Stored in DB — Archival Pending
                 </span>
               )}
             </div>
@@ -785,6 +881,48 @@ function LoggerApp() {
             >
               {l.content}
             </p>
+
+            {/* External Evidence Links */}
+            {Boolean(l.github_url || l.evidence_url) && (
+              <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '11px' }}>
+                {Boolean(l.github_url) && (
+                  <a
+                    href={l.github_url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#00e5ff',
+                      background: 'rgba(0, 229, 255, 0.08)',
+                      border: '1px solid rgba(0, 229, 255, 0.25)',
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    🐙 GitHub Evidence ↗
+                  </a>
+                )}
+                {Boolean(l.evidence_url) && (
+                  <a
+                    href={l.evidence_url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#00ff88',
+                      background: 'rgba(0, 255, 136, 0.08)',
+                      border: '1px solid rgba(0, 255, 136, 0.25)',
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    🔗 Demo / Deployment ↗
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Classification Tags */}
             {(() => {

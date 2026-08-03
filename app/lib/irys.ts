@@ -7,6 +7,8 @@
 
 import bs58 from 'bs58'
 
+export type ArchivalState = 'pending' | 'archived' | 'failed' | 'legacy_unverified'
+
 export interface LogRecord {
   id: number
   wallet_address: string
@@ -16,27 +18,23 @@ export interface LogRecord {
   protocols?: string[]
   created_at: string
   irys_tx_id?: string | null
-  archival_state?: 'pending' | 'archived' | 'failed'
+  archival_state?: ArchivalState
   signature?: string
+  evidence_url?: string | null
+  github_url?: string | null
+  [key: string]: unknown
 }
 
 export interface SubmitLogResponse {
   success: boolean
   log: LogRecord
-  archivalState?: 'pending' | 'archived' | 'failed'
+  archivalState?: ArchivalState
   irysTxId: string | null
   gatewayUrl: string | null
   cnftAssetId?: string | null
   hasMerkleTree?: boolean
 }
 
-/**
- * Submit a cryptographically verified log to the backend.
- *
- * @param signMessage - The signMessage function from useWallet()
- * @param walletAddress - Base58 public key of the connected wallet
- * @param content - Log text entry
- */
 const encodeBase58 = (bytes: Uint8Array): string => {
   const bs58Obj = bs58 as unknown as { encode?: (bytes: Uint8Array) => string; default?: { encode: (bytes: Uint8Array) => string } }
   const fn = bs58Obj.encode || bs58Obj.default?.encode
@@ -47,7 +45,9 @@ const encodeBase58 = (bytes: Uint8Array): string => {
 export async function submitVerifiedLog(
   signMessage: (message: Uint8Array) => Promise<Uint8Array>,
   walletAddress: string,
-  content: string
+  content: string,
+  evidenceUrl?: string,
+  githubUrl?: string
 ): Promise<SubmitLogResponse> {
   const timestamp = new Date().toISOString()
   const messageText = `provn-sol.vercel.app wants you to sign in with your Solana account:\n${walletAddress}\n\nTimestamp: ${timestamp}\nContent: ${content.trim()}`
@@ -71,6 +71,8 @@ export async function submitVerifiedLog(
       walletAddress,
       timestamp,
       signature: signatureBase58,
+      evidenceUrl: evidenceUrl?.trim() || null,
+      githubUrl: githubUrl?.trim() || null,
     }),
   })
 

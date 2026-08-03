@@ -6,6 +6,7 @@ import { classifyLog } from '@/app/lib/classifier'
 import { generateNFTBadgeSVG, generateSingleLogNFTBadgeSVG } from '@/app/lib/badgeGenerator'
 import ContributionHeatmap from '@/app/components/ContributionHeatmap'
 import NFTBadgeModal from '@/app/components/NFTBadgeModal'
+import { ArchivalState } from '@/app/lib/irys'
 
 export interface LogItem {
   id: number
@@ -16,8 +17,10 @@ export interface LogItem {
   protocols?: string[]
   created_at: string
   irys_tx_id?: string | null
-  archival_state?: 'pending' | 'archived' | 'failed'
+  archival_state?: ArchivalState
   signature?: string
+  evidence_url?: string | null
+  github_url?: string | null
   [key: string]: unknown
 }
 
@@ -368,7 +371,21 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                       fontWeight: 700,
                     }}
                   >
-                    Stored in DB (Archival Failed)
+                    Archival Failed — Retry Available
+                  </span>
+                ) : l.archival_state === 'legacy_unverified' ? (
+                  <span
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: '#888',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '10.5px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Legacy Record — Archival Status Unverified
                   </span>
                 ) : (
                   <span
@@ -382,7 +399,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                       fontWeight: 700,
                     }}
                   >
-                    Stored in DB (Archival Pending)
+                    Stored in DB — Archival Pending
                   </span>
                 )}
               </div>
@@ -399,6 +416,48 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
               >
                 {l.content}
               </p>
+
+              {/* External Evidence Links */}
+              {Boolean(l.github_url || l.evidence_url) && (
+                <div style={{ marginBottom: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '11px' }}>
+                  {Boolean(l.github_url) && (
+                    <a
+                      href={l.github_url as string}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#00e5ff',
+                        background: 'rgba(0, 229, 255, 0.08)',
+                        border: '1px solid rgba(0, 229, 255, 0.25)',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                      }}
+                    >
+                      🐙 GitHub Evidence ↗
+                    </a>
+                  )}
+                  {Boolean(l.evidence_url) && (
+                    <a
+                      href={l.evidence_url as string}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#00ff88',
+                        background: 'rgba(0, 255, 136, 0.08)',
+                        border: '1px solid rgba(0, 255, 136, 0.25)',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                      }}
+                    >
+                      🔗 Demo / Deployment ↗
+                    </a>
+                  )}
+                </div>
+              )}
 
               {/* Classification Badges */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>

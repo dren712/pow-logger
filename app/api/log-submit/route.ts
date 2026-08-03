@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
 import { classifyLog } from '@/app/lib/classifier'
-import { LogRecord } from '@/app/lib/irys'
+import { LogRecord, ArchivalState } from '@/app/lib/irys'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey =
@@ -41,7 +41,7 @@ const decodeBase58 = (str: string): Uint8Array => {
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, walletAddress, timestamp, signature } = await req.json()
+    const { content, walletAddress, timestamp, signature, evidenceUrl, githubUrl } = await req.json()
 
     // 1. Input Validation
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
@@ -63,6 +63,10 @@ export async function POST(req: NextRequest) {
     if (!timestamp || typeof timestamp !== 'string') {
       return NextResponse.json({ error: 'ISO timestamp is required' }, { status: 400 })
     }
+
+    // Optional Evidence URLs sanity check
+    const cleanEvidenceUrl = evidenceUrl && typeof evidenceUrl === 'string' && evidenceUrl.startsWith('http') ? evidenceUrl.trim() : null
+    const cleanGithubUrl = githubUrl && typeof githubUrl === 'string' && githubUrl.startsWith('http') ? githubUrl.trim() : null
 
     // 2. Pre-verification Rate Limiting Check (IP / Wallet)
     const clientIp = req.headers.get('x-forwarded-for') || walletAddress
@@ -113,6 +117,10 @@ export async function POST(req: NextRequest) {
       .eq('wallet_address', walletAddress)
       .gte('created_at', startOfDay.toISOString())
 
+    if (countError) {
+      console.error('Supabase count error:', countError)
+    }
+
     if (!countError && todayLogs && todayLogs.length >= 3) {
       return NextResponse.json(
         { error: 'Daily log quota reached (3/3 logs submitted today). Come back tomorrow 🗿' },
@@ -121,11 +129,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Replay Check via Signature Uniqueness in DB
-    const { data: existingSig } = await supabase
+    const { data: existingSig, error: sigCheckError } = await supabase
       .from('logs')
       .select('id')
       .eq('signature', signature)
       .maybeSingle()
+
+    if (sigCheckError) {
+      console.warn('Signature lookup error:', sigCheckError.message)
+    }
 
     if (existingSig) {
       return NextResponse.json(
@@ -141,7 +153,7 @@ export async function POST(req: NextRequest) {
     let dbData: LogRecord[] | null = null
     let dbError: { message: string } | null = null
 
-    // Try full insert with classification & signature
+    // Try full insert with classification, signature, and evidence links
     const fullRes = await supabase
       .from('logs')
       .insert([{
@@ -152,6 +164,8 @@ export async function POST(req: NextRequest) {
         skills: classification.skills,
         protocols: classification.protocols,
         category: classification.category,
+        evidence_url: cleanEvidenceUrl,
+        github_url: cleanGithubUrl,
         archival_state: 'pending',
       }])
       .select()
@@ -181,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     const savedLog = dbData[0]
     let irysTxId: string | null = null
-    let archivalState: 'pending' | 'archived' | 'failed' = 'pending'
+    let archivalState: ArchivalState = 'pending'
 
     // 9. Permanent Storage Upload to Arweave (Irys)
     const privateKey = process.env.IRYS_PRIVATE_KEY
@@ -211,6 +225,9 @@ export async function POST(req: NextRequest) {
           { name: 'Category', value: classification.category },
         ]
 
+        if (cleanEvidenceUrl) tags.push({ name: 'Evidence-URL', value: cleanEvidenceUrl })
+        if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
+
         const uploadReceipt = await uploader.upload(content.trim(), { tags })
 
         if (uploadReceipt && uploadReceipt.id) {
@@ -229,45 +246,32 @@ export async function POST(req: NextRequest) {
     }
 
     // Update database row with confirmed irys_tx_id and archival_state
-    try {
-      await supabase
-        .from('logs')
-        .update({
-          irys_tx_id: irysTxId,
-          archival_state: archivalState
-        })
-        .eq('id', savedLog.id)
-    } catch {
-      // Non-fatal DB update error
-    }
+    const { error: updateError } = await supabase
+      .from('logs')
+      .update({
+        irys_tx_id: irysTxId,
+        archival_state: archivalState
+      })
+      .eq('id', savedLog.id)
 
-    // 10. Mint Compressed NFT (cNFT) Proof Badge (only if Merkle Tree configured)
-    let cnftAssetId: string | null = null
-    const hasMerkleTree = !!process.env.SOLANA_MERKLE_TREE_PUBKEY
-    if (hasMerkleTree && irysTxId) {
-      try {
-        const { mintProofCNFT } = await import('@/app/lib/cnft')
-        const cnftResult = await mintProofCNFT(walletAddress, content, irysTxId)
-        if (cnftResult.success && cnftResult.assetId) {
-          cnftAssetId = cnftResult.assetId
-        }
-      } catch (cnftErr) {
-        console.error('cNFT minting error (non-fatal):', cnftErr)
-      }
+    if (updateError) {
+      console.error('Supabase update error:', updateError.message)
     }
 
     return NextResponse.json({
       success: true,
       log: {
         ...savedLog,
+        evidence_url: cleanEvidenceUrl,
+        github_url: cleanGithubUrl,
         irys_tx_id: irysTxId,
         archival_state: archivalState,
       },
       classification,
       archivalState,
       irysTxId,
-      cnftAssetId,
-      hasMerkleTree,
+      cnftAssetId: null,
+      hasMerkleTree: !!process.env.SOLANA_MERKLE_TREE_PUBKEY,
       gatewayUrl: irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : null,
     })
   } catch (error: unknown) {
