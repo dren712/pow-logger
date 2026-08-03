@@ -804,39 +804,6 @@ function LoggerApp() {
                 >
                   ✓ Archived on Irys ↗
                 </a>
-              ) : l.archival_state === 'failed' ? (
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <span
-                    style={{
-                      background: 'rgba(255, 184, 0, 0.08)',
-                      color: '#ffb800',
-                      border: '1px solid rgba(255, 184, 0, 0.25)',
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '10.5px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    Archival Failed — Retry Available
-                  </span>
-                  <button
-                    onClick={() => retryArchival(l.id)}
-                    disabled={retryingLogId === l.id}
-                    style={{
-                      background: 'rgba(255, 184, 0, 0.15)',
-                      border: '1px solid rgba(255, 184, 0, 0.4)',
-                      color: '#ffb800',
-                      borderRadius: '4px',
-                      padding: '2px 8px',
-                      cursor: 'pointer',
-                      fontSize: '10px',
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {retryingLogId === l.id ? 'Retrying...' : '🔄 Retry Archival'}
-                  </button>
-                </div>
               ) : l.archival_state === 'legacy_unverified' ? (
                 <span
                   style={{
@@ -852,19 +819,38 @@ function LoggerApp() {
                   Legacy Record — Archival Status Unverified
                 </span>
               ) : (
-                <span
-                  style={{
-                    background: 'rgba(0, 229, 255, 0.08)',
-                    color: '#00e5ff',
-                    border: '1px solid rgba(0, 229, 255, 0.25)',
-                    padding: '3px 10px',
-                    borderRadius: '4px',
-                    fontSize: '10.5px',
-                    fontWeight: 700,
-                  }}
-                >
-                  Stored in DB — Archival Pending
-                </span>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span
+                    style={{
+                      background: l.archival_state === 'failed' ? 'rgba(255, 184, 0, 0.08)' : 'rgba(0, 229, 255, 0.08)',
+                      color: l.archival_state === 'failed' ? '#ffb800' : '#00e5ff',
+                      border: `1px solid ${l.archival_state === 'failed' ? 'rgba(255, 184, 0, 0.25)' : 'rgba(0, 229, 255, 0.25)'}`,
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {l.archival_state === 'failed' ? 'Archival Failed' : 'Stored in DB — Archival Pending'}
+                  </span>
+                  <button
+                    onClick={() => retryArchival(l.id)}
+                    disabled={retryingLogId === l.id}
+                    style={{
+                      background: 'rgba(0, 255, 136, 0.12)',
+                      border: '1px solid rgba(0, 255, 136, 0.35)',
+                      color: '#00ff88',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      cursor: 'pointer',
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {retryingLogId === l.id ? 'Archiving...' : '⚡ Archive to Irys'}
+                  </button>
+                </div>
               )}
             </div>
 
