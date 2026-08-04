@@ -49,6 +49,7 @@ DROP POLICY IF EXISTS "Enable read access for all users" ON public.logs;
 DROP POLICY IF EXISTS "Enable insert for all users" ON public.logs;
 DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.logs;
 DROP POLICY IF EXISTS "Public Insert Access" ON public.logs;
+DROP POLICY IF EXISTS "Allow public log submissions" ON public.logs;
 
 -- PUBLIC READ-ONLY POLICY: Public/anon users can ONLY read logs
 CREATE POLICY "Public Read Access" ON public.logs
