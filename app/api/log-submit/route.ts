@@ -229,6 +229,7 @@ export async function POST(req: NextRequest) {
         evidence_url: cleanEvidenceUrl,
         github_url: cleanGithubUrl,
         irys_tx_id: irysTxId,
+        archival_state: archivalState,
       }])
       .select()
 
@@ -240,8 +241,10 @@ export async function POST(req: NextRequest) {
         .insert([{
           content: content.trim(),
           wallet_address: walletAddress,
+          signature,
           created_at: timestamp,
           irys_tx_id: irysTxId,
+          archival_state: archivalState,
         }])
         .select()
     }

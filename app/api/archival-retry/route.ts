@@ -92,7 +92,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Log entry not found or wallet mismatch' }, { status: 404 })
     }
 
-    if (logRow.archival_state === 'archived' && logRow.irys_tx_id) {
+    if (logRow.irys_tx_id && !logRow.irys_tx_id.startsWith('powl_')) {
+      if (logRow.archival_state !== 'archived') {
+        await supabase
+          .from('logs')
+          .update({ archival_state: 'archived' })
+          .eq('id', logId)
+      }
       return NextResponse.json({
         success: true,
         message: 'Log entry is already archived on Irys',
@@ -141,6 +147,7 @@ export async function POST(req: NextRequest) {
       .from('logs')
       .update({
         irys_tx_id: irysTxId,
+        archival_state: 'archived',
       })
       .eq('id', logId)
 
