@@ -81,6 +81,6 @@ BEGIN
 END;
 $$;
 
--- 7. Revoke execution from public and anon roles to close PostgREST RPC exposure
-REVOKE EXECUTE ON FUNCTION public.get_daily_log_count(TEXT, TIMESTAMPTZ) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.get_daily_log_count(TEXT, TIMESTAMPTZ) TO service_role, authenticated;
+-- 7. Revoke execution from PUBLIC, anon, and authenticated roles. Grant STRICTLY to service_role.
+REVOKE EXECUTE ON FUNCTION public.get_daily_log_count(TEXT, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_daily_log_count(TEXT, TIMESTAMPTZ) TO service_role;
