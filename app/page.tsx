@@ -14,7 +14,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-const MAX_CHARS = 500
+const MAX_CHARS = 280
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return 'Just now'
@@ -78,7 +78,9 @@ function LoggerApp() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Signature rejected'
       console.error('Retry error:', e)
-      alert(`Archival Retry Failed: ${msg}`)
+      setStatusStep('error')
+      setStatusMsg(`Archival Retry Failed: ${msg}`)
+      setTimeout(() => { setStatusStep('idle'); setStatusMsg('') }, 5000)
     } finally {
       setRetryingLogId(null)
     }
@@ -218,7 +220,7 @@ function LoggerApp() {
     const irysUrl = txId ? `https://gateway.irys.xyz/${txId}` : 'https://provn-sol.vercel.app'
     const previewText = logText.length > 80 ? `${logText.slice(0, 80)}...` : logText
     const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${irysUrl}\nBuild your reputation: provn-sol.vercel.app\n#PROVN #Solana #BuildInPublic`
-    window.location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank', 'noopener')
   }
 
   const shortAddress = publicKey
@@ -790,6 +792,7 @@ function LoggerApp() {
               {l.irys_tx_id ? (
                 <a
                   href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
+                  target="_blank"
                   rel="noopener noreferrer"
                   style={{
                     background: 'rgba(0, 255, 136, 0.08)',
@@ -1001,6 +1004,7 @@ function LoggerApp() {
                 {l.irys_tx_id && (
                   <a
                     href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
+                    target="_blank"
                     rel="noopener noreferrer"
                     style={{
                       color: '#00ff88',

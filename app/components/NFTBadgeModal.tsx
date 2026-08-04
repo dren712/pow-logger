@@ -125,7 +125,7 @@ export default function NFTBadgeModal({
     // Open X Intent
     const tweetIntent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`
     setTimeout(() => {
-      window.location.href = tweetIntent
+      window.open(tweetIntent, '_blank', 'noopener')
     }, 400)
   }
 

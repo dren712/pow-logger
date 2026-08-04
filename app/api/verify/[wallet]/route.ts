@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       return NextResponse.json(
         { verified: false, message: 'Builder profile not found' },
         {
-          status: 444,
+          status: 404,
           headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' },
         }
       )

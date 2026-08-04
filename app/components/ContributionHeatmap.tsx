@@ -161,7 +161,7 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
             fontFamily: 'var(--font-geist-mono), monospace',
           }}
         >
-          2025–2026
+          {new Date().getFullYear() - 1}–{new Date().getFullYear()}
         </span>
       </div>
 
