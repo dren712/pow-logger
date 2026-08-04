@@ -48,18 +48,22 @@ DROP POLICY IF EXISTS "Service Role Full Access" ON public.logs;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.logs;
 DROP POLICY IF EXISTS "Enable insert for all users" ON public.logs;
 DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.logs;
-DROP POLICY IF EXISTS "Public Insert Access" ON public.logs;
-DROP POLICY IF EXISTS "Allow public log submissions" ON public.logs;
+DROP POLICY IF EXISTS "Allow log submissions" ON public.logs;
+DROP POLICY IF EXISTS "Validated Log Submissions" ON public.logs;
 
 -- PUBLIC READ POLICY: Anyone can view public logs
 CREATE POLICY "Public Read Access" ON public.logs
     FOR SELECT TO public
     USING (true);
 
--- LOG SUBMISSION INSERT POLICY: Enables log submissions from authenticated API calls & clients
-CREATE POLICY "Allow log submissions" ON public.logs
+-- VALIDATED LOG SUBMISSION POLICY: Enables log submissions with structural column validation
+CREATE POLICY "Validated Log Submissions" ON public.logs
     FOR INSERT TO public
-    WITH CHECK (true);
+    WITH CHECK (
+        wallet_address IS NOT NULL 
+        AND length(wallet_address) >= 32 
+        AND signature IS NOT NULL
+    );
 
 -- SERVICE ROLE FULL ACCESS POLICY: Backend API server has full write access
 CREATE POLICY "Service Role Full Access" ON public.logs
