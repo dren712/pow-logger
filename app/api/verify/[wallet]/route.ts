@@ -6,14 +6,10 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-interface RouteParams {
-  params: Promise<{ wallet: string }> | { wallet: string }
-}
-
-export async function GET(req: NextRequest, { params }: RouteParams) {
+export async function GET(req: NextRequest, props: { params: Promise<{ wallet: string }> }) {
   try {
-    const resolvedParams = await params
-    const wallet = resolvedParams.wallet
+    const params = await props.params
+    const wallet = params.wallet
 
     if (!wallet || typeof wallet !== 'string' || wallet.trim().length < 32 || wallet.trim().length > 44) {
       return NextResponse.json(

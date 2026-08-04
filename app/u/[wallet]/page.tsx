@@ -9,7 +9,7 @@ const supabaseKey =
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 interface PageProps {
-  params: Promise<{ wallet: string }> | { wallet: string }
+  params: Promise<{ wallet: string }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
