@@ -147,8 +147,8 @@ async function runProductionTestSuite() {
 
   // --- SUITE 3: Supabase RLS Security Verification ---
   console.log('\n► SUITE 3: Supabase Database Row-Level Security (RLS) Policies')
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://chdvxbofxmayaqkqmaoy.supabase.co'
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_LGB4n34Pc6dwT6a0ScNgag_BRHE7WtA'
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
   if (supabaseUrl && anonKey && !supabaseUrl.includes('placeholder')) {
     const anonClient = createClient(supabaseUrl, anonKey)
