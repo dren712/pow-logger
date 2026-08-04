@@ -51,10 +51,15 @@ DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.log
 DROP POLICY IF EXISTS "Public Insert Access" ON public.logs;
 DROP POLICY IF EXISTS "Allow public log submissions" ON public.logs;
 
--- PUBLIC READ-ONLY POLICY: Public/anon users can ONLY read logs
+-- PUBLIC READ POLICY: Anyone can view public logs
 CREATE POLICY "Public Read Access" ON public.logs
     FOR SELECT TO public
     USING (true);
+
+-- LOG SUBMISSION INSERT POLICY: Enables log submissions from authenticated API calls & clients
+CREATE POLICY "Allow log submissions" ON public.logs
+    FOR INSERT TO public
+    WITH CHECK (true);
 
 -- SERVICE ROLE FULL ACCESS POLICY: Backend API server has full write access
 CREATE POLICY "Service Role Full Access" ON public.logs
