@@ -66,6 +66,7 @@ CREATE OR REPLACE FUNCTION public.get_daily_log_count(
 RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
     v_count INTEGER;
