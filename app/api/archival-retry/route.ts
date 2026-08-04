@@ -4,6 +4,8 @@ import nacl from 'tweetnacl'
 import bs58 from 'bs58'
 import { buildCanonicalRetryMessage } from '@/app/lib/canonicalMessage'
 
+export const maxDuration = 30 // Allow up to 30s execution for Irys Arweave upload
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

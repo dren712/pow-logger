@@ -5,6 +5,8 @@ import bs58 from 'bs58'
 import { buildCanonicalSubmitMessage, validateAndNormalizeUrl } from '@/app/lib/canonicalMessage'
 import { ArchivalState } from '@/app/lib/irys'
 
+export const maxDuration = 30 // Allow up to 30s execution for Irys Arweave upload
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
