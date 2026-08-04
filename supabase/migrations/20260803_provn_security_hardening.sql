@@ -56,6 +56,12 @@ CREATE POLICY "Public Read Access" ON public.logs
     FOR SELECT TO public
     USING (true);
 
+-- SERVICE ROLE FULL ACCESS POLICY: Backend API server has full write access
+CREATE POLICY "Service Role Full Access" ON public.logs
+    FOR ALL TO service_role
+    USING (true)
+    WITH CHECK (true);
+
 -- NOTE: Direct INSERT, UPDATE, DELETE policies for anon/public are EXPLICITLY DENIED.
 -- API routes use the SUPABASE_SERVICE_ROLE_KEY which bypasses RLS safely.
 
