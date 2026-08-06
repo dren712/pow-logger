@@ -163,7 +163,7 @@ async function runProductionTestSuite() {
       content: 'Bypassing API server via direct client RLS write attempt',
       signature: 'fake_sig_' + Math.random().toString(36).substring(2, 8),
     }]).select()
-    const isInsertDenied = !!insertErr || (!insertData || insertData.length === 0) || !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    const isInsertDenied = !!insertErr || (!insertData || insertData.length === 0)
     assert(isInsertDenied, 'Direct anonymous client INSERT is strictly DENIED by RLS policy', insertErr?.message)
 
     // Test Anonymous Delete (Must be DENIED by database RLS)

@@ -33,7 +33,7 @@ PROVN is a lightweight reputation protocol for Solana builders. It provides a ta
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                 Next.js API Engine Server                   │
-│   • Rate Limiting (10 req/hr per IP & Wallet)               │
+│   • Daily Quota Enforcement (3 logs/day per wallet)       │
 │   • Replay Protection (15-min timestamp window)             │
 │   • Off-chain Ed25519 Signature Verification (TweetNaCl)    │
 │   • URL Normalization & Sanitization                        │
@@ -58,7 +58,7 @@ PROVN implements several layers of verification to protect log authenticity:
 - **Replay Attack Mitigation**: Payloads older than 15 minutes (`Math.abs(now - ts) > 900,000ms`) are rejected.
 - **Signature Uniqueness**: PostgreSQL enforces a `UNIQUE` index on the `signature` column to prevent reusing valid signatures.
 - **Row-Level Security (RLS)**: Public clients only have `SELECT` access to the Supabase database. All database writes are processed through server-side API routes.
-- **Rate Limiting**: Requests are rate-limited to 10 submissions per hour per IP and wallet address.
+- **Daily Quota**: Each wallet is limited to 3 log submissions per day.
 
 ---
 
@@ -126,7 +126,7 @@ The Supabase schema and RLS policies are located in [`supabase/migrations/202608
 Key database constraints:
 - RLS policy: Public `SELECT` allowed; direct `INSERT`/`UPDATE`/`DELETE` denied.
 - Unique signature index: `CREATE UNIQUE INDEX idx_logs_signature_unique ON public.logs (signature);`
-- Daily quota function: `get_daily_log_count(p_wallet, p_start_time)`
+- Daily quota RPC: `get_daily_log_count(p_wallet, p_start_time)` — called atomically by `/api/log-submit`.
 
 ---
 

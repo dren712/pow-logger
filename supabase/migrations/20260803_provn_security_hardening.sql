@@ -56,9 +56,9 @@ CREATE POLICY "Public Read Access" ON public.logs
     FOR SELECT TO public
     USING (true);
 
--- VALIDATED LOG SUBMISSION POLICY: Enables log submissions with structural column validation
+-- SERVICE ROLE INSERT POLICY: Only backend API server can insert validated logs
 CREATE POLICY "Validated Log Submissions" ON public.logs
-    FOR INSERT TO public
+    FOR INSERT TO service_role
     WITH CHECK (
         wallet_address IS NOT NULL 
         AND length(wallet_address) >= 32 

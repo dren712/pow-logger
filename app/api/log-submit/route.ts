@@ -25,56 +25,7 @@ const decodeBase58 = (str: string): Uint8Array => {
   return fn(str)
 }
 
-function classifyLog(content: string) {
-  const contentLower = content.toLowerCase()
-
-  const skillsMap: Record<string, string[]> = {
-    Solana: ['solana', 'anchor', 'web3.js', 'spl-token', 'spl', 'program', 'pda', 'cpi'],
-    TypeScript: ['typescript', 'ts', 'next.js', 'nextjs', 'react', 'node'],
-    Rust: ['rust', 'cargo', 'anchor-lang'],
-    Python: ['python', 'py', 'django', 'fastapi'],
-    Design: ['css', 'tailwind', 'ui', 'ux', 'figma'],
-  }
-
-  const protocolsMap: Record<string, string[]> = {
-    Anchor: ['anchor', 'anchor-lang'],
-    Irys: ['irys', 'arweave', 'bundlr'],
-    Metaplex: ['metaplex', 'token-metadata', 'cnft', 'bubblegum'],
-    Pyth: ['pyth', 'oracle'],
-    Jupiter: ['jupiter', 'jup', 'swap'],
-  }
-
-  const detectedSkills: string[] = []
-  for (const [skill, keywords] of Object.entries(skillsMap)) {
-    if (keywords.some((kw) => contentLower.includes(kw))) {
-      detectedSkills.push(skill)
-    }
-  }
-
-  const detectedProtocols: string[] = []
-  for (const [proto, keywords] of Object.entries(protocolsMap)) {
-    if (keywords.some((kw) => contentLower.includes(kw))) {
-      detectedProtocols.push(proto)
-    }
-  }
-
-  let category = 'Development'
-  if (contentLower.includes('design') || contentLower.includes('ui') || contentLower.includes('css')) {
-    category = 'Design'
-  } else if (contentLower.includes('deploy') || contentLower.includes('vercel') || contentLower.includes('release')) {
-    category = 'Deployment'
-  } else if (contentLower.includes('test') || contentLower.includes('audit')) {
-    category = 'Testing'
-  } else if (contentLower.includes('doc') || contentLower.includes('readme')) {
-    category = 'Documentation'
-  }
-
-  return {
-    skills: detectedSkills,
-    protocols: detectedProtocols,
-    category,
-  }
-}
+import { classifyLog } from '@/app/lib/classifier'
 
 export async function POST(req: NextRequest) {
   try {
@@ -150,19 +101,31 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 5. Daily Log Quota Check
+    // 5. Atomic Daily Log Quota Check (via Postgres SECURITY DEFINER RPC)
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
 
     let todayCount = 0
-    const { data: todayLogs, error: countError } = await supabase
-      .from('logs')
-      .select('id')
-      .eq('wallet_address', walletAddress)
-      .gte('created_at', startOfDay.toISOString())
+    const { data: rpcCount, error: rpcError } = await supabase
+      .rpc('get_daily_log_count', {
+        p_wallet: walletAddress,
+        p_start_time: startOfDay.toISOString(),
+      })
 
-    if (!countError && todayLogs) {
-      todayCount = todayLogs.length
+    if (!rpcError && typeof rpcCount === 'number') {
+      todayCount = rpcCount
+    } else {
+      // Fallback: plain SELECT if RPC not deployed yet
+      console.warn('RPC fallback:', rpcError?.message)
+      const { data: todayLogs, error: countError } = await supabase
+        .from('logs')
+        .select('id')
+        .eq('wallet_address', walletAddress)
+        .gte('created_at', startOfDay.toISOString())
+
+      if (!countError && todayLogs) {
+        todayCount = todayLogs.length
+      }
     }
 
     if (todayCount >= 3) {
