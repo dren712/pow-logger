@@ -126,7 +126,7 @@ The Supabase schema and RLS policies are located in [`supabase/migrations/202608
 Key database constraints:
 - RLS policy: Public `SELECT` allowed; direct `INSERT`/`UPDATE`/`DELETE` denied.
 - Unique signature index: `CREATE UNIQUE INDEX idx_logs_signature_unique ON public.logs (signature);`
-- Daily quota RPC: `get_daily_log_count(p_wallet, p_start_time)` — called atomically by `/api/log-submit`.
+- Daily quota RPC: `get_daily_log_count(p_wallet, p_start_time)` — server-side count enforced by `/api/log-submit`.
 
 ---
 
