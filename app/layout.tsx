@@ -3,6 +3,13 @@ import "./globals.css";
 import Footer from "./components/Footer";
 import WalletContextProvider from "./providers/WalletProvider";
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export const metadata: Metadata = {
   title: "PROVN — Proof-of-Work Logger 🗿",
   description: "Cryptographically verified daily work logs on Solana. Build your on-chain builder reputation.",

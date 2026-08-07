@@ -167,12 +167,14 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
 
       {/* Main Heatmap Box */}
       <div
+        className="heatmap-scroll-container"
         style={{
           background: '#0d1117',
           border: '1px solid #30363d',
           borderRadius: '6px',
           padding: '16px',
           overflowX: 'auto',
+          maxWidth: '100%',
         }}
       >
         <div style={{ minWidth: '720px' }}>
