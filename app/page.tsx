@@ -10,6 +10,7 @@ import TerminalStudio from './components/TerminalStudio'
 import ContributionHeatmap from './components/ContributionHeatmap'
 import NFTBadgeModal from './components/NFTBadgeModal'
 import NetworkBanner from './components/NetworkBanner'
+import MobileWalletNotice from './components/MobileWalletNotice'
 import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
 import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
@@ -191,6 +192,8 @@ export default function LoggerApp() {
       <HeroHeader connected={connected} walletAddress={publicKey?.toBase58()} />
 
       <NetworkBanner />
+
+      <MobileWalletNotice />
 
       <StatsDashboard
         connected={connected}
