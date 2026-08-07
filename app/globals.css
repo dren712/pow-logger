@@ -191,15 +191,67 @@ body {
 }
 
 @media (max-width: 640px) {
-  .stats-grid { grid-template-columns: 1fr !important; }
-  .telemetry-bar { flex-direction: column; gap: 8px; text-align: center; }
-  .telemetry-right { flex-direction: column; gap: 4px; }
-  .header-bar { flex-direction: column; gap: 12px; align-items: flex-start; }
-  .log-footer { flex-direction: column; gap: 10px; align-items: flex-start !important; }
-  .pipeline-steps { flex-direction: column; gap: 6px; }
-  .submit-row { flex-direction: column; gap: 12px; align-items: stretch; }
-  .hero-buttons { flex-direction: column; width: 100%; }
-  .hero-buttons > * { width: 100%; justify-content: center; }
+  main {
+    padding: 16px 12px 60px 12px !important;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .telemetry-bar {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+  }
+  .telemetry-right {
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+  }
+  .header-bar {
+    flex-direction: column;
+    gap: 14px;
+    align-items: center !important;
+    text-align: center;
+  }
+  .wallet-adapter-button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .log-footer {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch !important;
+  }
+  .pipeline-steps {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .submit-row {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .hero-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px !important;
+  }
+  .hero-buttons > * {
+    width: 100%;
+    justify-content: center;
+  }
+  .verify-form {
+    width: 100%;
+    display: flex;
+    gap: 6px;
+  }
+  .verify-input {
+    flex: 1;
+    width: 100% !important;
+  }
 }
 
 button:focus-visible, a:focus-visible, textarea:focus-visible {

@@ -111,9 +111,10 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
             </a>
           )}
 
-          <form onSubmit={handleVerifySubmit} style={{ display: 'flex', gap: '6px' }}>
+          <form onSubmit={handleVerifySubmit} className="verify-form" style={{ display: 'flex', gap: '6px' }}>
             <input
               type="text"
+              className="verify-input"
               placeholder="Verify Any Wallet..."
               value={verifyWalletInput}
               onChange={(e) => setVerifyWalletInput(e.target.value)}
