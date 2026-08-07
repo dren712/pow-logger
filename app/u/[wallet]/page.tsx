@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import ProfileClient from './ProfileClient'
+import { getBuilderLevel } from '@/app/lib/milestones'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey =
@@ -23,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq('wallet_address', wallet)
 
   const count = logs?.length || 0
+  const builderLevel = getBuilderLevel(count)
 
   // Calculate streak count for metadata
   let streak = 0
@@ -45,20 +47,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
+  const ogTitle = `${walletShort} — ${builderLevel.emoji} ${builderLevel.title} • ${streak}d streak 🔥`
+  const ogDesc = `Level ${builderLevel.level} builder with ${count} verified work logs on Arweave. Builder reputation on Solana.`
+
   return {
-    title: `${walletShort}'s PROVN Profile — ${streak} day streak 🔥`,
-    description: `${count} verified work logs permanently stored on Arweave. Builder reputation on Solana.`,
+    title: ogTitle,
+    description: ogDesc,
     openGraph: {
-      title: `${walletShort}'s PROVN Profile — ${streak} day streak 🔥`,
-      description: `${count} verified work logs permanently stored on Arweave.`,
+      title: ogTitle,
+      description: ogDesc,
       url: `https://provn-sol.vercel.app/u/${wallet}`,
       siteName: 'PROVN',
       type: 'profile',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${walletShort}'s PROVN Profile — ${streak} day streak 🔥`,
-      description: `${count} verified work logs permanently stored on Arweave. 🗿`,
+      title: ogTitle,
+      description: `${builderLevel.emoji} ${builderLevel.title} • ${count} verified logs on Arweave 🗿`,
     },
   }
 }

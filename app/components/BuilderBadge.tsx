@@ -1,6 +1,6 @@
 'use client'
 
-import { BuilderLevel, StreakMilestone, BadgeSummary } from '@/app/lib/milestones'
+import { StreakMilestone, BadgeSummary } from '@/app/lib/milestones'
 
 interface BuilderBadgeProps {
   badge: BadgeSummary
@@ -9,7 +9,16 @@ interface BuilderBadgeProps {
 }
 
 export default function BuilderBadge({ badge, compact = false }: BuilderBadgeProps) {
-  const { level, nextLevel, levelProgress, currentStreak, earnedMilestones, nextMilestone } = badge
+  if (!badge || !badge.level) return null
+
+  const {
+    level,
+    nextLevel = null,
+    levelProgress = 0,
+    currentStreak = 0,
+    earnedMilestones = [],
+    nextMilestone = null,
+  } = badge
 
   if (compact) {
     return (
@@ -158,7 +167,7 @@ export default function BuilderBadge({ badge, compact = false }: BuilderBadgePro
             { days: 100, emoji: '💎', title: '100d' },
             { days: 365, emoji: '👑', title: '365d' },
           ] as { days: number; emoji: string; title: string }[]).map((m) => {
-            const earned = earnedMilestones.some((em: StreakMilestone) => em.days === m.days)
+            const earned = Array.isArray(earnedMilestones) && earnedMilestones.some((em: StreakMilestone) => em?.days === m.days)
             return (
               <div
                 key={m.days}
