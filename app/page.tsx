@@ -549,7 +549,7 @@ function LoggerApp() {
       )}
 
       {/* Builder Badge & Level Card */}
-      {connected && logs.length > 0 && (
+      {connected && (
         <div style={{ marginBottom: '24px' }}>
           <BuilderBadge badge={badgeSummary} />
         </div>
