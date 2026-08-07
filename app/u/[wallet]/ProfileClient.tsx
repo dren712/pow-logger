@@ -128,10 +128,11 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   return (
     <main
       style={{
-        maxWidth: '820px',
+        width: 'min(820px, 94vw)',
         margin: '0 auto',
-        padding: '32px 20px 100px 20px',
+        padding: '32px 16px 100px 16px',
         fontFamily: 'var(--font-geist-mono), monospace',
+        boxSizing: 'border-box',
       }}
     >
       {/* Header Navigation */}
