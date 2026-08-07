@@ -49,6 +49,7 @@ export default function LoggerApp() {
   const [retryingLogId, setRetryingLogId] = useState<number | null>(null)
   const [statusStep, setStatusStep] = useState<'idle' | 'saving' | 'storing' | 'success' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
+  const [copiedId, setCopiedId] = useState<number | null>(null)
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null)
 
   // NFT Modal State
@@ -176,6 +177,19 @@ export default function LoggerApp() {
     } finally {
       setRetryingLogId(null)
     }
+  }
+
+  const copyIrysLink = (txId: string, logId: number) => {
+    navigator.clipboard.writeText(`https://gateway.irys.xyz/${txId}`)
+    setCopiedId(logId)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const shareOnTwitter = (logText: string, txId?: string) => {
+    const irysUrl = txId ? `https://gateway.irys.xyz/${txId}` : 'https://provn-sol.vercel.app'
+    const previewText = logText.length > 80 ? `${logText.slice(0, 80)}...` : logText
+    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${irysUrl}\nBuild your reputation: provn-sol.vercel.app\n#PROVN #Solana #BuildInPublic`
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank', 'noopener')
   }
 
   return (
@@ -346,37 +360,71 @@ export default function LoggerApp() {
                       )}
                     </div>
 
-                    <button
-                      onClick={() => {
-                        const svg = generateSingleLogNFTBadgeSVG(
-                          publicKey?.toBase58() || '',
-                          l.id,
-                          l.content,
-                          l.category || 'Development',
-                          l.skills || [],
-                          l.created_at || 'Just now',
-                          l.irys_tx_id || undefined
-                        )
-                        setModalSvg(svg)
-                        setModalTitle(`PROVN Proof Card #${l.id} 🗿`)
-                        setModalLogId(l.id)
-                        setModalLogContent(l.content)
-                        setModalIrysTxId(l.irys_tx_id || undefined)
-                        setModalOpen(true)
-                      }}
-                      style={{
-                        background: 'none',
-                        border: '1px solid #00e5ff',
-                        color: '#00e5ff',
-                        borderRadius: '4px',
-                        padding: '4px 10px',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      🖼️ Share Card
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {l.irys_tx_id && (
+                        <button
+                          onClick={() => copyIrysLink(l.irys_tx_id!, l.id)}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #1c2230',
+                            color: copiedId === l.id ? '#00e5ff' : '#888',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                          }}
+                        >
+                          {copiedId === l.id ? '✓ Copied' : '📋 Copy Link'}
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => shareOnTwitter(l.content, l.irys_tx_id || undefined)}
+                        style={{
+                          background: 'none',
+                          border: '1px solid #1c2230',
+                          color: '#ab9ff2',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                        }}
+                      >
+                        🚀 Share on X
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const svg = generateSingleLogNFTBadgeSVG(
+                            publicKey?.toBase58() || '',
+                            l.id,
+                            l.content,
+                            l.category || 'Development',
+                            l.skills || [],
+                            l.created_at || 'Just now',
+                            l.irys_tx_id || undefined
+                          )
+                          setModalSvg(svg)
+                          setModalTitle(`PROVN Proof Card #${l.id} 🗿`)
+                          setModalLogId(l.id)
+                          setModalLogContent(l.content)
+                          setModalIrysTxId(l.irys_tx_id || undefined)
+                          setModalOpen(true)
+                        }}
+                        style={{
+                          background: 'none',
+                          border: '1px solid #00e5ff',
+                          color: '#00e5ff',
+                          borderRadius: '4px',
+                          padding: '4px 10px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        🖼️ Share Card
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
