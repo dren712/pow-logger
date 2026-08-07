@@ -9,6 +9,8 @@ import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
 import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
 import NFTBadgeModal from './components/NFTBadgeModal'
+import BuilderBadge from './components/BuilderBadge'
+import { computeBadgeSummary } from './lib/milestones'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
@@ -157,6 +159,38 @@ function LoggerApp() {
 
   const isDailyLimitReached = todayLogsCount >= 3
 
+  // Calculate longest streak from logs history
+  const longestStreak = useMemo(() => {
+    if (logs.length === 0) return 0
+    const dates = [...new Set(logs.map((l) => {
+      const d = new Date(l.created_at)
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+    }))].sort().reverse()
+    
+    let longest = 1
+    let current = 1
+    for (let i = 0; i < dates.length - 1; i++) {
+      const [y1, m1, d1] = dates[i].split('-').map(Number)
+      const [y2, m2, d2] = dates[i + 1].split('-').map(Number)
+      const date1 = new Date(y1, m1, d1)
+      const date2 = new Date(y2, m2, d2)
+      const diffDays = Math.round((date1.getTime() - date2.getTime()) / 86400000)
+      if (diffDays === 1) {
+        current++
+        longest = Math.max(longest, current)
+      } else {
+        current = 1
+      }
+    }
+    return Math.max(longest, current)
+  }, [logs])
+
+  // Compute badge summary from existing state
+  const badgeSummary = useMemo(
+    () => computeBadgeSummary(logs.length, streakCount, longestStreak),
+    [logs.length, streakCount, longestStreak]
+  )
+
   const submitLog = async () => {
     if (!log.trim() || !connected || !publicKey) return
     if (log.length > MAX_CHARS) return
@@ -189,8 +223,22 @@ function LoggerApp() {
         setLog('')
         setEvidenceUrl('')
         setGithubUrl('')
-        setStatusStep('success')
-        setStatusMsg('✓ Wallet signature verified & stored in database!')
+
+        // Check if a new streak milestone was just unlocked
+        if (result.newMilestone) {
+          setStatusStep('success')
+          setStatusMsg(
+            `🏆 MILESTONE UNLOCKED: ${result.newMilestone.emoji} ${result.newMilestone.title}! — ${result.newMilestone.description}`
+          )
+        } else if (result.builderLevel) {
+          setStatusStep('success')
+          setStatusMsg(
+            `✓ Verified & stored! ${result.builderLevel.emoji} Level ${result.builderLevel.level} • ${result.builderLevel.title}`
+          )
+        } else {
+          setStatusStep('success')
+          setStatusMsg('✓ Wallet signature verified & stored in database!')
+        }
       } else {
         setStatusStep('error')
         setStatusMsg('Verification or upload failed.')
@@ -484,6 +532,13 @@ function LoggerApp() {
               {todayLogsCount}/3 {isDailyLimitReached ? '🔒' : '⚡'}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Builder Badge & Level Card */}
+      {connected && logs.length > 0 && (
+        <div style={{ marginBottom: '24px' }}>
+          <BuilderBadge badge={badgeSummary} />
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { computeBadgeSummary } from '@/app/lib/milestones'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,6 +54,23 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       } else break
     }
 
+    // Calculate longest streak ever achieved
+    let longestStreak = 0
+    let tempStreak = 1
+    for (let i = 0; i < logDates.length - 1; i++) {
+      const diff = Math.round((logDates[i].getTime() - logDates[i + 1].getTime()) / 86400000)
+      if (diff === 1) {
+        tempStreak++
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak)
+        tempStreak = 1
+      }
+    }
+    longestStreak = Math.max(longestStreak, tempStreak)
+
+    // Compute badge summary
+    const badgeSummary = computeBadgeSummary(logs.length, streak, longestStreak)
+
     // Aggregate skills, protocols, categories
     const skillCount: Record<string, number> = {}
     const protocolCount: Record<string, number> = {}
@@ -93,6 +111,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         wallet: walletShort,
         wallet_full: wallet,
         streak,
+        longest_streak: longestStreak,
         total_logs: logs.length,
         irys_archived_count: confirmedArchivedLogs.length,
         member_since: new Date(logs[logs.length - 1].created_at)
@@ -101,6 +120,28 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         top_skills: topSkills,
         top_protocols: topProtocols,
         work_categories: categoryCount,
+        badge: {
+          level: badgeSummary.level.level,
+          title: badgeSummary.level.title,
+          emoji: badgeSummary.level.emoji,
+          color: badgeSummary.level.color,
+          progress: badgeSummary.levelProgress,
+          next_level: badgeSummary.nextLevel ? {
+            title: badgeSummary.nextLevel.next.title,
+            emoji: badgeSummary.nextLevel.next.emoji,
+            logs_remaining: badgeSummary.nextLevel.logsRemaining,
+          } : null,
+          earned_milestones: badgeSummary.earnedMilestones.map(m => ({
+            days: m.days,
+            title: m.title,
+            emoji: m.emoji,
+          })),
+          next_milestone: badgeSummary.nextMilestone ? {
+            title: badgeSummary.nextMilestone.milestone.title,
+            emoji: badgeSummary.nextMilestone.milestone.emoji,
+            days_remaining: badgeSummary.nextMilestone.daysRemaining,
+          } : null,
+        },
         recent_logs: logs.slice(0, 5).map((l) => ({
           id: l.id,
           content: l.content,

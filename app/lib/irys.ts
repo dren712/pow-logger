@@ -37,6 +37,20 @@ export interface SubmitLogResponse {
   gatewayUrl: string | null
   cnftAssetId?: string | null
   hasMerkleTree?: boolean
+  hasHeliusRpc?: boolean
+  streak?: number
+  builderLevel?: {
+    level: number
+    title: string
+    emoji: string
+    color: string
+  }
+  newMilestone?: {
+    days: number
+    title: string
+    emoji: string
+    description: string
+  } | null
 }
 
 export interface RetryArchivalResponse {

@@ -6,7 +6,9 @@ import { classifyLog } from '@/app/lib/classifier'
 import { generateNFTBadgeSVG, generateSingleLogNFTBadgeSVG } from '@/app/lib/badgeGenerator'
 import ContributionHeatmap from '@/app/components/ContributionHeatmap'
 import NFTBadgeModal from '@/app/components/NFTBadgeModal'
+import BuilderBadge from '@/app/components/BuilderBadge'
 import { ArchivalState } from '@/app/lib/irys'
+import { computeBadgeSummary } from '@/app/lib/milestones'
 
 export interface LogItem {
   id: number
@@ -88,6 +90,35 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
     }
     return streak
   }, [initialLogs])
+
+  // Calculate longest streak ever achieved
+  const longestStreak = useMemo(() => {
+    if (initialLogs.length === 0) return 0
+    const logDates = [
+      ...new Set(initialLogs.map((l) => new Date(l.created_at).toDateString())),
+    ]
+      .map((d) => new Date(d))
+      .sort((a, b) => b.getTime() - a.getTime())
+
+    let longest = 1
+    let current = 1
+    for (let i = 0; i < logDates.length - 1; i++) {
+      const diff = Math.round((logDates[i].getTime() - logDates[i + 1].getTime()) / 86400000)
+      if (diff === 1) {
+        current++
+        longest = Math.max(longest, current)
+      } else {
+        current = 1
+      }
+    }
+    return Math.max(longest, current)
+  }, [initialLogs])
+
+  // Compute badge summary
+  const badgeSummary = useMemo(
+    () => computeBadgeSummary(initialLogs.length, streakCount, longestStreak),
+    [initialLogs.length, streakCount, longestStreak]
+  )
 
   // Skills Breakdown (Top 3)
   const topSkills = useMemo(() => {
@@ -292,6 +323,13 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           )}
         </div>
       </section>
+
+      {/* Builder Badge & Level Card */}
+      {initialLogs.length > 0 && (
+        <section style={{ marginBottom: '28px' }}>
+          <BuilderBadge badge={badgeSummary} />
+        </section>
+      )}
 
       {/* GitHub-Grade 365-Day Contribution Heatmap */}
       <section style={{ marginBottom: '32px' }}>
