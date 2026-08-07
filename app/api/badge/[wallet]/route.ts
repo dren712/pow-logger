@@ -6,12 +6,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ wallet: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ wallet: string }> }) {
   try {
-    const resolvedParams = await params
-    const wallet = resolvedParams?.wallet
+    const resolvedParams = await props.params
+    const rawWallet = resolvedParams?.wallet || ''
+    const wallet = rawWallet.replace(/\.(svg|png)$/i, '').trim()
 
-    if (!wallet || typeof wallet !== 'string' || wallet.trim().length < 32 || wallet.trim().length > 44) {
+    if (!wallet || wallet.length < 32 || wallet.length > 44) {
       return new NextResponse('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30"><rect width="200" height="30" fill="#222"/><text x="10" y="20" fill="#ff4444" font-family="monospace" font-size="12">Invalid Wallet</text></svg>', {
         headers: { 'Content-Type': 'image/svg+xml' },
       })
