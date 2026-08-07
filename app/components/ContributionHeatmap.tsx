@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 interface LogEntry {
   id: number
@@ -24,6 +24,14 @@ interface DayCell {
 export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) {
   const [hoveredDay, setHoveredDay] = useState<DayCell | null>(null)
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const { weeks, monthLabels, totalContributions } = useMemo(() => {
     const today = new Date()
@@ -107,6 +115,23 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
     }
   }, [logs])
 
+  const displayedWeeks = useMemo(() => {
+    return isMobile ? weeks.slice(-18) : weeks
+  }, [weeks, isMobile])
+
+  const displayedMonthLabels = useMemo(() => {
+    const labels: { name: string; colIndex: number }[] = []
+    let prevMonth = ''
+    displayedWeeks.forEach((w, wIdx) => {
+      const firstDayInWeek = w[0]
+      if (firstDayInWeek && firstDayInWeek.monthName !== prevMonth) {
+        labels.push({ name: firstDayInWeek.monthName, colIndex: wIdx })
+        prevMonth = firstDayInWeek.monthName
+      }
+    })
+    return labels
+  }, [displayedWeeks])
+
   const getCellColor = (count: number) => {
     if (count === 0) return { bg: '#161b22', border: '#21262d' }
     if (count === 1) return { bg: '#0e4429', border: 'rgba(0,255,136,0.2)' }
@@ -150,7 +175,7 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
               fontFamily: 'var(--font-geist-mono), monospace',
             }}
           >
-            {totalContributions} {totalContributions === 1 ? 'contribution' : 'contributions'} in the last year
+            {totalContributions} {totalContributions === 1 ? 'contribution' : 'contributions'} in the last {isMobile ? '4 months' : 'year'}
           </h3>
         </div>
 
@@ -177,10 +202,10 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
           maxWidth: '100%',
         }}
       >
-        <div style={{ minWidth: '720px' }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'center' : 'flex-start' }}>
           {/* Month Labels Row */}
-          <div style={{ display: 'flex', marginLeft: '32px', marginBottom: '6px', height: '16px', position: 'relative' }}>
-            {monthLabels.map((m) => (
+          <div style={{ display: 'flex', marginLeft: '32px', marginBottom: '6px', height: '16px', position: 'relative', width: `${displayedWeeks.length * 13}px` }}>
+            {displayedMonthLabels.map((m) => (
               <span
                 key={`${m.name}-${m.colIndex}`}
                 style={{
@@ -197,7 +222,7 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
             ))}
           </div>
 
-          {/* Grid Container (Day labels on left + 52-week columns) */}
+          {/* Grid Container (Day labels on left + week columns) */}
           <div style={{ display: 'flex', gap: '8px' }}>
             {/* Day of Week Labels (Mon, Wed, Fri) */}
             <div
@@ -223,12 +248,12 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
               <span></span>
             </div>
 
-            {/* Week Columns */}
+            {/* Weeks Columns */}
             <div style={{ display: 'flex', gap: '3px' }}>
-              {weeks.map((week, wIdx) => (
-                <div key={wIdx} style={{ display: 'grid', gridTemplateRows: 'repeat(7, 10px)', gap: '3px' }}>
+              {displayedWeeks.map((week, wIdx) => (
+                <div key={wIdx} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   {week.map((day) => {
-                    const styleInfo = getCellColor(day.count)
+                    const colorStyle = getCellColor(day.count)
                     return (
                       <div
                         key={day.dateStr}
@@ -238,9 +263,9 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
                           width: '10px',
                           height: '10px',
                           borderRadius: '2px',
-                          backgroundColor: styleInfo.bg,
-                          border: `1px solid ${styleInfo.border}`,
-                          boxShadow: styleInfo.shadow || 'none',
+                          background: colorStyle.bg,
+                          border: `1px solid ${colorStyle.border}`,
+                          boxShadow: colorStyle.shadow || 'none',
                           cursor: 'pointer',
                           transition: 'transform 0.1s ease',
                         }}
@@ -263,6 +288,7 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
               fontSize: '11px',
               color: '#7d8590',
               fontFamily: 'var(--font-geist-mono), monospace',
+              width: '100%',
             }}
           >
             <span style={{ fontSize: '10px', color: '#555' }}>
