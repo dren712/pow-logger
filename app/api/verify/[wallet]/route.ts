@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { computeBadgeSummary } from '@/app/lib/milestones'
+import { computeBadgeSummary, calculateStreak, calculateLongestStreak } from '@/app/lib/milestones'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,41 +35,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       )
     }
 
-    // Calculate consecutive streak
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const logDates = [
-      ...new Set(logs.map((l) => new Date(l.created_at).toDateString())),
-    ]
-      .map((d) => new Date(d))
-      .sort((a, b) => b.getTime() - a.getTime())
-
-    let streak = 0
-    let checkDate = new Date(today)
-    for (const date of logDates) {
-      const diff = Math.round((checkDate.getTime() - date.getTime()) / 86400000)
-      if (diff === 0 || diff === 1) {
-        streak++
-        checkDate = date
-      } else break
-    }
-
-    // Calculate longest streak ever achieved
-    let longestStreak = 0
-    let tempStreak = 1
-    for (let i = 0; i < logDates.length - 1; i++) {
-      const diff = Math.round((logDates[i].getTime() - logDates[i + 1].getTime()) / 86400000)
-      if (diff === 1) {
-        tempStreak++
-      } else {
-        longestStreak = Math.max(longestStreak, tempStreak)
-        tempStreak = 1
-      }
-    }
-    longestStreak = Math.max(longestStreak, tempStreak)
+    const createdAts = logs.map((l) => l.created_at)
+    const streak = calculateStreak(createdAts)
+    const longestStreak = calculateLongestStreak(createdAts)
 
     // Compute badge summary
-    const badgeSummary = computeBadgeSummary(logs.length, streak, longestStreak)
+    const badgeSummary = computeBadgeSummary(logs.length, streak, longestStreak, logs)
 
     // Aggregate skills, protocols, categories
     const skillCount: Record<string, number> = {}

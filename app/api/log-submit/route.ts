@@ -71,8 +71,12 @@ export async function POST(req: NextRequest) {
     const cleanGithubUrl = validateAndNormalizeUrl(githubUrl as string | null, 'github')
     const cleanEvidenceUrl = validateAndNormalizeUrl(evidenceUrl as string | null, 'evidence')
 
+    // Extract dynamic host header from incoming request
+    const reqHost = req.headers.get('host') || 'provn-sol.vercel.app'
+
     // 4. Cryptographic Ed25519 Signature Verification
     const expectedMessageText = buildCanonicalSubmitMessage({
+      domain: reqHost,
       walletAddress,
       timestamp,
       nonce: typeof nonce === 'string' ? nonce : 'legacy',
@@ -157,7 +161,46 @@ export async function POST(req: NextRequest) {
     // 7. Classify Log Content
     const classification = classifyLog(content.trim())
 
-    // 8. Upload Envelope to Arweave via Irys Node #1 (Before DB Save)
+    // 8. Atomic Database Reservation FIRST (Protects against EDoS race conditions)
+    let insertRes = await supabase
+      .from('logs')
+      .insert([{
+        content: content.trim(),
+        wallet_address: walletAddress,
+        signature,
+        created_at: timestamp,
+        skills: classification.skills,
+        protocols: classification.protocols,
+        category: classification.category,
+        evidence_url: cleanEvidenceUrl,
+        github_url: cleanGithubUrl,
+        archival_state: 'pending' as ArchivalState,
+      }])
+      .select()
+
+    if (insertRes.error) {
+      // Fallback: base schema
+      console.warn('Full schema insert warning. Falling back to base schema:', insertRes.error.message)
+      insertRes = await supabase
+        .from('logs')
+        .insert([{
+          content: content.trim(),
+          wallet_address: walletAddress,
+          signature,
+          created_at: timestamp,
+          archival_state: 'pending' as ArchivalState,
+        }])
+        .select()
+    }
+
+    if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
+      console.error('Supabase insert error:', insertRes.error)
+      return NextResponse.json({ error: `Failed to save log to database: ${insertRes.error?.message || 'Unknown database error'}` }, { status: 500 })
+    }
+
+    const savedLog = insertRes.data[0]
+
+    // 9. Upload Envelope to Arweave via Irys Node #1 (After DB reservation)
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
       version: 1,
@@ -187,46 +230,13 @@ export async function POST(req: NextRequest) {
     const irysTxId = uploadRes.irysTxId || null
     const archivalState: ArchivalState = uploadRes.success && irysTxId ? 'archived' : 'pending'
 
-    // 9. Single Atomic Database Save (Supabase) WITH irys_tx_id INCLUDED ATOMICALLY!
-    let insertRes = await supabase
-      .from('logs')
-      .insert([{
-        content: content.trim(),
-        wallet_address: walletAddress,
-        signature,
-        created_at: timestamp,
-        skills: classification.skills,
-        protocols: classification.protocols,
-        category: classification.category,
-        evidence_url: cleanEvidenceUrl,
-        github_url: cleanGithubUrl,
-        irys_tx_id: irysTxId,
-        archival_state: archivalState,
-      }])
-      .select()
-
-    // Fallback: If live DB schema does not have new columns yet, insert with basic schema + irys_tx_id
-    if (insertRes.error) {
-      console.warn('Full schema insert warning. Falling back to base schema:', insertRes.error.message)
-      insertRes = await supabase
+    // Update log row with Arweave receipt if successful
+    if (irysTxId) {
+      await supabase
         .from('logs')
-        .insert([{
-          content: content.trim(),
-          wallet_address: walletAddress,
-          signature,
-          created_at: timestamp,
-          irys_tx_id: irysTxId,
-          archival_state: archivalState,
-        }])
-        .select()
+        .update({ irys_tx_id: irysTxId, archival_state: archivalState })
+        .eq('id', savedLog.id)
     }
-
-    if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
-      console.error('Supabase insert error:', insertRes.error)
-      return NextResponse.json({ error: `Failed to save log to database: ${insertRes.error?.message || 'Unknown database error'}` }, { status: 500 })
-    }
-
-    const savedLog = insertRes.data[0]
 
     // ─── Milestone Detection ─────────────────────────────────────────────
     // Compute the builder's updated streak after this new log submission

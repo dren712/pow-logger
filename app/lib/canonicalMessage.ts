@@ -57,7 +57,8 @@ export function validateAndNormalizeUrl(
  * Cryptographically binds content AND normalized evidence URLs.
  */
 export function buildCanonicalSubmitMessage(params: CanonicalSubmitParams): string {
-  const domain = params.domain || 'provn-sol.vercel.app'
+  const defaultDomain = typeof window !== 'undefined' && window.location?.host ? window.location.host : 'provn-sol.vercel.app'
+  const domain = params.domain || defaultDomain
   const version = params.version || 1
   const cleanContent = params.content.trim()
   const cleanGithubUrl = validateAndNormalizeUrl(params.githubUrl, 'github') || 'none'

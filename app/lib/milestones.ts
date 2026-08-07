@@ -109,6 +109,65 @@ export function checkNewMilestoneReached(previousStreak: number, newStreak: numb
   return null
 }
 
+/**
+ * Calculates current active streak from an array of ISO date strings or Date objects.
+ * Single source of truth for streak calculation across client and server routes.
+ */
+export function calculateStreak(createdAts: (string | Date)[]): number {
+  if (!createdAts || createdAts.length === 0) return 0
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const logDates = [
+    ...new Set(createdAts.map((d) => new Date(d).toDateString())),
+  ]
+    .map((d) => new Date(d))
+    .sort((a, b) => b.getTime() - a.getTime())
+
+  let streak = 0
+  let checkDate = new Date(today)
+
+  for (const date of logDates) {
+    const diff = Math.round((checkDate.getTime() - date.getTime()) / 86400000)
+    if (diff === 0 || diff === 1) {
+      streak++
+      checkDate = date
+    } else break
+  }
+
+  return streak
+}
+
+/**
+ * Calculates longest streak ever achieved from an array of ISO date strings or Date objects.
+ * Single source of truth across client and server.
+ */
+export function calculateLongestStreak(createdAts: (string | Date)[]): number {
+  if (!createdAts || createdAts.length === 0) return 0
+
+  const logDates = [
+    ...new Set(createdAts.map((d) => new Date(d).toDateString())),
+  ]
+    .map((d) => new Date(d))
+    .sort((a, b) => b.getTime() - a.getTime())
+
+  let longest = 1
+  let temp = 1
+
+  for (let i = 0; i < logDates.length - 1; i++) {
+    const diff = Math.round((logDates[i].getTime() - logDates[i + 1].getTime()) / 86400000)
+    if (diff === 1) {
+      temp++
+      longest = Math.max(longest, temp)
+    } else {
+      temp = 1
+    }
+  }
+
+  return Math.max(longest, temp)
+}
+
 // ─── Tier 3: LeetCode / Codeforces Style Skill & Specialization Badges ─────────
 
 export interface SkillBadge {
@@ -118,7 +177,7 @@ export interface SkillBadge {
   color: string
   category: 'skill' | 'quality' | 'volume'
   description: string
-  checkUnlocked: (logs: Array<{ skills?: string[]; category?: string; evidence_url?: string; github_url?: string; irys_tx_id?: string }>) => boolean
+  checkUnlocked: (logs: Array<{ skills?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>) => boolean
 }
 
 export const SKILL_BADGES: SkillBadge[] = [
@@ -180,7 +239,7 @@ export const SKILL_BADGES: SkillBadge[] = [
 ]
 
 export function getEarnedSkillBadges(
-  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string; github_url?: string; irys_tx_id?: string }>
+  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>
 ): SkillBadge[] {
   if (!logs || !Array.isArray(logs)) return []
   return SKILL_BADGES.filter((b) => b.checkUnlocked(logs))
@@ -204,7 +263,7 @@ export function computeBadgeSummary(
   totalLogs: number,
   currentStreak: number,
   longestStreak: number,
-  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string; github_url?: string; irys_tx_id?: string }> = []
+  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }> = []
 ): BadgeSummary {
   return {
     level: getBuilderLevel(totalLogs),
