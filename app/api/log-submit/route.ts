@@ -27,7 +27,6 @@ const decodeBase58 = (str: string): Uint8Array => {
 
 import { classifyLog } from '@/app/lib/classifier'
 import { getBuilderLevel, checkNewMilestoneReached } from '@/app/lib/milestones'
-import { getWalletDailyLimit } from '@/app/lib/quota'
 
 export async function POST(req: NextRequest) {
   try {
@@ -130,10 +129,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const maxDailyLogs = getWalletDailyLimit(walletAddress)
-    if (todayCount >= maxDailyLogs) {
+    if (todayCount >= 3) {
       return NextResponse.json(
-        { error: `Daily log quota reached (${todayCount}/${maxDailyLogs} logs submitted today). Come back tomorrow 🗿` },
+        { error: 'Daily log quota reached (3/3 logs submitted today). Come back tomorrow 🗿' },
         { status: 429 }
       )
     }

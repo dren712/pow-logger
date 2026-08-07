@@ -11,7 +11,6 @@ import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
 import NFTBadgeModal from './components/NFTBadgeModal'
 import BuilderBadge from './components/BuilderBadge'
 import { computeBadgeSummary } from './lib/milestones'
-import { getWalletDailyLimit } from './lib/quota'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
@@ -152,18 +151,13 @@ function LoggerApp() {
     return streak
   }, [logs])
 
-  // Calculate wallet daily quota limit
-  const maxDailyQuota = useMemo(() => {
-    return publicKey ? getWalletDailyLimit(publicKey.toBase58()) : 3
-  }, [publicKey])
-
   // Calculate today's log count
   const todayLogsCount = useMemo(() => {
     const todayStr = new Date().toDateString()
     return logs.filter((l) => new Date(l.created_at).toDateString() === todayStr).length
   }, [logs])
 
-  const isDailyLimitReached = todayLogsCount >= maxDailyQuota
+  const isDailyLimitReached = todayLogsCount >= 3
 
   // Calculate longest streak from logs history
   const longestStreak = useMemo(() => {
@@ -547,7 +541,7 @@ function LoggerApp() {
             Today&apos;s Quota
           </div>
           <div style={{ color: isDailyLimitReached ? '#ff4444' : '#00e5ff', fontSize: '22px', fontWeight: 800, marginTop: '4px' }}>
-            {connected ? todayLogsCount : 0}/{maxDailyQuota} {isDailyLimitReached ? '🔒' : '⚡'}
+            {connected ? todayLogsCount : 0}/3 {isDailyLimitReached ? '🔒' : '⚡'}
           </div>
         </div>
       </div>
