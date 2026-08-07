@@ -1,0 +1,115 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { computeBadgeSummary } from '@/app/lib/milestones'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+export async function GET(req: NextRequest, props: { params: Promise<{ wallet: string }> }) {
+  try {
+    const params = await props.params
+    const wallet = params.wallet
+
+    if (!wallet || typeof wallet !== 'string' || wallet.trim().length < 32 || wallet.trim().length > 44) {
+      return new NextResponse('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30"><rect width="200" height="30" fill="#222"/><text x="10" y="20" fill="#ff4444" font-family="monospace" font-size="12">Invalid Wallet</text></svg>', {
+        headers: { 'Content-Type': 'image/svg+xml' },
+      })
+    }
+
+    const { data: logs } = await supabase
+      .from('logs')
+      .select('*')
+      .eq('wallet_address', wallet)
+      .order('created_at', { ascending: false })
+
+    const logList = logs || []
+    const totalLogs = logList.length
+
+    // Calculate streak
+    let streak = 0
+    if (logList.length > 0) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const logDates = [
+        ...new Set(logList.map((l) => new Date(l.created_at).toDateString())),
+      ]
+        .map((d) => new Date(d))
+        .sort((a, b) => b.getTime() - a.getTime())
+
+      let checkDate = new Date(today)
+      for (const date of logDates) {
+        const diff = Math.round((checkDate.getTime() - date.getTime()) / 86400000)
+        if (diff === 0 || diff === 1) {
+          streak++
+          checkDate = date
+        } else break
+      }
+    }
+
+    const badgeSummary = computeBadgeSummary(totalLogs, streak, streak, logList)
+    const level = badgeSummary.level
+    const shortWallet = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
+
+    // Build responsive Shields.io style SVG badge
+    const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="110" viewBox="0 0 460 110" fill="none">
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="460" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#090b10" />
+      <stop offset="1" stop-color="#121620" />
+    </linearGradient>
+    <linearGradient id="border-grad" x1="0" y1="0" x2="460" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${level.color}" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#00e5ff" stop-opacity="0.2"/>
+    </linearGradient>
+    <style>
+      .text-title { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-weight: 800; font-size: 13px; fill: ${level.color}; }
+      .text-sub { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-size: 11px; fill: #888888; }
+      .text-val { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-weight: 700; font-size: 13px; fill: #ffffff; }
+    </style>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="460" height="110" rx="10" fill="url(#bg-grad)" stroke="url(#border-grad)" stroke-width="1.5" />
+
+  <!-- Protocol Badge Tag -->
+  <rect x="360" y="12" width="86" height="20" rx="10" fill="rgba(0, 255, 136, 0.1)" stroke="rgba(0, 255, 136, 0.3)" stroke-width="1" />
+  <text x="370" y="26" font-family="monospace" font-size="10" font-weight="700" fill="#00ff88">PROVN 🗿</text>
+
+  <!-- Builder Level Badge Icon -->
+  <rect x="16" y="16" width="46" height="46" rx="10" fill="${level.glow}" stroke="${level.color}" stroke-width="1.5" />
+  <text x="28" y="47" font-size="24">${level.emoji}</text>
+
+  <!-- Level & Wallet Title -->
+  <text x="74" y="32" class="text-title">LVL ${level.level} • ${level.title}</text>
+  <text x="74" y="50" class="text-sub">Builder: ${shortWallet}</text>
+
+  <!-- Stats Grid -->
+  <line x1="16" y1="74" x2="444" y2="74" stroke="#1c2230" stroke-width="1" />
+
+  <text x="20" y="94" class="text-sub">Streak:</text>
+  <text x="66" y="94" class="text-val" fill="#ffb800">🔥 ${streak}d</text>
+
+  <text x="140" y="94" class="text-sub">Total Logs:</text>
+  <text x="210" y="94" class="text-val" fill="#00ff88">📦 ${totalLogs}</text>
+
+  <text x="285" y="94" class="text-sub">Badges:</text>
+  <text x="338" y="94" class="text-val" fill="#ab9ff2">🏆 ${badgeSummary.earnedSkillBadges.length + badgeSummary.earnedMilestones.length}</text>
+</svg>
+`.trim()
+
+    return new NextResponse(svg, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=300, s-maxage=600',
+      },
+    })
+  } catch (error) {
+    console.error('Badge SVG API Error:', error)
+    return new NextResponse('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30"><rect width="200" height="30" fill="#222"/><text x="10" y="20" fill="#ff4444" font-family="monospace" font-size="12">Server Error</text></svg>', {
+      headers: { 'Content-Type': 'image/svg+xml' },
+    })
+  }
+}

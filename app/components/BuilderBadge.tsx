@@ -204,6 +204,48 @@ export default function BuilderBadge({ badge, compact = false }: BuilderBadgePro
           </div>
         )}
       </div>
+
+      {/* LeetCode / Codeforces Style Skill Badges */}
+      <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #161a24' }}>
+        <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+          Skill & Specialization Badges
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {([
+            { id: 'rust_anchor', title: 'Anchor Specialist', emoji: '⚓', color: '#ff0055', desc: '3+ Solana/Anchor logs' },
+            { id: 'security_auditor', title: 'Security Auditor', emoji: '🛡️', color: '#ff4444', desc: '2+ Security logs' },
+            { id: 'open_source', title: 'Open Source Builder', emoji: '🐙', color: '#ab9ff2', desc: '3+ Verified GitHub links' },
+            { id: 'permanent_archivist', title: 'Arweave Archivist', emoji: '📜', color: '#00e5ff', desc: '5+ Permanent Arweave logs' },
+            { id: 'century_builder', title: 'Century Club', emoji: '💯', color: '#ff00ff', desc: '100+ Total logs' },
+          ] as { id: string; title: string; emoji: string; color: string; desc: string }[]).map((sb) => {
+            const earned = Array.isArray(badge.earnedSkillBadges) && badge.earnedSkillBadges.some((esb) => esb.id === sb.id)
+            return (
+              <div
+                key={sb.id}
+                title={earned ? `${sb.title} — Unlocked!` : `${sb.title} — Locked (${sb.desc})`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 10px',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  background: earned ? `${sb.color}15` : '#0a0c10',
+                  border: `1px solid ${earned ? sb.color : '#1c2230'}`,
+                  color: earned ? sb.color : '#555',
+                  opacity: earned ? 1 : 0.4,
+                  transition: 'all 0.3s ease',
+                  boxShadow: earned ? `0 0 10px ${sb.color}20` : 'none',
+                }}
+              >
+                <span>{sb.emoji}</span>
+                <span>{sb.title}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

@@ -109,6 +109,83 @@ export function checkNewMilestoneReached(previousStreak: number, newStreak: numb
   return null
 }
 
+// ─── Tier 3: LeetCode / Codeforces Style Skill & Specialization Badges ─────────
+
+export interface SkillBadge {
+  id: string
+  title: string
+  emoji: string
+  color: string
+  category: 'skill' | 'quality' | 'volume'
+  description: string
+  checkUnlocked: (logs: Array<{ skills?: string[]; category?: string; evidence_url?: string; github_url?: string; irys_tx_id?: string }>) => boolean
+}
+
+export const SKILL_BADGES: SkillBadge[] = [
+  {
+    id: 'rust_anchor',
+    title: 'Anchor Specialist',
+    emoji: '⚓',
+    color: '#ff0055',
+    category: 'skill',
+    description: 'Logged 3+ Solana Smart Contract / Anchor work logs',
+    checkUnlocked: (logs) =>
+      logs.filter((l) =>
+        (l.skills || []).some(
+          (s) => s.toLowerCase().includes('anchor') || s.toLowerCase().includes('rust') || s.toLowerCase().includes('solana')
+        )
+      ).length >= 3,
+  },
+  {
+    id: 'security_auditor',
+    title: 'Security Auditor',
+    emoji: '🛡️',
+    color: '#ff4444',
+    category: 'skill',
+    description: 'Logged 2+ Security or Authentication work logs',
+    checkUnlocked: (logs) =>
+      logs.filter(
+        (l) =>
+          (l.category || '').toLowerCase().includes('security') ||
+          (l.skills || []).some((s) => s.toLowerCase().includes('security') || s.toLowerCase().includes('auth'))
+      ).length >= 2,
+  },
+  {
+    id: 'open_source',
+    title: 'Open Source Builder',
+    emoji: '🐙',
+    color: '#ab9ff2',
+    category: 'quality',
+    description: 'Attached 3+ verified GitHub PR/Commit links',
+    checkUnlocked: (logs) => logs.filter((l) => l.github_url && l.github_url.includes('github.com')).length >= 3,
+  },
+  {
+    id: 'permanent_archivist',
+    title: 'Arweave Archivist',
+    emoji: '📜',
+    color: '#00e5ff',
+    category: 'quality',
+    description: 'Archived 5+ logs permanently to Arweave',
+    checkUnlocked: (logs) => logs.filter((l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_')).length >= 5,
+  },
+  {
+    id: 'century_builder',
+    title: 'Century Club',
+    emoji: '💯',
+    color: '#ff00ff',
+    category: 'volume',
+    description: 'Submitted 100+ verified proof logs',
+    checkUnlocked: (logs) => logs.length >= 100,
+  },
+]
+
+export function getEarnedSkillBadges(
+  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string; github_url?: string; irys_tx_id?: string }>
+): SkillBadge[] {
+  if (!logs || !Array.isArray(logs)) return []
+  return SKILL_BADGES.filter((b) => b.checkUnlocked(logs))
+}
+
 // ─── Combined Badge Summary ──────────────────────────────────────────────────
 
 export interface BadgeSummary {
@@ -118,11 +195,17 @@ export interface BadgeSummary {
   currentStreak: number
   longestStreak: number
   earnedMilestones: StreakMilestone[]
+  earnedSkillBadges: SkillBadge[]
   nextMilestone: { milestone: StreakMilestone; daysRemaining: number } | null
   totalLogs: number
 }
 
-export function computeBadgeSummary(totalLogs: number, currentStreak: number, longestStreak: number): BadgeSummary {
+export function computeBadgeSummary(
+  totalLogs: number,
+  currentStreak: number,
+  longestStreak: number,
+  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string; github_url?: string; irys_tx_id?: string }> = []
+): BadgeSummary {
   return {
     level: getBuilderLevel(totalLogs),
     nextLevel: getNextLevel(totalLogs),
@@ -130,6 +213,7 @@ export function computeBadgeSummary(totalLogs: number, currentStreak: number, lo
     currentStreak,
     longestStreak,
     earnedMilestones: getEarnedMilestones(currentStreak, longestStreak),
+    earnedSkillBadges: getEarnedSkillBadges(logs),
     nextMilestone: getNextMilestone(currentStreak),
     totalLogs,
   }
