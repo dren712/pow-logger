@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { computeBadgeSummary } from '@/app/lib/milestones'
+import { computeBadgeSummary, calculateStreak, calculateLongestStreak } from '@/app/lib/milestones'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-export async function GET(req: NextRequest, props: { params: Promise<{ wallet: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ wallet: string }> }) {
   try {
-    const params = await props.params
-    const wallet = params.wallet
+    const resolvedParams = await params
+    const wallet = resolvedParams?.wallet
 
     if (!wallet || typeof wallet !== 'string' || wallet.trim().length < 32 || wallet.trim().length > 44) {
       return new NextResponse('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30"><rect width="200" height="30" fill="#222"/><text x="10" y="20" fill="#ff4444" font-family="monospace" font-size="12">Invalid Wallet</text></svg>', {
@@ -27,28 +26,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const logList = logs || []
     const totalLogs = logList.length
 
-    // Calculate streak
-    let streak = 0
-    if (logList.length > 0) {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const logDates = [
-        ...new Set(logList.map((l) => new Date(l.created_at).toDateString())),
-      ]
-        .map((d) => new Date(d))
-        .sort((a, b) => b.getTime() - a.getTime())
+    const createdAts = logList.map((l) => l.created_at)
+    const streak = calculateStreak(createdAts)
+    const longestStreak = calculateLongestStreak(createdAts)
 
-      let checkDate = new Date(today)
-      for (const date of logDates) {
-        const diff = Math.round((checkDate.getTime() - date.getTime()) / 86400000)
-        if (diff === 0 || diff === 1) {
-          streak++
-          checkDate = date
-        } else break
-      }
-    }
-
-    const badgeSummary = computeBadgeSummary(totalLogs, streak, streak, logList)
+    const badgeSummary = computeBadgeSummary(totalLogs, streak, longestStreak, logList)
     const level = badgeSummary.level
     const shortWallet = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
 
@@ -106,9 +88,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         'Cache-Control': 'public, max-age=300, s-maxage=600',
       },
     })
-  } catch (error) {
-    console.error('Badge SVG API Error:', error)
-    return new NextResponse('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30"><rect width="200" height="30" fill="#222"/><text x="10" y="20" fill="#ff4444" font-family="monospace" font-size="12">Server Error</text></svg>', {
+  } catch (error: unknown) {
+    const errDetail = error instanceof Error ? error.message : String(error)
+    console.error('Badge SVG API Error:', errDetail)
+    return new NextResponse(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="40"><rect width="400" height="40" fill="#222"/><text x="10" y="25" fill="#ff4444" font-family="monospace" font-size="12">Badge Error: ${errDetail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text></svg>`, {
       headers: { 'Content-Type': 'image/svg+xml' },
     })
   }

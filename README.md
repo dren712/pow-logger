@@ -18,12 +18,12 @@
 Developers can embed their real-time PROVN reputation badge directly inside any GitHub `README.md`:
 
 ```markdown
-[![PROVN Reputation](https://provn-sol.vercel.app/api/badge/YOUR_SOLANA_WALLET_ADDRESS.svg)](https://provn-sol.vercel.app/u/YOUR_SOLANA_WALLET_ADDRESS)
+[![PROVN Reputation](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg)](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
 ```
 
 **Live SVG Output Example:**
 
-![PROVN Live Badge](https://provn-sol.vercel.app/api/badge/FqDWkZazJro7sQ4c5omrbyqzuWipC7QEPdjgCEp3ucAs.svg)
+![PROVN Live Badge](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg)
 
 ---
 
