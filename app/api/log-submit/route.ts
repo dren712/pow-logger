@@ -26,7 +26,7 @@ const decodeBase58 = (str: string): Uint8Array => {
 }
 
 import { classifyLog } from '@/app/lib/classifier'
-import { getBuilderLevel, checkNewMilestoneReached } from '@/app/lib/milestones'
+import { getBuilderLevel, checkNewMilestoneReached, calculateStreak } from '@/app/lib/milestones'
 
 export async function POST(req: NextRequest) {
   try {
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Atomic Daily Log Quota Check (via Postgres SECURITY DEFINER RPC)
     const startOfDay = new Date()
-    startOfDay.setHours(0, 0, 0, 0)
+    startOfDay.setUTCHours(0, 0, 0, 0)
 
     let todayCount = 0
     const { data: rpcCount, error: rpcError } = await supabase
@@ -239,39 +239,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Milestone Detection ─────────────────────────────────────────────
-    // Compute the builder's updated streak after this new log submission
     const { data: allLogs } = await supabase
       .from('logs')
       .select('created_at')
       .eq('wallet_address', walletAddress)
       .order('created_at', { ascending: false })
 
-    let newStreak = 1
-    let previousStreak = 0
-    if (allLogs && allLogs.length > 1) {
-      const logDates = [
-        ...new Set(allLogs.map((l: { created_at: string }) => new Date(l.created_at).toDateString())),
-      ]
-        .map((d: string) => new Date(d))
-        .sort((a: Date, b: Date) => b.getTime() - a.getTime())
-
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      let checkDate = new Date(today)
-      newStreak = 0
-      for (const date of logDates) {
-        const diff = Math.round((checkDate.getTime() - date.getTime()) / 86400000)
-        if (diff === 0 || diff === 1) {
-          newStreak++
-          checkDate = date
-        } else break
-      }
-      // Previous streak is current minus today's contribution
-      previousStreak = Math.max(0, newStreak - 1)
-    }
+    const createdAts = (allLogs || []).map((l: { created_at: string }) => l.created_at)
+    const newStreak = calculateStreak(createdAts)
+    const previousStreak = Math.max(0, newStreak - 1)
 
     const newMilestone = checkNewMilestoneReached(previousStreak, newStreak)
-    const builderLevel = getBuilderLevel(allLogs ? allLogs.length : 1)
+    const builderLevel = getBuilderLevel(createdAts.length)
 
     return NextResponse.json({
       success: true,
