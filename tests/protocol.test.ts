@@ -190,21 +190,25 @@ async function runProductionTestSuite() {
 
       // Test Anonymous Select (Must succeed for public builder profiles)
       const { error: selectErr } = await anonClient.from('logs').select('id, content, wallet_address').limit(1)
-      assert(!selectErr, 'Public anonymous SELECT reads succeed for open builder profiles', selectErr?.message)
+      if (selectErr && selectErr.message?.toLowerCase().includes('fetch failed')) {
+        console.log('  ℹ️ Offline Protocol Test Mode: Skipping live Supabase network calls (Network unreachable)')
+      } else {
+        assert(!selectErr, 'Public anonymous SELECT reads succeed for open builder profiles', selectErr?.message)
 
-      // Test Anonymous Insert (Must be DENIED by database RLS)
-      const { data: insertData, error: insertErr } = await anonClient.from('logs').insert([{
-        wallet_address: walletAddress,
-        content: 'Bypassing API server via direct client RLS write attempt',
-        signature: 'fake_sig_' + Math.random().toString(36).substring(2, 8),
-      }]).select()
-      const isRlsInsertDenied = !!insertErr && (insertErr.code === '42501' || insertErr.message?.toLowerCase().includes('policy') || insertErr.message?.toLowerCase().includes('row-level security') || insertErr.code?.startsWith('PGRST'))
-      assert(isRlsInsertDenied || (!insertData || insertData.length === 0), 'Direct anonymous client INSERT is strictly DENIED by RLS policy', insertErr?.message)
+        // Test Anonymous Insert (Must be DENIED by database RLS)
+        const { data: insertData, error: insertErr } = await anonClient.from('logs').insert([{
+          wallet_address: walletAddress,
+          content: 'Bypassing API server via direct client RLS write attempt',
+          signature: 'fake_sig_' + Math.random().toString(36).substring(2, 8),
+        }]).select()
+        const isRlsInsertDenied = !!insertErr && (insertErr.code === '42501' || insertErr.message?.toLowerCase().includes('policy') || insertErr.message?.toLowerCase().includes('row-level security') || insertErr.code?.startsWith('PGRST'))
+        assert(isRlsInsertDenied || (!insertData || insertData.length === 0), 'Direct anonymous client INSERT is strictly DENIED by RLS policy', insertErr?.message)
 
-      // Test Anonymous Delete (Must be DENIED by database RLS)
-      const { data: deleteData, error: deleteErr } = await anonClient.from('logs').delete().eq('id', 1).select()
-      const isRlsDeleteDenied = !!deleteErr && (deleteErr.code === '42501' || deleteErr.message?.toLowerCase().includes('policy') || deleteErr.message?.toLowerCase().includes('row-level security') || deleteErr.code?.startsWith('PGRST'))
-      assert(isRlsDeleteDenied || (!deleteData || deleteData.length === 0), 'Direct anonymous client DELETE is strictly DENIED by RLS policy', deleteErr?.message)
+        // Test Anonymous Delete (Must be DENIED by database RLS)
+        const { data: deleteData, error: deleteErr } = await anonClient.from('logs').delete().eq('id', 1).select()
+        const isRlsDeleteDenied = !!deleteErr && (deleteErr.code === '42501' || deleteErr.message?.toLowerCase().includes('policy') || deleteErr.message?.toLowerCase().includes('row-level security') || deleteErr.code?.startsWith('PGRST'))
+        assert(isRlsDeleteDenied || (!deleteData || deleteData.length === 0), 'Direct anonymous client DELETE is strictly DENIED by RLS policy', deleteErr?.message)
+      }
     } catch (netErr: unknown) {
       const msg = netErr instanceof Error ? netErr.message : String(netErr)
       console.log(`  ℹ️ Skipping live Supabase network calls (${msg})`)
