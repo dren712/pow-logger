@@ -110,62 +110,94 @@ export function checkNewMilestoneReached(previousStreak: number, newStreak: numb
 }
 
 /**
+ * Normalizes a Date or ISO string to a UTC Date object at midnight UTC (00:00:00.000).
+ */
+export function toUTCDay(dateInput: string | Date): Date {
+  const d = new Date(dateInput)
+  if (isNaN(d.getTime())) return new Date(0)
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+}
+
+/**
  * Calculates current active streak from an array of ISO date strings or Date objects.
- * Single source of truth for streak calculation across client and server routes.
+ * Single source of truth for streak calculation, globally standardized to UTC midnight.
  */
 export function calculateStreak(createdAts: (string | Date)[]): number {
   if (!createdAts || createdAts.length === 0) return 0
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = toUTCDay(new Date())
 
-  const logDates = [
-    ...new Set(createdAts.map((d) => new Date(d).toDateString())),
-  ]
-    .map((d) => new Date(d))
-    .sort((a, b) => b.getTime() - a.getTime())
+  // Extract unique UTC days sorted in descending order
+  const uniqueUtcDays = Array.from(
+    new Set(
+      createdAts
+        .map((d) => toUTCDay(d).getTime())
+        .filter((t) => t > 0)
+    )
+  ).sort((a, b) => b - a)
 
-  let streak = 0
-  let checkDate = new Date(today)
+  if (uniqueUtcDays.length === 0) return 0
 
-  for (const date of logDates) {
-    const diff = Math.round((checkDate.getTime() - date.getTime()) / 86400000)
-    if (diff === 0 || diff === 1) {
+  // If most recent log is older than yesterday UTC, streak is broken
+  const mostRecent = uniqueUtcDays[0]
+  const daysDiffFromToday = Math.round((today.getTime() - mostRecent) / 86400000)
+  if (daysDiffFromToday > 1) {
+    return 0 // Streak broken
+  }
+
+  let streak = 1
+  let checkTime = mostRecent
+
+  for (let i = 1; i < uniqueUtcDays.length; i++) {
+    const dayTime = uniqueUtcDays[i]
+    const diff = Math.round((checkTime - dayTime) / 86400000)
+    if (diff === 0) {
+      continue
+    } else if (diff === 1) {
       streak++
-      checkDate = date
-    } else break
+      checkTime = dayTime
+    } else {
+      break
+    }
   }
 
   return streak
 }
 
 /**
- * Calculates longest streak ever achieved from an array of ISO date strings or Date objects.
- * Single source of truth across client and server.
+ * Calculates the longest streak achieved in days.
+ * Standardized on global UTC midnight boundaries.
  */
 export function calculateLongestStreak(createdAts: (string | Date)[]): number {
   if (!createdAts || createdAts.length === 0) return 0
 
-  const logDates = [
-    ...new Set(createdAts.map((d) => new Date(d).toDateString())),
-  ]
-    .map((d) => new Date(d))
-    .sort((a, b) => b.getTime() - a.getTime())
+  const uniqueUtcDays = Array.from(
+    new Set(
+      createdAts
+        .map((d) => toUTCDay(d).getTime())
+        .filter((t) => t > 0)
+    )
+  ).sort((a, b) => a - b) // Ascending order
 
-  let longest = 1
-  let temp = 1
+  if (uniqueUtcDays.length === 0) return 0
 
-  for (let i = 0; i < logDates.length - 1; i++) {
-    const diff = Math.round((logDates[i].getTime() - logDates[i + 1].getTime()) / 86400000)
-    if (diff === 1) {
-      temp++
-      longest = Math.max(longest, temp)
-    } else {
-      temp = 1
+  let maxStreak = 1
+  let currentStreak = 1
+
+  for (let i = 1; i < uniqueUtcDays.length; i++) {
+    const prev = uniqueUtcDays[i - 1]
+    const curr = uniqueUtcDays[i]
+    const diffDays = Math.round((curr - prev) / 86400000)
+
+    if (diffDays === 1) {
+      currentStreak++
+      if (currentStreak > maxStreak) maxStreak = currentStreak
+    } else if (diffDays > 1) {
+      currentStreak = 1
     }
   }
 
-  return Math.max(longest, temp)
+  return maxStreak
 }
 
 // ─── Tier 3: LeetCode / Codeforces Style Skill & Specialization Badges ─────────

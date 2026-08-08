@@ -10,8 +10,17 @@ const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+import { checkRateLimit } from '@/app/lib/rateLimiter'
+
 export async function POST(req: NextRequest) {
   try {
+    // 0. Pre-verification Rate Limiting (IP & Wallet)
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+    const ipLimit = checkRateLimit(clientIp, 'ip', 10, 900000)
+    if (!ipLimit.allowed) {
+      return NextResponse.json({ error: ipLimit.error }, { status: 429 })
+    }
+
     let body: Record<string, unknown>
     try {
       body = await req.json()
@@ -20,6 +29,13 @@ export async function POST(req: NextRequest) {
     }
 
     const { logId, walletAddress, timestamp, nonce, signature } = body
+
+    if (walletAddress && typeof walletAddress === 'string') {
+      const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
+      if (!walletLimit.allowed) {
+        return NextResponse.json({ error: walletLimit.error }, { status: 429 })
+      }
+    }
 
     // 1. Input Validation
     if (!logId || typeof logId !== 'number') {

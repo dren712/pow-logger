@@ -22,6 +22,7 @@ import {
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
+import { calculateStreak } from '../app/lib/milestones'
 
 import fs from 'fs'
 import path from 'path'
@@ -81,6 +82,14 @@ async function runProductionTestSuite() {
   const dummyKeyArr = JSON.stringify(Array.from({ length: 64 }, (_, i) => i))
   const parsedKeyBytes = parseIrysPrivateKey(dummyKeyArr)
   assert(parsedKeyBytes instanceof Uint8Array && parsedKeyBytes.length === 64, 'Deterministic 64-byte Irys secret key parsed correctly')
+
+  const sampleDates = [
+    new Date(Date.now() - 2 * 86400000).toISOString(),
+    new Date(Date.now() - 1 * 86400000).toISOString(),
+    new Date().toISOString(),
+  ]
+  const currentStreakCount = calculateStreak(sampleDates)
+  assert(currentStreakCount === 3, 'Consecutive 3-day UTC streak calculated correctly')
 
   // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
   console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')

@@ -193,7 +193,7 @@ npm run dev
 ### Testing & Verification
 
 ```bash
-# Protocol test suite (13 tests)
+# Protocol test suite (20 tests)
 npm test
 
 # TypeScript type check
@@ -202,6 +202,14 @@ npx tsc --noEmit
 # Production build
 npm run build
 ```
+
+---
+
+## ⚠️ Known Limitations & Technical Trade-Offs
+
+1. **cNFT Minting Status**: Metaplex compressed NFT (cNFT) minting is fully implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts) but is currently feature-flagged off (`NEXT_PUBLIC_CNFT_ENABLED=false`) until Mainnet Merkle Tree deployment in Phase 4.
+2. **Serverless In-Memory Rate Limiting**: The current rate limiter uses an in-memory token bucket (`app/lib/rateLimiter.ts`), which enforces per-lambda instance quotas. Multi-region scaling to Upstash Redis (`@upstash/ratelimit`) is scheduled for Phase 3.
+3. **UTC Day Boundary Standard**: Daily work logs and streaks are calculated strictly against UTC midnight boundaries (`00:00:00.000 UTC`), preventing timezone manipulation.
 
 ---
 

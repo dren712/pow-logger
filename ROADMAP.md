@@ -62,4 +62,15 @@
 
 ---
 
+## 🏛️ Superteam India Microgrant Execution & Ask Breakdown ($4,500 USDG)
+
+| Milestone | Deliverable / Objective | Funding Target |
+| :--- | :--- | :--- |
+| **Milestone 1** | Onboard 10 Active Superteam India Builders (7-day streaks + GitHub embeds) | **$1,500 USDG** |
+| **Milestone 2** | Solana Mainnet Metaplex Merkle Tree Deployment & cNFT Minting Engine | **$1,500 USDG** |
+| **Milestone 3** | `@provn/sdk` TypeScript Client & Superteam Earn Bounty Gating Webhooks | **$1,500 USDG** |
+| **TOTAL ASK** | **3-Phase Executable Roadmap** | **$4,500 USDG** |
+
+---
+
 *For technical details, refer to the [PROVN Protocol Litepaper](LITEPAPER.md).*
