@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import bs58 from 'bs58'
-import { buildCanonicalRetryMessage } from '@/app/lib/canonicalMessage'
+import { buildCanonicalRetryMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
 
 export const maxDuration = 30 // Allow up to 30s execution for Irys Arweave upload
 
@@ -10,13 +9,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
-
-const decodeBase58 = (str: string): Uint8Array => {
-  const bs58Obj = bs58 as unknown as { decode?: (s: string) => Uint8Array; default?: { decode: (s: string) => Uint8Array } }
-  const fn = bs58Obj.decode || bs58Obj.default?.decode
-  if (!fn) throw new Error('Base58 decoder unavailable')
-  return fn(str)
-}
 
 export async function POST(req: NextRequest) {
   try {
