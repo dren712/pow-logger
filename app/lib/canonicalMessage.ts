@@ -53,12 +53,40 @@ export function validateAndNormalizeUrl(
 }
 
 /**
+ * Resolves and validates the canonical domain for SIWS verification.
+ * Prevents Host header injection by enforcing configured app domain or whitelisted patterns.
+ */
+export function getVerifiedDomain(reqHost: string | null): string {
+  if (process.env.NEXT_PUBLIC_APP_DOMAIN) {
+    return process.env.NEXT_PUBLIC_APP_DOMAIN.trim()
+  }
+
+  if (!reqHost || typeof reqHost !== 'string') {
+    return 'provn-sol.vercel.app'
+  }
+
+  const cleanHost = reqHost.trim().toLowerCase().split(':')[0]
+
+  const isVercel = cleanHost === 'provn-sol.vercel.app' || cleanHost.endsWith('.vercel.app')
+  const isLocalhost = cleanHost === 'localhost' || cleanHost === '127.0.0.1'
+  const isWhitelisted = process.env.ALLOWED_DOMAINS
+    ? process.env.ALLOWED_DOMAINS.split(',').map((d) => d.trim().toLowerCase()).includes(cleanHost)
+    : false
+
+  if (isVercel || isLocalhost || isWhitelisted) {
+    return reqHost.trim()
+  }
+
+  return 'provn-sol.vercel.app'
+}
+
+/**
  * Builds canonical SIWS prompt for initial log submission.
  * Cryptographically binds content AND normalized evidence URLs.
  */
 export function buildCanonicalSubmitMessage(params: CanonicalSubmitParams): string {
-  const defaultDomain = typeof window !== 'undefined' && window.location?.host ? window.location.host : 'provn-sol.vercel.app'
-  const domain = params.domain || defaultDomain
+  const defaultDomain = typeof window !== 'undefined' && window.location?.host ? getVerifiedDomain(window.location.host) : 'provn-sol.vercel.app'
+  const domain = getVerifiedDomain(params.domain || defaultDomain)
   const version = params.version || 1
   const cleanContent = params.content.trim()
   const cleanGithubUrl = validateAndNormalizeUrl(params.githubUrl, 'github') || 'none'

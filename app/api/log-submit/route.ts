@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
-import { buildCanonicalSubmitMessage, validateAndNormalizeUrl } from '@/app/lib/canonicalMessage'
+import { buildCanonicalSubmitMessage, validateAndNormalizeUrl, getVerifiedDomain } from '@/app/lib/canonicalMessage'
 import { ArchivalState } from '@/app/lib/irys'
 
 export const maxDuration = 30 // Allow up to 30s execution for Irys Arweave upload
@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
     const cleanGithubUrl = validateAndNormalizeUrl(githubUrl as string | null, 'github')
     const cleanEvidenceUrl = validateAndNormalizeUrl(evidenceUrl as string | null, 'evidence')
 
-    // Extract dynamic host header from incoming request
-    const reqHost = req.headers.get('host') || 'provn-sol.vercel.app'
+    // Extract & strictly validate domain against injection attacks
+    const reqHost = getVerifiedDomain(req.headers.get('host'))
 
     // 4. Cryptographic Ed25519 Signature Verification
     const expectedMessageText = buildCanonicalSubmitMessage({
@@ -120,17 +120,20 @@ export async function POST(req: NextRequest) {
     if (!rpcError && typeof rpcCount === 'number') {
       todayCount = rpcCount
     } else {
-      // Fallback: plain SELECT if RPC not deployed yet
-      console.warn('RPC fallback:', rpcError?.message)
+      console.error('Database Quota RPC get_daily_log_count Warning/Error:', rpcError?.message)
       const { data: todayLogs, error: countError } = await supabase
         .from('logs')
         .select('id')
         .eq('wallet_address', walletAddress)
         .gte('created_at', startOfDay.toISOString())
 
-      if (!countError && todayLogs) {
-        todayCount = todayLogs.length
+      if (countError) {
+        return NextResponse.json(
+          { error: 'Database service unavailable while checking daily quota' },
+          { status: 500 }
+        )
       }
+      todayCount = todayLogs ? todayLogs.length : 0
     }
 
     if (todayCount >= 3) {

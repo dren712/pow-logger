@@ -18,7 +18,9 @@ import {
   buildCanonicalSubmitMessage,
   buildCanonicalRetryMessage,
   validateAndNormalizeUrl,
+  getVerifiedDomain,
 } from '../app/lib/canonicalMessage'
+import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 
 import fs from 'fs'
 import path from 'path'
@@ -68,6 +70,16 @@ async function runProductionTestSuite() {
 
   const validEvidence = validateAndNormalizeUrl('https://provn-sol.vercel.app/demo', 'evidence')
   assert(validEvidence === 'https://provn-sol.vercel.app/demo', 'Valid HTTPS evidence URL accepted')
+
+  const spoofedDomain = getVerifiedDomain('evil-hacker.com')
+  assert(spoofedDomain === 'provn-sol.vercel.app', 'Arbitrary host header spoofing rejected')
+
+  const validLocalhost = getVerifiedDomain('localhost:3000')
+  assert(validLocalhost === 'localhost:3000', 'Localhost development host header accepted')
+
+  const dummyKeyArr = JSON.stringify(Array.from({ length: 64 }, (_, i) => i))
+  const parsedKeyBytes = parseIrysPrivateKey(dummyKeyArr)
+  assert(parsedKeyBytes instanceof Uint8Array && parsedKeyBytes.length === 64, 'Deterministic 64-byte Irys secret key parsed correctly')
 
   // --- SUITE 2: Ed25519 Cryptographic Tamper Evidence ---
   console.log('\n► SUITE 2: Ed25519 SIWS Cryptographic Signature Tamper Protection')

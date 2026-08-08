@@ -23,43 +23,43 @@ async function getIrysModules() {
   return { UploaderFn: cachedUploaderFn, SolanaFn: cachedSolanaFn }
 }
 
-export function parseIrysPrivateKey(privateKey: string): Uint8Array | string {
-  let rawKey = privateKey.trim()
-  if (rawKey.startsWith('"') && rawKey.endsWith('"')) rawKey = rawKey.slice(1, -1)
-  rawKey = rawKey.replace(/\\n/g, '').trim()
+/**
+ * Deterministically parses a Solana secret key from environment variable string.
+ * Supports standard JSON Array (64-byte secret key / 32-byte seed) or Base58 encoded string.
+ */
+export function parseIrysPrivateKey(privateKeyEnv: string): Uint8Array {
+  let cleaned = privateKeyEnv.trim()
+  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+    cleaned = cleaned.slice(1, -1).trim()
+  }
+  cleaned = cleaned.replace(/\\n/g, '').trim()
 
-  // 1. Try JSON array format [123, 45, ...]
-  try {
-    const parsed = JSON.parse(rawKey)
-    if (Array.isArray(parsed)) {
-      const numArr = parsed.map((x) => Number(x)).filter((x) => !isNaN(x))
-      if (numArr.length === 64) return new Uint8Array(numArr)
-      if (numArr.length === 32) return Keypair.fromSeed(new Uint8Array(numArr)).secretKey
-      if (numArr.length > 0) return new Uint8Array(numArr)
+  // 1. JSON Array format [123, 45, ...]
+  if (cleaned.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(cleaned)
+      if (Array.isArray(parsed)) {
+        const bytes = new Uint8Array(parsed.map(Number))
+        if (bytes.length === 64) return bytes
+        if (bytes.length === 32) return Keypair.fromSeed(bytes).secretKey
+        throw new Error(`Invalid JSON key length (${bytes.length} bytes). Expected 64-byte secret key or 32-byte seed.`)
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Invalid JSON format'
+      throw new Error(`Failed to parse IRYS_PRIVATE_KEY as JSON array: ${msg}`)
     }
-  } catch {}
+  }
 
-  // 2. Try comma-separated string format "123, 45, 67..."
+  // 2. Base58 encoded string format
   try {
-    if (rawKey.includes(',')) {
-      const numArr = rawKey.replace(/[\[\]]/g, '').split(',').map((x) => Number(x.trim())).filter((x) => !isNaN(x))
-      if (numArr.length === 64) return new Uint8Array(numArr)
-      if (numArr.length === 32) return Keypair.fromSeed(new Uint8Array(numArr)).secretKey
-      if (numArr.length > 0) return new Uint8Array(numArr)
-    }
-  } catch {}
-
-  // 3. Try Base58 format
-  try {
-    if (typeof rawKey === 'string' && !rawKey.startsWith('[')) {
-      const decoded = decodeBase58(rawKey)
-      if (decoded && decoded.length === 64) return decoded
-      if (decoded && decoded.length === 32) return Keypair.fromSeed(decoded).secretKey
-      if (decoded && decoded.length > 0) return decoded
-    }
-  } catch {}
-
-  return rawKey
+    const decoded = decodeBase58(cleaned)
+    if (decoded.length === 64) return decoded
+    if (decoded.length === 32) return Keypair.fromSeed(decoded).secretKey
+    throw new Error(`Invalid Base58 key length (${decoded.length} bytes). Expected 64 or 32 bytes.`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Invalid Base58 format'
+    throw new Error(`Failed to parse IRYS_PRIVATE_KEY as Base58 string: ${msg}`)
+  }
 }
 
 export interface IrysUploadResult {
@@ -79,7 +79,15 @@ export async function uploadEnvelopeToIrys(
     return { success: false, error: msg }
   }
 
-  // Optimized module resolution with warm lambda caching
+  let parsedKey: Uint8Array
+  try {
+    parsedKey = parseIrysPrivateKey(privateKey)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Invalid key'
+    console.error('[PROVN Irys Key Parse Error]', msg)
+    return { success: false, error: msg }
+  }
+
   const { UploaderFn, SolanaFn } = await getIrysModules()
 
   if (typeof UploaderFn !== 'function' || !SolanaFn) {
@@ -88,30 +96,18 @@ export async function uploadEnvelopeToIrys(
     return { success: false, error: msg }
   }
 
-  const parsedKey = parseIrysPrivateKey(privateKey)
+  try {
+    const uploader = await UploaderFn(SolanaFn).withWallet(parsedKey)
+    const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
 
-  // Try multiple key representations for Irys uploader
-  const keyAttempts: (string | Uint8Array | number[])[] = [parsedKey]
-  if (parsedKey instanceof Uint8Array) {
-    keyAttempts.push(Array.from(parsedKey))
-  }
-
-  let lastError = 'Upload unconfirmed'
-
-  for (const walletKey of keyAttempts) {
-    try {
-      const uploader = await UploaderFn(SolanaFn).withWallet(walletKey)
-
-      const uploadReceipt = await uploader.upload(structuredEnvelope, { tags })
-      if (uploadReceipt && uploadReceipt.id) {
-        console.log(`[PROVN Irys] Successfully archived to Arweave ID: ${uploadReceipt.id}`)
-        return { success: true, irysTxId: uploadReceipt.id }
-      }
-    } catch (err: unknown) {
-      lastError = err instanceof Error ? err.message : String(err)
-      console.error('[PROVN Irys Key Attempt Failed]:', lastError)
+    if (uploadReceipt && uploadReceipt.id) {
+      console.log(`[PROVN Irys] Successfully archived to Arweave ID: ${uploadReceipt.id}`)
+      return { success: true, irysTxId: uploadReceipt.id }
     }
+    return { success: false, error: 'Upload returned empty receipt ID' }
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    console.error('[PROVN Irys Upload Failed]:', errorMsg)
+    return { success: false, error: errorMsg }
   }
-
-  return { success: false, error: lastError }
 }

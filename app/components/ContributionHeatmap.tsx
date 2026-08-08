@@ -33,7 +33,7 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const { weeks, monthLabels, totalContributions } = useMemo(() => {
+  const { weeks, totalContributions } = useMemo(() => {
     const today = new Date()
     today.setHours(23, 59, 59, 999)
 
