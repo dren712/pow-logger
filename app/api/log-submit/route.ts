@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import bs58 from 'bs58'
 import { buildCanonicalSubmitMessage, validateAndNormalizeUrl, getVerifiedDomain } from '@/app/lib/canonicalMessage'
 import { ArchivalState } from '@/app/lib/irys'
 
@@ -18,18 +17,20 @@ if (!serviceKey) {
 const supabaseKey = serviceKey || anonKey!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-const decodeBase58 = (str: string): Uint8Array => {
-  const bs58Obj = bs58 as unknown as { decode?: (s: string) => Uint8Array; default?: { decode: (s: string) => Uint8Array } }
-  const fn = bs58Obj.decode || bs58Obj.default?.decode
-  if (!fn) throw new Error('Base58 decoder unavailable')
-  return fn(str)
-}
-
+import { checkRateLimit } from '@/app/lib/rateLimiter'
+import { decodeBase58 } from '@/app/lib/canonicalMessage'
 import { classifyLog } from '@/app/lib/classifier'
 import { getBuilderLevel, checkNewMilestoneReached, calculateStreak } from '@/app/lib/milestones'
 
 export async function POST(req: NextRequest) {
   try {
+    // 0. Pre-verification Serverless Rate Limiting (IP & Wallet)
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+    const ipLimit = checkRateLimit(clientIp, 'ip', 10, 900000)
+    if (!ipLimit.allowed) {
+      return NextResponse.json({ error: ipLimit.error }, { status: 429 })
+    }
+
     let body: Record<string, unknown>
     try {
       body = await req.json()
@@ -38,6 +39,13 @@ export async function POST(req: NextRequest) {
     }
 
     const { content, walletAddress, timestamp, nonce, signature, evidenceUrl, githubUrl } = body
+
+    if (walletAddress && typeof walletAddress === 'string') {
+      const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
+      if (!walletLimit.allowed) {
+        return NextResponse.json({ error: walletLimit.error }, { status: 429 })
+      }
+    }
 
     // 1. Mandatory Input Sanitization & Boundaries
     if (!content || typeof content !== 'string' || content.trim().length === 0) {

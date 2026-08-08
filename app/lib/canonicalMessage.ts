@@ -5,6 +5,18 @@
  * timestamp, and unique nonce into a standardized, tamper-evident SIWS message.
  */
 
+import bs58 from 'bs58'
+
+/**
+ * Shared Base58 decoder helper with CJS/ESM interop safety.
+ */
+export function decodeBase58(str: string): Uint8Array {
+  const bs58Obj = bs58 as unknown as { decode?: (s: string) => Uint8Array; default?: { decode: (s: string) => Uint8Array } }
+  const fn = bs58Obj.decode || bs58Obj.default?.decode
+  if (!fn) throw new Error('Base58 decoder unavailable')
+  return fn(str)
+}
+
 export interface CanonicalSubmitParams {
   domain?: string
   walletAddress: string

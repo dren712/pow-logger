@@ -21,6 +21,7 @@ import {
   getVerifiedDomain,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
+import { checkRateLimit } from '../app/lib/rateLimiter'
 
 import fs from 'fs'
 import path from 'path'
@@ -81,8 +82,20 @@ async function runProductionTestSuite() {
   const parsedKeyBytes = parseIrysPrivateKey(dummyKeyArr)
   assert(parsedKeyBytes instanceof Uint8Array && parsedKeyBytes.length === 64, 'Deterministic 64-byte Irys secret key parsed correctly')
 
-  // --- SUITE 2: Ed25519 Cryptographic Tamper Evidence ---
-  console.log('\n► SUITE 2: Ed25519 SIWS Cryptographic Signature Tamper Protection')
+  // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
+  console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')
+  const testIp = '192.168.1.100'
+  const rateLimitTest1 = checkRateLimit(testIp, 'ip', 2, 1000)
+  assert(rateLimitTest1.allowed === true && rateLimitTest1.remaining === 1, 'First request within rate limit allowed')
+
+  const rateLimitTest2 = checkRateLimit(testIp, 'ip', 2, 1000)
+  assert(rateLimitTest2.allowed === true && rateLimitTest2.remaining === 0, 'Second request reaching limit allowed')
+
+  const rateLimitTest3 = checkRateLimit(testIp, 'ip', 2, 1000)
+  assert(rateLimitTest3.allowed === false, 'Excessive request beyond rate limit strictly rejected (429)')
+
+  // --- SUITE 3: Ed25519 Cryptographic Tamper Evidence ---
+  console.log('\n► SUITE 3: Ed25519 SIWS Cryptographic Signature Tamper Protection')
   const keypair = nacl.sign.keyPair()
   const walletAddress = bs58.encode(keypair.publicKey)
   const timestamp = new Date().toISOString()

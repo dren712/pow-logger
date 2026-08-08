@@ -1,12 +1,5 @@
 import { Keypair } from '@solana/web3.js'
-import bs58 from 'bs58'
-
-const decodeBase58 = (str: string): Uint8Array => {
-  const bs58Obj = bs58 as unknown as { decode?: (s: string) => Uint8Array; default?: { decode: (s: string) => Uint8Array } }
-  const fn = bs58Obj.decode || bs58Obj.default?.decode
-  if (!fn) throw new Error('Base58 decoder unavailable')
-  return fn(str)
-}
+import { decodeBase58 } from './canonicalMessage'
 
 let cachedUploaderFn: ((adapter: unknown) => { withWallet: (key: unknown) => Promise<{ upload: (data: string, opts?: unknown) => Promise<{ id: string }> }> }) | null = null
 let cachedSolanaFn: unknown = null
