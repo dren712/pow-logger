@@ -12,8 +12,8 @@ interface RateLimitRecord {
 const ipStore = new Map<string, RateLimitRecord>()
 const walletStore = new Map<string, RateLimitRecord>()
 
-// Clean up expired entries every 10 minutes
-setInterval(() => {
+// Clean up expired entries every 10 minutes (unref'd to prevent event loop hanging)
+const cleanupInterval = setInterval(() => {
   const now = Date.now()
   for (const [key, record] of ipStore.entries()) {
     if (now > record.resetTime) ipStore.delete(key)
@@ -22,6 +22,10 @@ setInterval(() => {
     if (now > record.resetTime) walletStore.delete(key)
   }
 }, 600000)
+
+if (cleanupInterval && typeof cleanupInterval.unref === 'function') {
+  cleanupInterval.unref()
+}
 
 export interface RateLimitResult {
   allowed: boolean
