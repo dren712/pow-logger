@@ -29,6 +29,9 @@ jobs:
         run: npm run lint
 
       - name: Protocol Security Test Suite
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://dummy-test.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
         run: npm test
 
       - name: Next.js Production Build

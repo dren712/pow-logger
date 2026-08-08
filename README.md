@@ -83,13 +83,32 @@ PROVN implements a 3-tier reputation model:
 
 ---
 
-## 🛡️ Security Model
+---
 
-- **Cryptographic Binding**: Work logs are signed using the wallet's private key (`nacl.sign.detached.verify`). Any alteration to content, URLs, timestamp, or nonce breaks verification.
+## ⚡ Live System vs Roadmap Status
+
+| Subsystem / Feature | Live Status | Implementation File |
+| :--- | :--- | :--- |
+| **Sign-In-With-Solana (SIWS)** | 🟢 **LIVE & VERIFIED** | [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts) |
+| **Ed25519 Off-Chain Verification** | 🟢 **LIVE & VERIFIED** | [`app/api/log-submit/route.ts`](app/api/log-submit/route.ts#L80-L107) |
+| **Arweave Permanent Storage** | 🟢 **LIVE & VERIFIED** | [`app/lib/irysUploader.ts`](app/lib/irysUploader.ts) |
+| **Serverless Rate Limiter** | 🟢 **LIVE & VERIFIED** | [`app/lib/rateLimiter.ts`](app/lib/rateLimiter.ts) |
+| **Host Header Spoof Protection** | 🟢 **LIVE & VERIFIED** | [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts#L59-L80) |
+| **Postgres RLS Database Security** | 🟢 **LIVE & VERIFIED** | [`supabase/migrations/20260803_provn_security_hardening.sql`](supabase/migrations/20260803_provn_security_hardening.sql) |
+| **Dynamic GitHub SVG Badges** | 🟢 **LIVE & VERIFIED** | [`app/api/badge/[wallet]/route.ts`](app/api/badge/[wallet]/route.ts) |
+| **Metaplex cNFT Minting** | 🟡 **PHASE 4 (OPT-IN)** | [`app/lib/cnft.ts`](app/lib/cnft.ts) *(Feature-flagged off until Mainnet Merkle Tree deployment)* |
+
+---
+
+## 🛡️ Security Implementation Details
+
+- **Cryptographic Binding**: Work logs are signed using the wallet's private key (`nacl.sign.detached.verify`). Verified in [`app/api/log-submit/route.ts`](app/api/log-submit/route.ts#L100).
+- **Serverless Rate Limiting**: Enforces 10 requests per 15 minutes per IP and per Wallet Address. Implemented in [`app/lib/rateLimiter.ts`](app/lib/rateLimiter.ts).
+- **Host Header Spoof Mitigation**: Host headers validated against whitelisted domains via `getVerifiedDomain()`. Implemented in [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts#L59-L80).
 - **Replay Attack Defense**: Timestamps older than 15 minutes (`900,000ms`) are rejected.
 - **Database Signature Uniqueness**: PostgreSQL enforces a `UNIQUE INDEX` on the `signature` column to prevent replaying valid signatures.
 - **Row-Level Security (RLS)**: Anonymous clients only have `SELECT` access. All database writes require server-side execution via `service_role`.
-- **Atomic Quota RPC**: Quotas (3 logs/day) checked via `get_daily_log_count` SECURITY DEFINER RPC.
+- **Atomic Quota RPC**: Quotas (3 logs/day) checked via `get_daily_log_count` SECURITY DEFINER RPC. Implemented in [`supabase/migrations/20260803_provn_security_hardening.sql`](supabase/migrations/20260803_provn_security_hardening.sql#L35).
 
 ---
 
