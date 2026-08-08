@@ -62,14 +62,13 @@
 
 ---
 
-## 🏛️ Superteam India Microgrant Execution & Ask Breakdown ($4,500 USDG)
+## 🎯 Production Engineering Deliverables & Milestones
 
-| Milestone | Deliverable / Objective | Funding Target |
+| Milestone Phase | Technical Scope & Objective | Deliverables |
 | :--- | :--- | :--- |
-| **Milestone 1** | Onboard 10 Active Superteam India Builders (7-day streaks + GitHub embeds) | **$1,500 USDG** |
-| **Milestone 2** | Solana Mainnet Metaplex Merkle Tree Deployment & cNFT Minting Engine | **$1,500 USDG** |
-| **Milestone 3** | `@provn/sdk` TypeScript Client & Superteam Earn Bounty Gating Webhooks | **$1,500 USDG** |
-| **TOTAL ASK** | **3-Phase Executable Roadmap** | **$4,500 USDG** |
+| **Milestone 1** | **Ecosystem Onboarding & Profile Embedding** | Onboard 10+ active Solana builders with 7-day streaks & live GitHub SVG embeds |
+| **Milestone 2** | **Solana Mainnet Metaplex cNFT Engine** | Deploy Concurrent Merkle Tree (Depth 14) & automated Helius DAS badge minting |
+| **Milestone 3** | **Developer SDK & Superteam Earn Integration** | Package `@provn/sdk` TypeScript client & build bounty-gating verification webhooks |
 
 ---
 
