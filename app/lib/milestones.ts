@@ -119,6 +119,15 @@ export function toUTCDay(dateInput: string | Date): Date {
 }
 
 /**
+ * Returns YYYY-MM-DD string representation of a Date in UTC.
+ */
+export function toUTCDayString(dateInput: string | Date): string {
+  const d = new Date(dateInput)
+  if (isNaN(d.getTime())) return '1970-01-01'
+  return d.toISOString().split('T')[0]
+}
+
+/**
  * Calculates current active streak from an array of ISO date strings or Date objects.
  * Single source of truth for streak calculation, globally standardized to UTC midnight.
  */
