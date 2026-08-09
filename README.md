@@ -1,6 +1,6 @@
 # PROVN — Proof-of-Work Logger 🗿
 
-**Verifiable, wallet-attested build logs and reputation foundry for Solana developers.**
+**PROVN turns a wallet-signed daily log into proof that can't be faked, backdated, or borrowed — the way a commit graph or a Twitter build-log can be.**
 
 [![Build Status](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -8,20 +8,44 @@
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
 
 - **Live Platform:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
+- **Live Proof Artifact:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
 - **Technical Litepaper:** [`LITEPAPER.md`](LITEPAPER.md)
 - **Engineering Roadmap:** [`ROADMAP.md`](ROADMAP.md)
 
 ---
 
+## 🔍 Verification Comparison
+
+| Method | Can be backdated? | Can be faked by someone else? | Cryptographically tied to identity? |
+| :--- | :--- | :--- | :--- |
+| **GitHub commit graph** | Yes (`git commit --date`) | Yes (commit under any name/email) | No |
+| **Twitter / Discord build-log** | Yes (post anytime) | Yes (anyone can type it) | No |
+| **POAP / attendance badge** | N/A | Yes (transferable) | No |
+| **PROVN log entry** | **No** — timestamp is server-verified | **No** — requires wallet's private key | **Yes** — Ed25519 SIWS signature |
+
+Bounty hosts currently vet submitter activity manually, with no verifiable signal beyond a linked GitHub profile that can be gamed. PROVN gives a host a single link that resolves to cryptographically signed activity history.
+
+---
+
+## 🔗 Live Proof Artifact
+
+**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 14 consecutive days of signed, timestamped work history. Try producing the equivalent with a commit graph — you can't prove none of those commits were backdated. Every entry here carries an Ed25519 signature that can't be.
+
+---
+
+## ❓ Why Not Just Use GitHub?
+
+A commit graph proves code changed. It doesn't prove who changed it, when they really changed it, or that the same person is claiming credit consistently across bounties, hackathons, and grants. PROVN's entries are signed by the same wallet that receives payouts — the identity making the claim and the identity being rewarded are cryptographically the same, every time.
+
+---
+
 ## ⚡ Live GitHub Profile Badge Embed
 
-Developers can embed their real-time PROVN reputation badge directly inside any GitHub `README.md`:
+Developers can embed their real-time PROVN badge directly inside any GitHub `README.md`:
 
 ```markdown
 [![PROVN Reputation](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg)](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
 ```
-
-**Live SVG Output Example:**
 
 ![PROVN Live Badge](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg)
 
@@ -29,14 +53,14 @@ Developers can embed their real-time PROVN reputation badge directly inside any 
 
 ## 🌟 Overview
 
-PROVN is a decentralized reputation protocol for Solana builders. It provides a tamper-evident, permanent record of daily development activity by binding each work log to a wallet-signed **Sign-In-With-Solana (SIWS)** payload.
+PROVN binds daily work logs to wallet-signed **Sign-In-With-Solana (SIWS)** payloads.
 
 ### Core Verification Flow
 1. **Cryptographic Signing**: The developer signs a canonical SIWS message containing work content, timestamp, nonce, and proof links using their Solana wallet (Ed25519 keypair).
 2. **Server-Side Attestation**: The backend re-derives the SIWS payload and verifies the signature off-chain using TweetNaCl (`nacl.sign.detached.verify`).
 3. **Decentralized Archival**: Verified logs are packaged into a JSON envelope and stored permanently on **Arweave** via Irys Node #1.
 4. **Database Indexing & RLS**: Log metadata is indexed in Supabase PostgreSQL, strictly protected by Row-Level Security (RLS) policies.
-5. **Multi-Pillar Reputation Engine**: Computes builder levels (Apprentice → Grand Legend), streak trophies (7d, 30d, 100d), and LeetCode/Codeforces-style skill badges.
+5. **Multi-Pillar Reputation Engine**: Computes builder levels (Apprentice → Grand Legend), streak trophies (7d, 30d, 100d), and skill badges.
 
 ---
 
