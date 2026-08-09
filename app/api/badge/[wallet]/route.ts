@@ -86,7 +86,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     return new NextResponse(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=300, s-maxage=600',
+        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=120',
+        'Surrogate-Control': 'max-age=60',
       },
     })
   } catch (error: unknown) {
