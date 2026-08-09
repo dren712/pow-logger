@@ -110,6 +110,26 @@ export function checkNewMilestoneReached(previousStreak: number, newStreak: numb
 }
 
 /**
+ * Formats a Date or ISO timestamp into YYYY-MM-DD string according to a specific timezone.
+ * Defaults to 'Asia/Kolkata' (IST, UTC+5:30) for Solana India / Superteam India builders.
+ */
+export function toLocalDateString(dateInput: string | Date, timeZone: string = 'Asia/Kolkata'): string {
+  const d = new Date(dateInput)
+  if (isNaN(d.getTime())) return '1970-01-01'
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZone || 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    return formatter.format(d)
+  } catch {
+    return d.toISOString().split('T')[0]
+  }
+}
+
+/**
  * Normalizes a Date or ISO string to a UTC Date object at midnight UTC (00:00:00.000).
  */
 export function toUTCDay(dateInput: string | Date): Date {
@@ -129,42 +149,49 @@ export function toUTCDayString(dateInput: string | Date): string {
 
 /**
  * Calculates current active streak from an array of ISO date strings or Date objects.
- * Single source of truth for streak calculation, globally standardized to UTC midnight.
+ * Single source of truth for streak calculation, evaluating day boundaries in target timezone (default: 'Asia/Kolkata' / IST).
  */
-export function calculateStreak(createdAts: (string | Date)[]): number {
+export function calculateStreak(
+  createdAts: (string | Date)[],
+  timeZone: string = 'Asia/Kolkata'
+): number {
   if (!createdAts || createdAts.length === 0) return 0
 
-  const today = toUTCDay(new Date())
-
-  // Extract unique UTC days sorted in descending order
-  const uniqueUtcDays = Array.from(
+  const tz = timeZone || 'Asia/Kolkata'
+  const uniqueDays = Array.from(
     new Set(
       createdAts
-        .map((d) => toUTCDay(d).getTime())
-        .filter((t) => t > 0)
+        .map((d) => toLocalDateString(d, tz))
+        .filter((s) => s !== '1970-01-01')
     )
-  ).sort((a, b) => b - a)
+  ).sort().reverse()
 
-  if (uniqueUtcDays.length === 0) return 0
+  if (uniqueDays.length === 0) return 0
 
-  // If most recent log is older than yesterday UTC, streak is broken
-  const mostRecent = uniqueUtcDays[0]
-  const daysDiffFromToday = Math.round((today.getTime() - mostRecent) / 86400000)
-  if (daysDiffFromToday > 1) {
-    return 0 // Streak broken
+  const todayStr = toLocalDateString(new Date(), tz)
+  const yesterdayDate = new Date()
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+  const yesterdayStr = toLocalDateString(yesterdayDate, tz)
+
+  const mostRecent = uniqueDays[0]
+  if (mostRecent !== todayStr && mostRecent !== yesterdayStr) {
+    return 0
   }
 
   let streak = 1
-  let checkTime = mostRecent
+  let checkDateStr = mostRecent
 
-  for (let i = 1; i < uniqueUtcDays.length; i++) {
-    const dayTime = uniqueUtcDays[i]
-    const diff = Math.round((checkTime - dayTime) / 86400000)
-    if (diff === 0) {
+  for (let i = 1; i < uniqueDays.length; i++) {
+    const dayStr = uniqueDays[i]
+    const checkDate = new Date(checkDateStr + 'T00:00:00.000Z')
+    const dayDate = new Date(dayStr + 'T00:00:00.000Z')
+    const diffDays = Math.round((checkDate.getTime() - dayDate.getTime()) / 86400000)
+
+    if (diffDays === 0) {
       continue
-    } else if (diff === 1) {
+    } else if (diffDays === 1) {
       streak++
-      checkTime = dayTime
+      checkDateStr = dayStr
     } else {
       break
     }
@@ -174,29 +201,35 @@ export function calculateStreak(createdAts: (string | Date)[]): number {
 }
 
 /**
- * Calculates the longest streak achieved in days.
- * Standardized on global UTC midnight boundaries.
+ * Calculates the longest streak achieved in days for a target timezone.
+ * Defaults to 'Asia/Kolkata' (IST, UTC+5:30).
  */
-export function calculateLongestStreak(createdAts: (string | Date)[]): number {
+export function calculateLongestStreak(
+  createdAts: (string | Date)[],
+  timeZone: string = 'Asia/Kolkata'
+): number {
   if (!createdAts || createdAts.length === 0) return 0
 
-  const uniqueUtcDays = Array.from(
+  const tz = timeZone || 'Asia/Kolkata'
+  const uniqueDays = Array.from(
     new Set(
       createdAts
-        .map((d) => toUTCDay(d).getTime())
-        .filter((t) => t > 0)
+        .map((d) => toLocalDateString(d, tz))
+        .filter((s) => s !== '1970-01-01')
     )
-  ).sort((a, b) => a - b) // Ascending order
+  ).sort()
 
-  if (uniqueUtcDays.length === 0) return 0
+  if (uniqueDays.length === 0) return 0
 
   let maxStreak = 1
   let currentStreak = 1
 
-  for (let i = 1; i < uniqueUtcDays.length; i++) {
-    const prev = uniqueUtcDays[i - 1]
-    const curr = uniqueUtcDays[i]
-    const diffDays = Math.round((curr - prev) / 86400000)
+  for (let i = 1; i < uniqueDays.length; i++) {
+    const prevStr = uniqueDays[i - 1]
+    const currStr = uniqueDays[i]
+    const prevDate = new Date(prevStr + 'T00:00:00.000Z')
+    const currDate = new Date(currStr + 'T00:00:00.000Z')
+    const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000)
 
     if (diffDays === 1) {
       currentStreak++

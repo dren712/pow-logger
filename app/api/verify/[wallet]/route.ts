@@ -41,8 +41,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     }
 
     const createdAts = logs.map((l) => l.created_at)
-    const streak = calculateStreak(createdAts)
-    const longestStreak = calculateLongestStreak(createdAts)
+    const tz = req.nextUrl.searchParams.get('tz') || 'Asia/Kolkata'
+    const streak = calculateStreak(createdAts, tz)
+    const longestStreak = calculateLongestStreak(createdAts, tz)
 
     // Compute badge summary
     const badgeSummary = computeBadgeSummary(logs.length, streak, longestStreak, logs)

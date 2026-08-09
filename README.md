@@ -53,6 +53,19 @@ Developers can embed their real-time PROVN badge directly inside any GitHub `REA
 
 ---
 
+## 🌏 Timezone Standard & Protocol Day-Boundary Specification
+
+PROVN implements a **Universal Timezone Engine**:
+- **Protocol Default (API & Badge Server)**: By default, server APIs (`/api/badge/[wallet]`, `/api/verify/[wallet]`, `/api/log-submit`) evaluate streak day boundaries using **Indian Standard Time (IST, UTC+5:30)** — aligning with Superteam India & Solana India builder cohorts.
+- **Client UI (Automatic Browser Locale)**: Client interfaces (`ProfileClient.tsx`) automatically detect the builder's local browser timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone` (e.g. `Asia/Kolkata` for India, `America/New_York` for US, `Europe/London` for UK).
+- **API Timezone Overrides**: API endpoints support custom timezone parameters via query string:
+  ```markdown
+  https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?tz=Asia/Kolkata
+  https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?tz=UTC
+  ```
+
+---
+
 ## 🌟 Overview
 
 PROVN binds daily work logs to wallet-signed **Sign-In-With-Solana (SIWS)** payloads.

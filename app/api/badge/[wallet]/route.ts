@@ -32,9 +32,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const logList = logs || []
     const totalLogs = logList.length
 
+    const tz = req.nextUrl.searchParams.get('tz') || 'Asia/Kolkata'
     const createdAts = logList.map((l) => l.created_at)
-    const streak = calculateStreak(createdAts)
-    const longestStreak = calculateLongestStreak(createdAts)
+    const streak = calculateStreak(createdAts, tz)
+    const longestStreak = calculateLongestStreak(createdAts, tz)
 
     const uniqueDays = Array.from(new Set(createdAts.map((d) => new Date(d).toISOString().split('T')[0]))).sort()
     console.log(`[PROVN Badge API] wallet=${wallet} rowCount=${totalLogs} streak=${streak} uniqueDaysCount=${uniqueDays.length} days=${JSON.stringify(uniqueDays)}`)
