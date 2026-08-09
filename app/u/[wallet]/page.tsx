@@ -1,13 +1,15 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import ProfileClient from './ProfileClient'
+import ProfileClient, { LogItem } from './ProfileClient'
 import { getBuilderLevel } from '@/app/lib/milestones'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 const supabase = createClient(supabaseUrl, supabaseKey)
+
+export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ wallet: string }>
@@ -18,10 +20,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const wallet = resolvedParams.wallet
   const walletShort = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
 
-  const { data: logs } = await supabase
-    .from('logs')
-    .select('created_at')
-    .eq('wallet_address', wallet)
+  let logs: { created_at: string }[] | null = null
+  if (!supabaseUrl.includes('placeholder')) {
+    try {
+      const { data } = await supabase
+        .from('logs')
+        .select('created_at')
+        .eq('wallet_address', wallet)
+      logs = data
+    } catch {
+      logs = null
+    }
+  }
 
   const count = logs?.length || 0
   const builderLevel = getBuilderLevel(count)
@@ -72,11 +82,22 @@ export default async function ProfilePage({ params }: PageProps) {
   const resolvedParams = await params
   const wallet = resolvedParams.wallet
 
-  const { data: logs, error } = await supabase
-    .from('logs')
-    .select('*')
-    .eq('wallet_address', wallet)
-    .order('created_at', { ascending: false })
+  let logs: LogItem[] | null = null
+  let error: unknown = null
+
+  if (!supabaseUrl.includes('placeholder')) {
+    try {
+      const res = await supabase
+        .from('logs')
+        .select('*')
+        .eq('wallet_address', wallet)
+        .order('created_at', { ascending: false })
+      logs = res.data
+      error = res.error
+    } catch (e) {
+      error = e
+    }
+  }
 
   if (error || !logs || logs.length === 0) {
     return (
