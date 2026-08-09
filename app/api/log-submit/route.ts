@@ -6,7 +6,7 @@ import { ArchivalState } from '@/app/lib/irys'
 
 export const maxDuration = 30 // Allow up to 30s execution for Irys Arweave upload
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -14,7 +14,7 @@ if (!serviceKey) {
   console.error('CRITICAL SERVER ERROR: SUPABASE_SERVICE_ROLE_KEY is missing in environment variables!')
 }
 
-const supabaseKey = serviceKey || anonKey!
+const supabaseKey = serviceKey || anonKey || 'placeholder'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 import { checkRateLimit } from '@/app/lib/rateLimiter'

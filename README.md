@@ -29,7 +29,7 @@ Bounty hosts currently vet submitter activity manually, with no verifiable signa
 
 ## 🔗 Live Proof Artifact
 
-**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 14 consecutive days of signed, timestamped work history. Try producing the equivalent with a commit graph — you can't prove none of those commits were backdated. Every entry here carries an Ed25519 signature that can't be.
+**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 23 verified, wallet-signed proof-of-work entries across multiple weeks. Try producing the equivalent with a commit graph — you can't prove none of those commits were backdated. Every entry here carries an Ed25519 signature that can't be.
 
 ---
 
