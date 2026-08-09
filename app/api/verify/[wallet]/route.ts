@@ -26,6 +26,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       .select('*')
       .eq('wallet_address', wallet)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
 
     if (error || !logs || logs.length === 0) {
       return NextResponse.json(

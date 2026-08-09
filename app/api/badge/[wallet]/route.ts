@@ -25,6 +25,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       .select('*')
       .eq('wallet_address', wallet)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
 
     const logList = logs || []
     const totalLogs = logList.length
@@ -32,6 +33,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const createdAts = logList.map((l) => l.created_at)
     const streak = calculateStreak(createdAts)
     const longestStreak = calculateLongestStreak(createdAts)
+
+    const uniqueDays = Array.from(new Set(createdAts.map((d) => new Date(d).toISOString().split('T')[0]))).sort()
+    console.log(`[PROVN Badge API] wallet=${wallet} rowCount=${totalLogs} streak=${streak} uniqueDaysCount=${uniqueDays.length} days=${JSON.stringify(uniqueDays)}`)
 
     const badgeSummary = computeBadgeSummary(totalLogs, streak, longestStreak, logList)
     const level = badgeSummary.level
