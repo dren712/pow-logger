@@ -7,6 +7,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 )
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest, props: { params: Promise<{ wallet: string }> }) {
   try {
     const params = await props.params
