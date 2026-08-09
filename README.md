@@ -44,12 +44,12 @@ A commit graph proves code changed. It doesn't prove who changed it, when they r
 Developers can embed their real-time PROVN badge directly inside any GitHub `README.md`:
 
 ```markdown
-[![PROVN Reputation](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?v=2)](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
+[![PROVN Reputation](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?d=2026-08-09)](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
 ```
 
-![PROVN Live Badge](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?v=2)
+![PROVN Live Badge](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?d=2026-08-09)
 
-> **GitHub Proxy Note**: GitHub routes markdown images through GitHub Camo Proxy (`camo.githubusercontent.com`). Appending a query parameter like `?v=2` or `?d=2026-08-09` forces GitHub Camo to bypass proxy staleness and fetch the latest live badge SVG.
+> **GitHub Proxy Note**: GitHub routes markdown images through GitHub Camo Proxy (`camo.githubusercontent.com`). Because Camo caches by exact URL, appending a date parameter (e.g. `?d=2026-08-09`) forces GitHub Camo to bypass proxy staleness and fetch the latest live badge SVG.
 
 ---
 
@@ -106,8 +106,6 @@ PROVN implements a 3-tier reputation model:
   - 🐙 **Open Source Builder**: 3+ Verified GitHub PR/Commit links.
   - 📜 **Arweave Archivist**: 5+ Permanent Arweave archived logs.
   - 💯 **Century Club**: 100+ Total verified proof logs.
-
----
 
 ---
 
