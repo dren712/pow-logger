@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import ProfileClient, { LogItem } from './ProfileClient'
 import { getBuilderLevel } from '@/app/lib/milestones'
+import { isConfiguredSupabaseUrl } from '@/app/lib/canonicalMessage'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey =
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const walletShort = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
 
   let logs: { created_at: string }[] | null = null
-  if (!supabaseUrl.includes('placeholder')) {
+  if (isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
       const { data } = await supabase
         .from('logs')
@@ -85,7 +86,7 @@ export default async function ProfilePage({ params }: PageProps) {
   let logs: LogItem[] | null = null
   let error: unknown = null
 
-  if (!supabaseUrl.includes('placeholder')) {
+  if (isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
       const res = await supabase
         .from('logs')

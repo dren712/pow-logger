@@ -19,6 +19,7 @@ import {
   buildCanonicalRetryMessage,
   validateAndNormalizeUrl,
   getVerifiedDomain,
+  isConfiguredSupabaseUrl,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
@@ -184,7 +185,7 @@ async function runProductionTestSuite() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-  if (supabaseUrl && anonKey && !supabaseUrl.includes('placeholder') && !supabaseUrl.includes('dummy-test')) {
+  if (supabaseUrl && anonKey && isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
       const anonClient = createClient(supabaseUrl, anonKey)
 

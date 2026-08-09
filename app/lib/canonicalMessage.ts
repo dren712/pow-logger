@@ -93,6 +93,16 @@ export function getVerifiedDomain(reqHost: string | null): string {
 }
 
 /**
+ * Helper to check if a Supabase URL is configured with a real live project domain
+ * rather than a placeholder string or missing env var.
+ */
+export function isConfiguredSupabaseUrl(url?: string): boolean {
+  if (!url || typeof url !== 'string') return false
+  const lower = url.toLowerCase().trim()
+  return !lower.includes('placeholder') && !lower.includes('dummy-test') && lower.startsWith('http')
+}
+
+/**
  * Builds canonical SIWS prompt for initial log submission.
  * Cryptographically binds content AND normalized evidence URLs.
  */
