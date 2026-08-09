@@ -11,6 +11,8 @@ const supabaseKey =
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 interface PageProps {
   params: Promise<{ wallet: string }>
