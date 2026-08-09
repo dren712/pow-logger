@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import ProfileClient, { LogItem } from './ProfileClient'
-import { getBuilderLevel } from '@/app/lib/milestones'
+import { getBuilderLevel, calculateStreak } from '@/app/lib/milestones'
 import { isConfiguredSupabaseUrl } from '@/app/lib/canonicalMessage'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
@@ -37,26 +37,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const count = logs?.length || 0
   const builderLevel = getBuilderLevel(count)
 
-  // Calculate streak count for metadata
-  let streak = 0
-  if (logs && logs.length > 0) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const logDates = [
-      ...new Set(logs.map((l) => new Date(l.created_at).toDateString())),
-    ]
-      .map((d) => new Date(d))
-      .sort((a, b) => b.getTime() - a.getTime())
-
-    let checkDate = new Date(today)
-    for (const date of logDates) {
-      const diff = Math.round((checkDate.getTime() - date.getTime()) / 86400000)
-      if (diff === 0 || diff === 1) {
-        streak++
-        checkDate = date
-      } else break
-    }
-  }
+  const createdAts = (logs || []).map((l) => l.created_at)
+  const streak = calculateStreak(createdAts)
 
   const ogTitle = `${walletShort} — ${builderLevel.emoji} ${builderLevel.title} • ${streak}d streak 🔥`
   const ogDesc = `Level ${builderLevel.level} builder with ${count} verified work logs on Arweave. Builder reputation on Solana.`
