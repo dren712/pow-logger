@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const streak = calculateStreak(createdAts)
 
   const ogTitle = `${walletShort} — ${builderLevel.emoji} ${builderLevel.title} • ${streak}d streak 🔥`
-  const ogDesc = `Level ${builderLevel.level} builder with ${count} verified work logs on Arweave. Builder reputation on Solana.`
+  const ogDesc = `Level ${builderLevel.level} builder with ${count} verified work logs on PROVN protocol. Builder reputation on Solana.`
 
   return {
     title: ogTitle,

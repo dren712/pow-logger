@@ -258,13 +258,15 @@ export async function POST(req: NextRequest) {
     // ─── Milestone Detection ─────────────────────────────────────────────
     const { data: allLogs } = await supabase
       .from('logs')
-      .select('created_at')
+      .select('id, created_at')
       .eq('wallet_address', walletAddress)
       .order('created_at', { ascending: false })
 
-    const createdAts = (allLogs || []).map((l: { created_at: string }) => l.created_at)
+    const createdAts = (allLogs || []).map((l: { id: number; created_at: string }) => l.created_at)
     const newStreak = calculateStreak(createdAts)
-    const previousLogs = createdAts.slice(1)
+    const previousLogs = (allLogs || [])
+      .filter((l: { id: number; created_at: string }) => l.id !== savedLog.id)
+      .map((l: { id: number; created_at: string }) => l.created_at)
     const previousStreak = calculateStreak(previousLogs)
 
     const newMilestone = checkNewMilestoneReached(previousStreak, newStreak)

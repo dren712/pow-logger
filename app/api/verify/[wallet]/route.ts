@@ -130,17 +130,32 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
           let isCryptoVerified = false
           if (l.signature && publicKeyBytes) {
             try {
-              const canonicalMsg = buildCanonicalSubmitMessage({
-                walletAddress: wallet,
-                content: l.content,
-                timestamp: l.created_at,
-                nonce: l.nonce || 'legacy',
-                githubUrl: l.github_url || undefined,
-                evidenceUrl: l.evidence_url || undefined,
-              })
-              const msgBytes = new TextEncoder().encode(canonicalMsg)
+              const reqHost = req.headers.get('host') ? req.headers.get('host')!.trim().toLowerCase().split(':')[0] : 'provn-sol.vercel.app'
+              const candidateDomains = Array.from(new Set([
+                l.domain,
+                reqHost,
+                'provn-sol.vercel.app',
+                'localhost'
+              ].filter(Boolean)))
+
               const sigBytes = decodeBase58(l.signature)
-              isCryptoVerified = nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)
+
+              for (const domain of candidateDomains) {
+                const canonicalMsg = buildCanonicalSubmitMessage({
+                  domain,
+                  walletAddress: wallet,
+                  content: l.content,
+                  timestamp: l.created_at,
+                  nonce: l.nonce || 'legacy',
+                  githubUrl: l.github_url || undefined,
+                  evidenceUrl: l.evidence_url || undefined,
+                })
+                const msgBytes = new TextEncoder().encode(canonicalMsg)
+                if (nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)) {
+                  isCryptoVerified = true
+                  break
+                }
+              }
             } catch {
               isCryptoVerified = false
             }

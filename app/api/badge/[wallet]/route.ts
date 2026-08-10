@@ -6,6 +6,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+import { decodeBase58 } from '@/app/lib/canonicalMessage'
+
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const fetchCache = 'force-no-store'
@@ -18,6 +20,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
 
     if (!wallet || wallet.length < 32 || wallet.length > 44) {
       return new NextResponse('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30"><rect width="200" height="30" fill="#222"/><text x="10" y="20" fill="#ff4444" font-family="monospace" font-size="12">Invalid Wallet</text></svg>', {
+        headers: { 'Content-Type': 'image/svg+xml' },
+      })
+    }
+
+    try {
+      const pubKeyBytes = decodeBase58(wallet)
+      if (pubKeyBytes.length !== 32) throw new Error('Invalid key length')
+    } catch {
+      return new NextResponse('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30"><rect width="200" height="30" fill="#222"/><text x="10" y="20" fill="#ff4444" font-family="monospace" font-size="12">Invalid Base58 Key</text></svg>', {
         headers: { 'Content-Type': 'image/svg+xml' },
       })
     }
@@ -37,7 +48,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const streak = calculateStreak(createdAts, tz)
     const longestStreak = calculateLongestStreak(createdAts, tz)
 
-    const shortWallet = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
+    const rawShort = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
+    const shortWallet = rawShort.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
     console.log(`[PROVN Badge API] wallet=${shortWallet} rowCount=${totalLogs} streak=${streak}`)
 
     const badgeSummary = computeBadgeSummary(totalLogs, streak, longestStreak, logList)
