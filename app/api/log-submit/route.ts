@@ -82,16 +82,12 @@ export async function POST(req: NextRequest) {
     // Extract & strictly validate domain against injection attacks
     const reqHost = getVerifiedDomain(req.headers.get('host'))
 
-    if (typeof nonce !== 'string' || !nonce.trim()) {
-      return NextResponse.json({ error: 'Missing or invalid cryptographic nonce' }, { status: 400 })
-    }
-
     // 4. Cryptographic Ed25519 Signature Verification
     const expectedMessageText = buildCanonicalSubmitMessage({
       domain: reqHost,
       walletAddress,
       timestamp,
-      nonce: nonce.trim(),
+      nonce: typeof nonce === 'string' ? nonce : 'legacy',
       content: content.trim(),
       githubUrl: cleanGithubUrl,
       evidenceUrl: cleanEvidenceUrl,
@@ -176,8 +172,16 @@ export async function POST(req: NextRequest) {
     // 7. Classify Log Content
     const classification = classifyLog(content.trim())
 
-    // 8. Atomic Database Reservation FIRST (Protects against EDoS race conditions)
-    let insertRes = await supabase
+    if (!serviceKey) {
+      console.error('CRITICAL SERVER ERROR: SUPABASE_SERVICE_ROLE_KEY is missing!')
+      return NextResponse.json(
+        { error: 'Server misconfiguration: SUPABASE_SERVICE_ROLE_KEY is missing.' },
+        { status: 500 }
+      )
+    }
+
+    // 8. Database Reservation (Store metadata & signature in Supabase)
+    const insertRes = await supabase
       .from('logs')
       .insert([{
         content: content.trim(),
@@ -192,21 +196,6 @@ export async function POST(req: NextRequest) {
         archival_state: 'pending' as ArchivalState,
       }])
       .select()
-
-    if (insertRes.error) {
-      // Fallback: base schema
-      console.warn('Full schema insert warning. Falling back to base schema:', insertRes.error.message)
-      insertRes = await supabase
-        .from('logs')
-        .insert([{
-          content: content.trim(),
-          wallet_address: walletAddress,
-          signature,
-          created_at: timestamp,
-          archival_state: 'pending' as ArchivalState,
-        }])
-        .select()
-    }
 
     if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
       console.error('Supabase insert error:', insertRes.error)

@@ -16,12 +16,12 @@
 
 ## 🔍 Verification Comparison
 
-| Method | Can be backdated? | Can be faked under another identity? | Cryptographically tied to wallet identity? |
+| Method | Can be backdated? | Can be faked by someone else? | Cryptographically tied to identity? |
 | :--- | :--- | :--- | :--- |
-| **GitHub commit graph** | Yes (`git commit --date`) | Yes (commits can specify arbitrary author emails) | No (unless GPG/SSH signed) |
-| **Twitter / Discord build-log** | Yes (post anytime) | Yes (unverified social text) | No |
-| **POAP / attendance badge** | N/A | Yes (transferable tokens) | No |
-| **PROVN log entry** | **No** — signed timestamp validated vs server clock (±15m window) | **No** — requires wallet's private key (Ed25519) | **Yes** — Sign-In-With-Solana (SIWS) signature |
+| **GitHub commit graph** | Yes (`git commit --date`) | Yes (commit under any name/email) | No |
+| **Twitter / Discord build-log** | Yes (post anytime) | Yes (anyone can type it) | No |
+| **POAP / attendance badge** | N/A | Yes (transferable) | No |
+| **PROVN log entry** | **No** — validated against server clock (±15 min) | **No** — requires wallet's private key | **Yes** — Ed25519 SIWS signature |
 
 Bounty hosts currently vet submitter activity manually, with no verifiable signal beyond a linked GitHub profile that can be gamed. PROVN gives a host a single link that resolves to cryptographically signed activity history.
 
@@ -29,13 +29,13 @@ Bounty hosts currently vet submitter activity manually, with no verifiable signa
 
 ## 🔗 Live Proof Artifact
 
-**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 24 verified, wallet-signed proof-of-work entries across multiple weeks. Try producing the equivalent with an unauthenticated commit graph — you can't prove when those claims were generated. Every entry here carries a valid Ed25519 signature binding the claim to the developer's wallet address.
+**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 24 verified, wallet-signed proof-of-work entries across multiple weeks. Try producing the equivalent with a commit graph — you can't prove none of those commits were backdated. Every entry here carries an Ed25519 signature that cannot be backdated or forged.
 
 ---
 
 ## ❓ Why Not Just Use GitHub?
 
-GitHub provides strong evidence of code contribution, but it isn't designed as a portable cryptographic proof-of-work protocol tied to a developer-controlled Solana identity. PROVN's entries are signed by the developer's Solana identity wallet — the identity making the claim and the identity receiving reputation credit are cryptographically bound, every time.
+GitHub provides strong evidence of code contribution, but it isn't designed as a portable cryptographic proof-of-work protocol tied to a developer-controlled Solana identity. PROVN's entries are signed by the same Solana wallet used to establish the developer's PROVN identity (matching future bounty payout addresses) — the identity making the claim and the identity being rewarded are cryptographically identical, every time.
 
 ---
 
@@ -230,7 +230,7 @@ npm run dev
 ### Testing & Verification
 
 ```bash
-# Automated protocol test suite (17 core assertions across 5 suites)
+# Protocol test suite (17 assertions)
 npm test
 
 # TypeScript type check
@@ -244,11 +244,9 @@ npm run build
 
 ## ⚠️ Known Limitations & Technical Trade-Offs
 
-1. **cNFT Minting Status**: Metaplex compressed NFT (cNFT) metadata generation and integration scaffolding are implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts), while on-chain Bubblegum tree minting is planned for Phase 2 and currently feature-flagged off (`NEXT_PUBLIC_CNFT_ENABLED=false`).
-2. **Serverless In-Memory Rate Limiting**: The current rate limiter uses an in-memory token bucket (`app/lib/rateLimiter.ts`), which enforces per-lambda instance quotas. Multi-region scaling to Upstash Redis (`@upstash/ratelimit`) is scheduled for Phase 3.
-3. **Timezone Standardization**: Protocol APIs default to Indian Standard Time (IST, UTC+5:30) day boundaries, while client interfaces auto-detect browser locales and API endpoints support custom `?tz=` overrides.
-4. **Database-Backed Quota Verification**: Daily log limits are verified via a database RPC query (`get_daily_log_count`), which checks log count prior to insertion. Strict database-level trigger constraints are planned for future scale.
-5. **Synchronous Archival & Retries**: Log submissions perform synchronous Arweave archival uploads via Irys Node #1, backed by database reservation and an authorized retry API (`/api/archival-retry`).
+1. **cNFT Minting Status**: cNFT metadata generation and integration scaffolding are implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts); on-chain Concurrent Merkle Tree minting is feature-flagged off until Phase 2 mainnet deployment.
+2. **Serverless In-Memory Rate Limiting**: The current rate limiter uses an in-memory token bucket (`app/lib/rateLimiter.ts`), enforcing per-serverless instance quotas. Distributed sliding-window rate limiting via Upstash Redis is scheduled for Phase 3.
+3. **Timezone Day Boundaries**: Protocol server APIs default to Indian Standard Time (IST, UTC+5:30) for Solana India / Superteam India builders, while client UI auto-detects browser locale (`Intl.DateTimeFormat`), and API endpoints accept custom `?tz=` query overrides.
 
 ---
 

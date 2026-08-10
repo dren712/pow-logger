@@ -43,7 +43,7 @@ export default function PrivacyPage() {
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>1. Overview</h2>
           <p style={{ color: '#ccc', margin: 0 }}>
-            PROVN (&quot;Proof-of-Work Logger&quot;) is a decentralized builder reputation protocol built on Solana and Arweave. We respect your privacy and are committed to maintaining zero covert tracking, zero user profiling, and zero third-party data monetization.
+            PROVN (&quot;Proof-of-Work Logger&quot;) is a Solana-native builder reputation protocol archived on Arweave. We respect your privacy and do not use advertising tracking pixels, behavioral profiling, or user data monetization.
           </p>
         </section>
 
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
         <section>
           <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>5. Cookies &amp; Tracking</h2>
           <p style={{ color: '#ccc', margin: 0 }}>
-            PROVN does not use tracking cookies, analytics scripts, advertising pixels, or invasive surveillance tools.
+            PROVN does not use tracking cookies, behavioral analytics scripts, advertising pixels, or invasive surveillance tools. Client IP addresses are processed transiently in serverless memory strictly for rate limiting and EDoS protection.
           </p>
         </section>
 

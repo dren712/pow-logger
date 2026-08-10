@@ -73,7 +73,6 @@ export default function LoggerApp() {
           .select('*')
           .eq('wallet_address', walletAddress)
           .order('created_at', { ascending: false })
-          .limit(50)
         if (data && active) setLogs(data as LogItem[])
       } catch (err) {
         console.error('Fetch logs error:', err)

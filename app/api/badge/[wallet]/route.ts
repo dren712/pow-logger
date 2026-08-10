@@ -37,12 +37,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const streak = calculateStreak(createdAts, tz)
     const longestStreak = calculateLongestStreak(createdAts, tz)
 
-    const uniqueDays = Array.from(new Set(createdAts.map((d) => new Date(d).toISOString().split('T')[0]))).sort()
-    console.log(`[PROVN Badge API] wallet=${wallet} rowCount=${totalLogs} streak=${streak} uniqueDaysCount=${uniqueDays.length} days=${JSON.stringify(uniqueDays)}`)
+    const shortWallet = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
+    console.log(`[PROVN Badge API] wallet=${shortWallet} rowCount=${totalLogs} streak=${streak}`)
 
     const badgeSummary = computeBadgeSummary(totalLogs, streak, longestStreak, logList)
     const level = badgeSummary.level
-    const shortWallet = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
 
     // Build responsive Shields.io style SVG badge
     const svg = `

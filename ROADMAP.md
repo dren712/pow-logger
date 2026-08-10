@@ -10,7 +10,7 @@
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            PROVN ROADMAP PHASES                             │
 │                                                                             │
-│  [ Phase 1: Proof Foundry Core ] ─────────────► ✅ COMPLETED & HARDENED    │
+│  [ Phase 1: Proof Foundry Core ] ─────────────► ✅ COMPLETED & SECURITY-TESTED
 │  [ Phase 2: Dual-Tier Reputation & Badges ] ──► ✅ COMPLETED & LIVE        │
 │  [ Phase 3: B2B DAO Grant Gating & SDK ] ─────► 🚧 IN PROGRESS (Q3 2026)    │
 │  [ Phase 4: Metaplex cNFT On-Chain Badges ] ──► 🔮 UPCOMING (Q4 2026)      │
@@ -26,7 +26,7 @@
 - [x] **Permanent Decentralized Archival**: Packaging log envelopes into JSON metadata and archiving to Arweave via Irys Node #1.
 - [x] **Database Security & RLS**: Supabase PostgreSQL with strict `service_role` write policies, anonymous `SELECT` read access, and unique signature indexing.
 - [x] **Automated Classification Engine**: 16-skill regex classification for Solana, Rust, Anchor, Next.js, Security, and DeFi work categories.
-- [x] **Automated CI/CD**: Automated protocol test suite (17 core assertions across 5 suites) running on GitHub Actions.
+- [x] **Automated CI/CD**: 17-assertion protocol test suite running on GitHub Actions.
 
 ---
 

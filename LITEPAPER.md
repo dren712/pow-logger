@@ -86,20 +86,21 @@ PROVN implements a gamified, multi-pillar reputation model inspired by LeetCode 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    PROVN REPUTATION & BADGE ENGINE                          │
 │                                                                             │
-│  LEVEL PROGRESSION (Tier 1):                                                │
+│  LEVEL PROGRESSION (5 Tiers):                                               │
 │  • Level 1: Apprentice Builder (0-6 logs)   [🔧 #888888]                    │
 │  • Level 2: Verified Craftsman (7-29 logs)  [⚒️ #00e5ff]                    │
 │  • Level 3: Senior Architect   (30-99 logs) [🏗️ #ffb800]                    │
-│  • Level 4: Protocol Master    (100+ logs)  [💎 #ff00ff]                    │
+│  • Level 4: Protocol Master    (100-249 logs)[💎 #ff00ff]                    │
+│  • Level 5: Grand Legend       (250+ logs)  [👑 #00ff88]                    │
 │                                                                             │
-│  STREAK TROPHIES (Tier 2):                                                  │
+│  STREAK TROPHIES:                                                           │
 │  • 🔥 7-Day Streak  | ⚡ 14-Day Streak | 🛡️ 30-Day Ironclad                 │
 │  • ⚔️ 60-Day Titan  | 💎 100-Day Legend | 👑 365-Day Eternal                 │
 │                                                                             │
-│  SKILL & QUALITY BADGES (Tier 3 - LeetCode / Codeforces Style):             │
+│  SKILL & QUALITY BADGES (LeetCode / Codeforces Style):                      │
 │  • ⚓ Anchor Specialist   (3+ Solana / Anchor smart contract logs)          │
 │  • 🛡️ Security Auditor    (2+ Security / Authentication work logs)         │
-│  • 🐙 Open Source Builder (3+ Verified GitHub PR/Commit links)               │
+│  • 🐙 Open Source Builder (3+ GitHub-linked proof logs)                      │
 │  • 📜 Arweave Archivist   (5+ Permanent Arweave archived logs)             │
 │  • 💯 Century Club        (100+ Total verified proof logs)                 │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -115,7 +116,7 @@ Developers can embed their real-time PROVN reputation badge in any markdown docu
 [![PROVN Reputation](https://provn-sol.vercel.app/api/badge/<WALLET_ADDRESS>.svg)](https://provn-sol.vercel.app/u/<WALLET_ADDRESS>)
 ```
 
-The server dynamically renders a responsive vector SVG displaying the builder's Level, active streak, log count, and unlocked badges with built-in HTTP caching (`max-age=300, s-maxage=600`).
+The server dynamically renders a responsive vector SVG displaying the builder's Level, active streak, log count, and unlocked badges with built-in HTTP caching (`max-age=60, s-maxage=60, stale-while-revalidate=120`).
 
 ---
 
@@ -123,14 +124,14 @@ The server dynamically renders a responsive vector SVG displaying the builder's 
 
 - **PostgreSQL Row-Level Security**: Public clients (`anon`) are strictly restricted to read-only `SELECT` queries on the `logs` table. Direct client `INSERT`, `UPDATE`, or `DELETE` operations are rejected by PostgreSQL policies. All writes execute through the `service_role` on verified server routes.
 - **Unique Signature Index**: Enforces a database-level `UNIQUE INDEX` on the `signature` column to neutralize signature replay attacks.
-- **Timestamp Anti-Replay Window**: Strict 15-minute window (`900,000ms`) enforced server-side.
-- **Atomic Daily Quota**: Daily limits (3 logs/day) checked via `get_daily_log_count` SECURITY DEFINER RPC.
+- **Timestamp Anti-Replay Window**: Validates signed timestamp against server clock within a strict 15-minute window (`900,000ms`).
+- **Daily Quota Enforcement**: Daily limits (3 logs/day) enforced database-side via `get_daily_log_count` RPC.
 
 ---
 
 ## 7. Future Protocols: Compressed NFTs (cNFTs) & Helius RPC
 
-The codebase includes integration scaffolding for **Metaplex Bubblegum Compressed NFTs (cNFTs)** in [`app/lib/cnft.ts`](app/lib/cnft.ts). When a fee-payer keypair and mainnet Merkle tree are configured in Phase 2, the protocol can automatically mint on-chain cNFT credentials to builders reaching 7-day and 30-day streak milestones on Solana devnet/mainnet.
+The codebase contains cNFT metadata generation and scaffolding in [`app/lib/cnft.ts`](app/lib/cnft.ts). On-chain Bubblegum Concurrent Merkle Tree minting is planned for Phase 2 mainnet deployment when fee payer keypair and tree pubkey are configured.
 
 ---
 

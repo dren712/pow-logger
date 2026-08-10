@@ -73,7 +73,7 @@ function generateNonce(): string {
     crypto.getRandomValues(bytes)
     return encodeBase58(bytes)
   }
-  return Math.random().toString(36).substring(2, 15)
+  throw new Error('Secure random generator (crypto.getRandomValues) unavailable.')
 }
 
 export async function submitVerifiedLog(
