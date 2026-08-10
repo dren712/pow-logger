@@ -191,6 +191,8 @@ export async function POST(req: NextRequest) {
         skills: classification.skills,
         protocols: classification.protocols,
         category: classification.category,
+        nonce: typeof nonce === 'string' ? nonce : 'legacy',
+        domain: reqHost,
         evidence_url: cleanEvidenceUrl,
         github_url: cleanGithubUrl,
         archival_state: 'pending' as ArchivalState,

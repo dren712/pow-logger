@@ -87,7 +87,9 @@ export async function submitVerifiedLog(
   const nonce = generateNonce()
 
   // 1. Build canonical SIWS message cryptographically binding content AND evidence URLs
+  const clientDomain = typeof window !== 'undefined' ? window.location.host.split(':')[0] : 'provn-sol.vercel.app'
   const messageText = buildCanonicalSubmitMessage({
+    domain: clientDomain,
     walletAddress,
     timestamp,
     nonce,

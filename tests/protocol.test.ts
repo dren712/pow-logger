@@ -7,7 +7,7 @@
  * 3. Ed25519 Cryptographic Signature Verification & Tampered Field Invalidation.
  * 4. Database Security & Supabase RLS Anonymous Mutation Rejection.
  * 5. Replay Attack Prevention (Duplicate Signature Rejection & Expiry Window).
- * 6. Daily Quota Limit Boundaries (Max 3 logs per 24 hours).
+ * 6. Fixed-Window In-Memory Serverless Rate Limiter.
  * 7. Verification API Metrics & Cache Header Validation.
  */
 
@@ -90,7 +90,7 @@ async function runProductionTestSuite() {
     new Date().toISOString(),
   ]
   const currentStreakCount = calculateStreak(sampleDates)
-  assert(currentStreakCount === 3, 'Consecutive 3-day UTC streak calculated correctly')
+  assert(currentStreakCount === 3, 'Consecutive 3-day IST streak calculated correctly')
 
   // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
   console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')

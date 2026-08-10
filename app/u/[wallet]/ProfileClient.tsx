@@ -128,6 +128,11 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
     return { bg: 'rgba(0, 255, 136, 0.1)', border: 'rgba(0, 255, 136, 0.3)', color: '#00ff88' }
   }
 
+  const archivedCount = useMemo(
+    () => initialLogs.filter((l) => l.archival_state === 'archived' && l.irys_tx_id && !l.irys_tx_id.startsWith('powl_')).length,
+    [initialLogs]
+  )
+
   return (
     <main
       style={{
@@ -163,7 +168,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             onClick={() => {
               const svg = generateNFTBadgeSVG(wallet, streakCount)
               setModalSvg(svg)
-              setModalTitle(`PROVN Builder NFT — ${walletShort}`)
+              setModalTitle(`PROVN Builder Proof Card — ${walletShort}`)
               setModalOpen(true)
             }}
             className="btn-primary"
@@ -174,7 +179,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
               color: '#00ff88',
             }}
           >
-            🖼️ View NFT Badge
+            🖼️ View Proof Card
           </button>
 
           <button
@@ -256,10 +261,10 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         >
           <div>
             <div style={{ color: '#666', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Total Permanent Logs
+              Total Work Logs
             </div>
             <div style={{ color: '#00e5ff', fontSize: '22px', fontWeight: 800, marginTop: '4px' }}>
-              📦 {initialLogs.length} Verified Entries
+              📦 {initialLogs.length} Verified Submissions ({archivedCount} Archived)
             </div>
           </div>
 
