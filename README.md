@@ -21,7 +21,7 @@
 | **GitHub commit graph** | Yes (`git commit --date`) | Yes (commit under any name/email) | No |
 | **Twitter / Discord build-log** | Yes (post anytime) | Yes (anyone can type it) | No |
 | **POAP / attendance badge** | N/A | Yes (transferable) | No |
-| **PROVN log entry** | **No** — validated against server clock (±15 min) | **No** — requires wallet's private key | **Yes** — Ed25519 SIWS signature |
+| **PROVN log entry** | **No** — signed timestamp must be within ±15 min of submission | **No** — requires wallet's private key | **Yes** — Ed25519 SIWS signature |
 
 Bounty hosts currently vet submitter activity manually, with no verifiable signal beyond a linked GitHub profile that can be gamed. PROVN gives a host a single link that resolves to cryptographically signed activity history.
 

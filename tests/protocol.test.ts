@@ -9,7 +9,7 @@
  * 5. Replay Attack Prevention (Duplicate Signature Rejection & Expiry Window).
  * 6. Fixed-Window In-Memory Serverless Rate Limiter.
  * 7. Verification API Metrics & Cache Header Validation.
- * 8. End-to-End Persisted Proof Re-Verification & Tamper Detection.
+ * 8. Persisted Proof Reconstruction & Multi-Field Tamper Validation.
  */
 
 import nacl from 'tweetnacl'
@@ -253,11 +253,11 @@ async function runProductionTestSuite() {
   )
   assert(isWrongWalletValid === false, 'Retry signature for wrong wallet address rejected')
 
-  // --- SUITE 6: End-to-End Persisted Proof Re-Verification & Tamper Validation ---
-  console.log('\n► SUITE 6: End-to-End Persisted Proof Re-Verification & Tamper Validation')
+  // --- SUITE 6: Persisted Proof Reconstruction & Multi-Field Tamper Validation ---
+  console.log('\n► SUITE 6: Persisted Proof Reconstruction & Multi-Field Tamper Validation')
   const testNonce = 'nonce_e2e_9999'
   const testDomain = 'provn-sol.vercel.app'
-  const testContent = 'End-to-End Persisted Proof Integration Test Log'
+  const testContent = 'Persisted Proof Reconstruction Test Log'
   const testTimestamp = new Date().toISOString()
 
   const e2eCanonicalMsg = buildCanonicalSubmitMessage({
@@ -298,7 +298,7 @@ async function runProductionTestSuite() {
   )
   assert(isE2EValid === true, 'Persisted nonce and domain reconstruct exact signature correctly')
 
-  // Verify that altering any single persisted field invalidates signature
+  // 1. Tampered Nonce
   const tamperedNonceMsg = buildCanonicalSubmitMessage({
     domain: mockStoredRow.domain,
     walletAddress: mockStoredRow.wallet_address,
@@ -306,12 +306,27 @@ async function runProductionTestSuite() {
     nonce: 'tampered_nonce',
     content: mockStoredRow.content,
   })
-  const isTamperedNonceValid = nacl.sign.detached.verify(
-    new TextEncoder().encode(tamperedNonceMsg),
-    bs58.decode(mockStoredRow.signature),
-    bs58.decode(mockStoredRow.wallet_address)
-  )
-  assert(isTamperedNonceValid === false, 'Tampered persisted nonce invalidates re-verification')
+  assert(!nacl.sign.detached.verify(new TextEncoder().encode(tamperedNonceMsg), bs58.decode(mockStoredRow.signature), bs58.decode(mockStoredRow.wallet_address)), 'Tampered persisted nonce invalidates re-verification')
+
+  // 2. Tampered Domain
+  const tamperedDomainMsg = buildCanonicalSubmitMessage({
+    domain: 'localhost',
+    walletAddress: mockStoredRow.wallet_address,
+    timestamp: mockStoredRow.created_at,
+    nonce: mockStoredRow.nonce,
+    content: mockStoredRow.content,
+  })
+  assert(!nacl.sign.detached.verify(new TextEncoder().encode(tamperedDomainMsg), bs58.decode(mockStoredRow.signature), bs58.decode(mockStoredRow.wallet_address)), 'Tampered persisted domain invalidates re-verification')
+
+  // 3. Tampered Content
+  const tamperedE2EContentMsg = buildCanonicalSubmitMessage({
+    domain: mockStoredRow.domain,
+    walletAddress: mockStoredRow.wallet_address,
+    timestamp: mockStoredRow.created_at,
+    nonce: mockStoredRow.nonce,
+    content: 'Altered content payload',
+  })
+  assert(!nacl.sign.detached.verify(new TextEncoder().encode(tamperedE2EContentMsg), bs58.decode(mockStoredRow.signature), bs58.decode(mockStoredRow.wallet_address)), 'Tampered persisted content invalidates re-verification')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')
