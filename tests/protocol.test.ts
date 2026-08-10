@@ -9,6 +9,7 @@
  * 5. Replay Attack Prevention (Duplicate Signature Rejection & Expiry Window).
  * 6. Fixed-Window In-Memory Serverless Rate Limiter.
  * 7. Verification API Metrics & Cache Header Validation.
+ * 8. End-to-End Persisted Proof Re-Verification & Tamper Detection.
  */
 
 import nacl from 'tweetnacl'
@@ -78,7 +79,7 @@ async function runProductionTestSuite() {
   assert(spoofedDomain === 'provn-sol.vercel.app', 'Arbitrary host header spoofing rejected')
 
   const validLocalhost = getVerifiedDomain('localhost:3000')
-  assert(validLocalhost === 'localhost:3000', 'Localhost development host header accepted')
+  assert(validLocalhost === 'localhost', 'Localhost development host header accepted')
 
   const dummyKeyArr = JSON.stringify(Array.from({ length: 64 }, (_, i) => i))
   const parsedKeyBytes = parseIrysPrivateKey(dummyKeyArr)
@@ -251,6 +252,66 @@ async function runProductionTestSuite() {
     bs58.decode(wrongWalletAddress)
   )
   assert(isWrongWalletValid === false, 'Retry signature for wrong wallet address rejected')
+
+  // --- SUITE 6: End-to-End Persisted Proof Re-Verification & Tamper Validation ---
+  console.log('\n► SUITE 6: End-to-End Persisted Proof Re-Verification & Tamper Validation')
+  const testNonce = 'nonce_e2e_9999'
+  const testDomain = 'provn-sol.vercel.app'
+  const testContent = 'End-to-End Persisted Proof Integration Test Log'
+  const testTimestamp = new Date().toISOString()
+
+  const e2eCanonicalMsg = buildCanonicalSubmitMessage({
+    domain: testDomain,
+    walletAddress,
+    timestamp: testTimestamp,
+    nonce: testNonce,
+    content: testContent,
+  })
+
+  const e2eMsgBytes = new TextEncoder().encode(e2eCanonicalMsg)
+  const e2eSigBytes = nacl.sign.detached(e2eMsgBytes, keypair.secretKey)
+  const e2eSignature = bs58.encode(e2eSigBytes)
+
+  // Simulate retrieving stored database fields
+  const mockStoredRow = {
+    wallet_address: walletAddress,
+    domain: testDomain,
+    nonce: testNonce,
+    created_at: testTimestamp,
+    content: testContent,
+    signature: e2eSignature,
+  }
+
+  // Re-verify from stored fields
+  const reconstructedMsg = buildCanonicalSubmitMessage({
+    domain: mockStoredRow.domain,
+    walletAddress: mockStoredRow.wallet_address,
+    timestamp: mockStoredRow.created_at,
+    nonce: mockStoredRow.nonce,
+    content: mockStoredRow.content,
+  })
+
+  const isE2EValid = nacl.sign.detached.verify(
+    new TextEncoder().encode(reconstructedMsg),
+    bs58.decode(mockStoredRow.signature),
+    bs58.decode(mockStoredRow.wallet_address)
+  )
+  assert(isE2EValid === true, 'Persisted nonce and domain reconstruct exact signature correctly')
+
+  // Verify that altering any single persisted field invalidates signature
+  const tamperedNonceMsg = buildCanonicalSubmitMessage({
+    domain: mockStoredRow.domain,
+    walletAddress: mockStoredRow.wallet_address,
+    timestamp: mockStoredRow.created_at,
+    nonce: 'tampered_nonce',
+    content: mockStoredRow.content,
+  })
+  const isTamperedNonceValid = nacl.sign.detached.verify(
+    new TextEncoder().encode(tamperedNonceMsg),
+    bs58.decode(mockStoredRow.signature),
+    bs58.decode(mockStoredRow.wallet_address)
+  )
+  assert(isTamperedNonceValid === false, 'Tampered persisted nonce invalidates re-verification')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')

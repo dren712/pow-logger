@@ -1,6 +1,6 @@
 # 🗿 PROVN Protocol — Technical Litepaper v1.0
 
-**A Decentralized, Cryptographically Verifiable Builder Reputation Protocol for Solana & Arweave**
+**A Solana-Native, Cryptographically Verifiable Builder Reputation Protocol with Permanent Arweave Archival**
 
 *Author: dren712*  
 *Repository: [github.com/dren712/pow-logger](https://github.com/dren712/pow-logger)*  
@@ -12,7 +12,7 @@
 
 In the modern Web3 software ecosystem, developer reputation is fragmented, unverified, and prone to fabrication. Resumes, social media posts, and unauthenticated portfolio claims fail to provide immutable proof of daily engineering contributions. Conversely, existing centralized platforms rely on single points of trust that can alter, censor, or delete historical developer records.
 
-**PROVN** solves this challenge by establishing a **lightweight, cryptographically verifiable Proof-of-Work Logger for developers**. By combining **Sign-In-With-Solana (SIWS)** cryptographic wallet signatures with **Arweave permanent storage** via Irys Node #1, PROVN creates a censorship-resistant, publicly verifiable record of daily development activity.
+**PROVN** solves this challenge by establishing a **lightweight, cryptographically verifiable Proof-of-Work Logger for developers**. By combining **Sign-In-With-Solana (SIWS)** cryptographic wallet signatures with **Arweave permanent storage** via Irys Node #1, PROVN creates a publicly verifiable, permanently archived record of daily development activity.
 
 ---
 

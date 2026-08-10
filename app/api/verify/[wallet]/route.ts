@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import { buildCanonicalSubmitMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { buildCanonicalSubmitMessage, decodeBase58, getVerifiedDomain } from '@/app/lib/canonicalMessage'
 import { computeBadgeSummary, calculateStreak, calculateLongestStreak } from '@/app/lib/milestones'
 
 const supabase = createClient(
@@ -128,9 +128,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         },
         recent_logs: logs.slice(0, 5).map((l) => {
           let isCryptoVerified = false
-          if (l.signature && publicKeyBytes) {
+          let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
+
+          if (!l.nonce) {
+            status = 'legacy_unindexed'
+          } else if (l.signature && publicKeyBytes) {
             try {
-              const reqHost = req.headers.get('host') ? req.headers.get('host')!.trim().toLowerCase().split(':')[0] : 'provn-sol.vercel.app'
+              const reqHost = getVerifiedDomain(req.headers.get('host'))
               const candidateDomains = Array.from(new Set([
                 l.domain,
                 reqHost,
@@ -146,18 +150,20 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
                   walletAddress: wallet,
                   content: l.content,
                   timestamp: l.created_at,
-                  nonce: l.nonce || 'legacy',
+                  nonce: l.nonce,
                   githubUrl: l.github_url || undefined,
                   evidenceUrl: l.evidence_url || undefined,
                 })
                 const msgBytes = new TextEncoder().encode(canonicalMsg)
                 if (nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)) {
                   isCryptoVerified = true
+                  status = 'verified'
                   break
                 }
               }
             } catch {
               isCryptoVerified = false
+              status = 'unverified'
             }
           }
           return {
@@ -171,6 +177,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
             github_url: l.github_url || null,
             irys_url: l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
             cryptographically_verified: isCryptoVerified,
+            verification_status: status,
           }
         }),
       },

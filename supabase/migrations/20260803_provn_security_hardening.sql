@@ -15,8 +15,6 @@ CREATE TABLE IF NOT EXISTS public.logs (
     skills TEXT[],
     protocols TEXT[],
     category TEXT,
-    nonce TEXT,
-    domain TEXT,
     archival_state TEXT DEFAULT 'pending'
 );
 

@@ -35,7 +35,7 @@ Bounty hosts currently vet submitter activity manually, with no verifiable signa
 
 ## ❓ Why Not Just Use GitHub?
 
-GitHub provides strong evidence of code contribution, but it isn't designed as a portable cryptographic proof-of-work protocol tied to a developer-controlled Solana identity. PROVN's entries are signed by the same Solana wallet used to establish the developer's PROVN identity (matching future bounty payout addresses) — the identity making the claim and the identity being rewarded are cryptographically identical, every time.
+GitHub provides strong evidence of code contribution, but it isn't designed as a portable cryptographic proof-of-work protocol tied to a developer-controlled Solana identity. PROVN's entries are signed by the developer's Solana wallet — ensuring the identity making the claim and the identity building reputation are cryptographically identical, every time.
 
 ---
 

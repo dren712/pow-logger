@@ -70,7 +70,7 @@ export function validateAndNormalizeUrl(
  */
 export function getVerifiedDomain(reqHost: string | null): string {
   if (process.env.NEXT_PUBLIC_APP_DOMAIN) {
-    return process.env.NEXT_PUBLIC_APP_DOMAIN.trim()
+    return process.env.NEXT_PUBLIC_APP_DOMAIN.trim().toLowerCase().split(':')[0]
   }
 
   if (!reqHost || typeof reqHost !== 'string') {
@@ -86,7 +86,7 @@ export function getVerifiedDomain(reqHost: string | null): string {
     : false
 
   if (isVercel || isLocalhost || isWhitelisted) {
-    return reqHost.trim()
+    return cleanHost
   }
 
   return 'provn-sol.vercel.app'
