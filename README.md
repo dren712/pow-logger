@@ -116,7 +116,7 @@ PROVN implements a 3-tier reputation model:
 - **Tier 3: LeetCode / Codeforces Skill Badges**:
   - ⚓ **Anchor Specialist**: 3+ Solana / Anchor smart contract logs.
   - 🛡️ **Security Auditor**: 2+ Security or Auth work logs.
-  - 🐙 **Open Source Builder**: 3+ Verified GitHub PR/Commit links.
+  - 🐙 **Open Source Builder**: 3+ GitHub-linked proof logs.
   - 📜 **Arweave Archivist**: 5+ Permanent Arweave archived logs.
   - 💯 **Century Club**: 100+ Total verified proof logs.
 

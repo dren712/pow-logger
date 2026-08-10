@@ -18,7 +18,7 @@ In the modern Web3 software ecosystem, developer reputation is fragmented, unver
 
 ## 2. Core Protocol Architecture
 
-PROVN operates as a 4-tier decentralized verification pipeline:
+PROVN operates as a 4-layer cryptographically verifiable pipeline:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -90,8 +90,8 @@ PROVN implements a gamified, multi-pillar reputation model inspired by LeetCode 
 │  • Level 1: Apprentice Builder (0-6 logs)   [🔧 #888888]                    │
 │  • Level 2: Verified Craftsman (7-29 logs)  [⚒️ #00e5ff]                    │
 │  • Level 3: Senior Architect   (30-99 logs) [🏗️ #ffb800]                    │
-│  • Level 4: Protocol Master    (100-249 logs)[💎 #ff00ff]                    │
-│  • Level 5: Grand Legend       (250+ logs)  [👑 #00ff88]                    │
+│  • Level 4: Protocol Master    (100-364 logs)[💎 #ff00ff]                    │
+│  • Level 5: Grand Legend       (365+ logs)  [👑 #00ff88]                    │
 │                                                                             │
 │  STREAK TROPHIES:                                                           │
 │  • 🔥 7-Day Streak  | ⚡ 14-Day Streak | 🛡️ 30-Day Ironclad                 │

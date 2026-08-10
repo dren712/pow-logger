@@ -83,12 +83,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Wallet Rate Limiting (ENFORCED AFTER SUCCESSFUL ED25519 SIGNATURE VERIFICATION TO PREVENT DOS GRIEFING)
-    const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
-    if (!walletLimit.allowed) {
-      return NextResponse.json({ error: walletLimit.error }, { status: 429 })
-    }
-
     // 4. Fetch log record from database & verify ownership
     const { data: logRow, error: fetchErr } = await supabase
       .from('logs')
@@ -115,6 +109,12 @@ export async function POST(req: NextRequest) {
         archivalState: 'archived',
         gatewayUrl: `https://gateway.irys.xyz/${logRow.irys_tx_id}`,
       })
+    }
+
+    // Wallet Rate Limiting (ENFORCED ONLY FOR VALID UNARCHIVED RETRY ELIGIBLE REQUESTS)
+    const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
+    if (!walletLimit.allowed) {
+      return NextResponse.json({ error: walletLimit.error }, { status: 429 })
     }
 
     // 5. Execute Retry Upload to Irys Node #1

@@ -107,13 +107,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Wallet Rate Limiting (ENFORCED AFTER SUCCESSFUL ED25519 SIGNATURE VERIFICATION TO PREVENT DOS GRIEFING)
-    const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
-    if (!walletLimit.allowed) {
-      return NextResponse.json({ error: walletLimit.error }, { status: 429 })
+    // 5. Signature Duplicate Lookup (Replay Defense Check)
+    const { data: existingSig, error: sigCheckError } = await supabase
+      .from('logs')
+      .select('id')
+      .eq('signature', signature)
+      .maybeSingle()
+
+    if (sigCheckError) {
+      console.warn('Signature lookup warning:', sigCheckError.message)
     }
 
-    // 5. Server-Enforced Daily Log Quota Check (via Postgres RPC)
+    if (existingSig) {
+      return NextResponse.json(
+        { error: 'Signature already submitted. Duplicate or replayed payload rejected.' },
+        { status: 409 }
+      )
+    }
+
+    // 6. Server-Enforced Daily Log Quota Check (via Postgres RPC)
     const todayISTString = toLocalDateString(new Date(), 'Asia/Kolkata')
     const startOfDay = new Date(`${todayISTString}T00:00:00+05:30`)
 
@@ -150,22 +162,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 6. Signature Replay Check
-    const { data: existingSig, error: sigCheckError } = await supabase
-      .from('logs')
-      .select('id')
-      .eq('signature', signature)
-      .maybeSingle()
-
-    if (sigCheckError) {
-      console.warn('Signature lookup warning:', sigCheckError.message)
-    }
-
-    if (existingSig) {
-      return NextResponse.json(
-        { error: 'Signature already submitted. Duplicate or replayed payload rejected.' },
-        { status: 409 }
-      )
+    // 7. Wallet Rate Limiting (ENFORCED AFTER ED25519 VERIFICATION + DUPLICATE REPLAY CHECK TO PREVENT GRIEFING)
+    const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
+    if (!walletLimit.allowed) {
+      return NextResponse.json({ error: walletLimit.error }, { status: 429 })
     }
 
     // 7. Classify Log Content
