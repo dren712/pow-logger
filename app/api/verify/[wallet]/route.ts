@@ -89,9 +89,70 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && l.archival_state === 'archived'
     )
 
+    const processedRecentLogs = logs.slice(0, 5).map((l) => {
+      let isCryptoVerified = false
+      let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
+
+      if (!l.nonce) {
+        status = 'legacy_unindexed'
+      } else if (l.signature && publicKeyBytes) {
+        try {
+          const reqHost = getVerifiedDomain(req.headers.get('host'))
+          const candidateDomains = Array.from(new Set([
+            l.domain,
+            reqHost,
+            'provn-sol.vercel.app',
+            'localhost'
+          ].filter(Boolean)))
+
+          const sigBytes = decodeBase58(l.signature)
+
+          for (const domain of candidateDomains) {
+            const canonicalMsg = buildCanonicalSubmitMessage({
+              domain,
+              walletAddress: wallet,
+              content: l.content,
+              timestamp: l.created_at,
+              nonce: l.nonce,
+              githubUrl: l.github_url || undefined,
+              evidenceUrl: l.evidence_url || undefined,
+            })
+            const msgBytes = new TextEncoder().encode(canonicalMsg)
+            if (nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)) {
+              isCryptoVerified = true
+              status = 'verified'
+              break
+            }
+          }
+        } catch {
+          isCryptoVerified = false
+          status = 'unverified'
+        }
+      }
+      return {
+        id: l.id,
+        content: l.content,
+        category: l.category,
+        skills: l.skills,
+        created_at: l.created_at,
+        archival_state: l.archival_state || 'pending',
+        evidence_url: l.evidence_url || null,
+        github_url: l.github_url || null,
+        irys_url: l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
+        cryptographically_verified: isCryptoVerified,
+        verification_status: status,
+      }
+    })
+
+    const verifiedLogsCount = processedRecentLogs.filter((l) => l.cryptographically_verified).length
+    const legacyCount = logs.filter((l) => !l.nonce).length
+
     return NextResponse.json(
       {
-        verified: true,
+        profile_found: true,
+        verified: verifiedLogsCount > 0,
+        verified_logs_count: verifiedLogsCount,
+        legacy_unindexed_count: legacyCount,
         wallet: walletShort,
         wallet_full: wallet,
         streak,
@@ -126,60 +187,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
             days_remaining: badgeSummary.nextMilestone.daysRemaining,
           } : null,
         },
-        recent_logs: logs.slice(0, 5).map((l) => {
-          let isCryptoVerified = false
-          let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
-
-          if (!l.nonce) {
-            status = 'legacy_unindexed'
-          } else if (l.signature && publicKeyBytes) {
-            try {
-              const reqHost = getVerifiedDomain(req.headers.get('host'))
-              const candidateDomains = Array.from(new Set([
-                l.domain,
-                reqHost,
-                'provn-sol.vercel.app',
-                'localhost'
-              ].filter(Boolean)))
-
-              const sigBytes = decodeBase58(l.signature)
-
-              for (const domain of candidateDomains) {
-                const canonicalMsg = buildCanonicalSubmitMessage({
-                  domain,
-                  walletAddress: wallet,
-                  content: l.content,
-                  timestamp: l.created_at,
-                  nonce: l.nonce,
-                  githubUrl: l.github_url || undefined,
-                  evidenceUrl: l.evidence_url || undefined,
-                })
-                const msgBytes = new TextEncoder().encode(canonicalMsg)
-                if (nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)) {
-                  isCryptoVerified = true
-                  status = 'verified'
-                  break
-                }
-              }
-            } catch {
-              isCryptoVerified = false
-              status = 'unverified'
-            }
-          }
-          return {
-            id: l.id,
-            content: l.content,
-            category: l.category,
-            skills: l.skills,
-            created_at: l.created_at,
-            archival_state: l.archival_state || 'pending',
-            evidence_url: l.evidence_url || null,
-            github_url: l.github_url || null,
-            irys_url: l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
-            cryptographically_verified: isCryptoVerified,
-            verification_status: status,
-          }
-        }),
+        recent_logs: processedRecentLogs,
       },
       {
         headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' },

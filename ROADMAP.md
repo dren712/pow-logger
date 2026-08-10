@@ -1,6 +1,6 @@
 # 🗺️ PROVN Protocol — Engineering Roadmap
 
-*Decentralized Proof-of-Work & Builder Reputation Protocol on Solana & Arweave*
+*A Solana-Native, Cryptographically Verifiable Builder Reputation Protocol with Permanent Arweave Archival*
 
 ---
 
@@ -37,9 +37,9 @@
 - [x] **Tier 3: LeetCode / Codeforces Skill Badges**:
   - ⚓ **Anchor Specialist**: 3+ Solana / Anchor smart contract logs.
   - 🛡️ **Security Auditor**: 2+ Security / Auth work logs.
-  - 🐙 **Open Source Builder**: 3+ Verified GitHub PR / Commit links.
+  - 🐙 **Open Source Builder**: 3+ GitHub-linked proof logs.
   - 📜 **Arweave Archivist**: 5+ Permanent Arweave archived logs.
-  - 💯 **Century Club**: 100+ Total verified logs.
+  - 💯 **Century Club**: 100+ Total signed proof logs.
 - [x] **GitHub README Live SVG Badge Engine**: Public SVG endpoint (`/api/badge/[wallet].svg`) for developer GitHub profiles.
 - [x] **Glassmorphic Builder Dashboard**: 4-column stats grid, level progress bar, and 365-day contribution heatmap.
 
