@@ -12,7 +12,7 @@
 
 In the modern Web3 software ecosystem, developer reputation is fragmented, unverified, and prone to fabrication. Resumes, social media posts, and unauthenticated portfolio claims fail to provide immutable proof of daily engineering contributions. Conversely, existing centralized platforms rely on single points of trust that can alter, censor, or delete historical developer records.
 
-**PROVN** solves this challenge by establishing a **lightweight, cryptographically verifiable Proof-of-Work Logger for developers**. By combining **Sign-In-With-Solana (SIWS)** cryptographic wallet signatures with **Arweave permanent storage** via Irys Node #1, PROVN creates a publicly verifiable, permanently archived record of daily development activity.
+**PROVN** solves this challenge by establishing a **lightweight, cryptographically verifiable Proof-of-Work Logger for developers**. By combining **Sign-In-With-Solana (SIWS)** cryptographic wallet signatures with **Arweave permanent storage** via Irys Node #1, PROVN creates a publicly verifiable, permanently archived record of developer-signed daily work claims.
 
 ---
 
@@ -74,7 +74,7 @@ Verified log envelopes are formatted into standardized JSON metadata structures 
 - Classified skills, protocols, and work categories
 - Canonical timestamp & normalized proof links
 
-The payload is stored permanently on **Arweave** via **Irys Node #1**. Because log envelopes are ~2 KB each, uploads fall under Irys's free storage tier (< 100 KB), ensuring zero transaction overhead for builders while guaranteeing permanent multi-decade data availability.
+The payload is stored permanently on **Arweave** via **Irys Node #1**. Because log envelopes are ~2 KB each, uploads fall under Irys's free storage tier (< 100 KB), ensuring zero transaction overhead for builders while designed for permanent multi-decade data availability via Arweave.
 
 ---
 

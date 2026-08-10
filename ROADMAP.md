@@ -26,7 +26,7 @@
 - [x] **Permanent Decentralized Archival**: Packaging log envelopes into JSON metadata and archiving to Arweave via Irys Node #1.
 - [x] **Database Security & RLS**: Supabase PostgreSQL with strict `service_role` write policies, anonymous `SELECT` read access, and unique signature indexing.
 - [x] **Automated Classification Engine**: 16-skill regex classification for Solana, Rust, Anchor, Next.js, Security, and DeFi work categories.
-- [x] **Automated CI/CD**: 17-assertion protocol test suite running on GitHub Actions.
+- [x] **Automated CI/CD**: Comprehensive protocol and security test suite running on GitHub Actions.
 
 ---
 
