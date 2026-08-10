@@ -82,7 +82,7 @@ export default function Footer() {
             </div>
             <div style={{ display: 'grid', gap: '6px' }}>
               <Link
-                href="/api/verify/demo"
+                href="/api/verify/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p"
                 style={{ color: '#00e5ff', textDecoration: 'none' }}
               >
                 Verification API (/api/verify/[wallet])

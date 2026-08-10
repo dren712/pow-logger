@@ -1,6 +1,6 @@
 # PROVN — Proof-of-Work Logger 🗿
 
-**PROVN turns a wallet-signed daily log into proof that can't be faked, backdated, or borrowed — the way a commit graph or a Twitter build-log can be.**
+**PROVN turns a developer's work claim into a cryptographically attributable, timestamp-bound, and permanently verifiable proof-of-work record.**
 
 [![Build Status](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -16,12 +16,12 @@
 
 ## 🔍 Verification Comparison
 
-| Method | Can be backdated? | Can be faked by someone else? | Cryptographically tied to identity? |
+| Method | Can be backdated? | Can be faked under another identity? | Cryptographically tied to wallet identity? |
 | :--- | :--- | :--- | :--- |
-| **GitHub commit graph** | Yes (`git commit --date`) | Yes (commit under any name/email) | No |
-| **Twitter / Discord build-log** | Yes (post anytime) | Yes (anyone can type it) | No |
-| **POAP / attendance badge** | N/A | Yes (transferable) | No |
-| **PROVN log entry** | **No** — timestamp is server-verified | **No** — requires wallet's private key | **Yes** — Ed25519 SIWS signature |
+| **GitHub commit graph** | Yes (`git commit --date`) | Yes (commits can specify arbitrary author emails) | No (unless GPG/SSH signed) |
+| **Twitter / Discord build-log** | Yes (post anytime) | Yes (unverified social text) | No |
+| **POAP / attendance badge** | N/A | Yes (transferable tokens) | No |
+| **PROVN log entry** | **No** — signed timestamp validated vs server clock (±15m window) | **No** — requires wallet's private key (Ed25519) | **Yes** — Sign-In-With-Solana (SIWS) signature |
 
 Bounty hosts currently vet submitter activity manually, with no verifiable signal beyond a linked GitHub profile that can be gamed. PROVN gives a host a single link that resolves to cryptographically signed activity history.
 
@@ -29,13 +29,13 @@ Bounty hosts currently vet submitter activity manually, with no verifiable signa
 
 ## 🔗 Live Proof Artifact
 
-**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 23 verified, wallet-signed proof-of-work entries across multiple weeks. Try producing the equivalent with a commit graph — you can't prove none of those commits were backdated. Every entry here carries an Ed25519 signature that can't be.
+**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 24 verified, wallet-signed proof-of-work entries across multiple weeks. Try producing the equivalent with an unauthenticated commit graph — you can't prove when those claims were generated. Every entry here carries a valid Ed25519 signature binding the claim to the developer's wallet address.
 
 ---
 
 ## ❓ Why Not Just Use GitHub?
 
-A commit graph proves code changed. It doesn't prove who changed it, when they really changed it, or that the same person is claiming credit consistently across bounties, hackathons, and grants. PROVN's entries are signed by the same wallet that receives payouts — the identity making the claim and the identity being rewarded are cryptographically the same, every time.
+GitHub provides strong evidence of code contribution, but it isn't designed as a portable cryptographic proof-of-work protocol tied to a developer-controlled Solana identity. PROVN's entries are signed by the developer's Solana identity wallet — the identity making the claim and the identity receiving reputation credit are cryptographically bound, every time.
 
 ---
 
@@ -230,7 +230,7 @@ npm run dev
 ### Testing & Verification
 
 ```bash
-# Protocol test suite (20 tests)
+# Automated protocol test suite (17 core assertions across 5 suites)
 npm test
 
 # TypeScript type check
@@ -244,9 +244,11 @@ npm run build
 
 ## ⚠️ Known Limitations & Technical Trade-Offs
 
-1. **cNFT Minting Status**: Metaplex compressed NFT (cNFT) minting is fully implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts) but is currently feature-flagged off (`NEXT_PUBLIC_CNFT_ENABLED=false`) until Mainnet Merkle Tree deployment in Phase 4.
+1. **cNFT Minting Status**: Metaplex compressed NFT (cNFT) metadata generation and integration scaffolding are implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts), while on-chain Bubblegum tree minting is planned for Phase 2 and currently feature-flagged off (`NEXT_PUBLIC_CNFT_ENABLED=false`).
 2. **Serverless In-Memory Rate Limiting**: The current rate limiter uses an in-memory token bucket (`app/lib/rateLimiter.ts`), which enforces per-lambda instance quotas. Multi-region scaling to Upstash Redis (`@upstash/ratelimit`) is scheduled for Phase 3.
-3. **UTC Day Boundary Standard**: Daily work logs and streaks are calculated strictly against UTC midnight boundaries (`00:00:00.000 UTC`), preventing timezone manipulation.
+3. **Timezone Standardization**: Protocol APIs default to Indian Standard Time (IST, UTC+5:30) day boundaries, while client interfaces auto-detect browser locales and API endpoints support custom `?tz=` overrides.
+4. **Database-Backed Quota Verification**: Daily log limits are verified via a database RPC query (`get_daily_log_count`), which checks log count prior to insertion. Strict database-level trigger constraints are planned for future scale.
+5. **Synchronous Archival & Retries**: Log submissions perform synchronous Arweave archival uploads via Irys Node #1, backed by database reservation and an authorized retry API (`/api/archival-retry`).
 
 ---
 

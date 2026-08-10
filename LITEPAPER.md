@@ -130,7 +130,7 @@ The server dynamically renders a responsive vector SVG displaying the builder's 
 
 ## 7. Future Protocols: Compressed NFTs (cNFTs) & Helius RPC
 
-The codebase retains built-in support for **Metaplex Bubblegum Compressed NFTs (cNFTs)** in [`app/lib/cnft.ts`](app/lib/cnft.ts). When `HELIUS_RPC_URL` and `SOLANA_MERKLE_TREE_PUBKEY` are configured, the protocol can automatically mint on-chain cNFT credentials to builders on Solana devnet/mainnet.
+The codebase includes integration scaffolding for **Metaplex Bubblegum Compressed NFTs (cNFTs)** in [`app/lib/cnft.ts`](app/lib/cnft.ts). When a fee-payer keypair and mainnet Merkle tree are configured in Phase 2, the protocol can automatically mint on-chain cNFT credentials to builders reaching 7-day and 30-day streak milestones on Solana devnet/mainnet.
 
 ---
 

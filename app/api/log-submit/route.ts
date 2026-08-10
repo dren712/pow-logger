@@ -82,12 +82,16 @@ export async function POST(req: NextRequest) {
     // Extract & strictly validate domain against injection attacks
     const reqHost = getVerifiedDomain(req.headers.get('host'))
 
+    if (typeof nonce !== 'string' || !nonce.trim()) {
+      return NextResponse.json({ error: 'Missing or invalid cryptographic nonce' }, { status: 400 })
+    }
+
     // 4. Cryptographic Ed25519 Signature Verification
     const expectedMessageText = buildCanonicalSubmitMessage({
       domain: reqHost,
       walletAddress,
       timestamp,
-      nonce: typeof nonce === 'string' ? nonce : 'legacy',
+      nonce: nonce.trim(),
       content: content.trim(),
       githubUrl: cleanGithubUrl,
       evidenceUrl: cleanEvidenceUrl,
