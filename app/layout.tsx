@@ -6,17 +6,15 @@ import WalletContextProvider from "./providers/WalletProvider";
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 }
 
 export const metadata: Metadata = {
   title: "PROVN — Proof-of-Work Logger 🗿",
-  description: "Cryptographically verified daily work logs on Solana. Build your on-chain builder reputation.",
+  description: "Solana-native, wallet-authenticated proof-of-work protocol permanently archived on Arweave.",
   metadataBase: new URL('https://provn-sol.vercel.app'),
   openGraph: {
     title: 'PROVN — Proof-of-Work Logger 🗿',
-    description: 'Cryptographically verified daily work logs on Solana. Build your on-chain builder reputation.',
+    description: 'Solana-native, wallet-authenticated proof-of-work protocol permanently archived on Arweave.',
     url: 'https://provn-sol.vercel.app',
     siteName: 'PROVN',
     type: 'website',
@@ -24,7 +22,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'PROVN — Proof-of-Work Logger 🗿',
-    description: 'Your work, permanently on-chain. 🗿',
+    description: 'Your work, cryptographically verified & permanently archived. 🗿',
   },
   other: {
     'theme-color': '#060709',

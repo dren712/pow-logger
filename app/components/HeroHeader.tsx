@@ -79,7 +79,7 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
           SOLANA & IRYS PERMANENT PROOF FOUNDRY
         </div>
         <h2 style={{ color: '#00ff88', fontSize: '2.2rem', fontWeight: 900, margin: '0 0 10px 0', letterSpacing: '-0.8px' }}>
-          Your work, permanently on-chain.
+          Your work, cryptographically verified &amp; permanently archived.
         </h2>
         <p style={{ color: '#aaa', fontSize: '14px', maxWidth: '600px', margin: '0 auto 24px auto', lineHeight: '1.6' }}>
           Cryptographically signed logs, auto-classified skills, and verifiable reputation trail.

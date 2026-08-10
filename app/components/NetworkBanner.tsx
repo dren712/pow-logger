@@ -56,8 +56,8 @@ export default function NetworkBanner() {
         <span style={{ fontSize: '14px' }}>{isMainnet ? '⚡' : '🧪'}</span>
         <span>
           {isMainnet
-            ? 'Connected to Solana Mainnet. Your logs are permanently indexed.'
-            : 'Connected to Solana Devnet (Test Mode). Switch your wallet to Mainnet Beta for real proof-of-work.'}
+            ? 'Connected Wallet RPC: Solana Mainnet Beta. Off-chain SIWS identity verification active.'
+            : 'Connected Wallet RPC: Solana Devnet. Off-chain SIWS identity verification active.'}
         </span>
       </div>
 

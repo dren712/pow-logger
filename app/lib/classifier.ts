@@ -28,10 +28,10 @@ const SKILL_PATTERNS: [RegExp, string][] = [
   [/\b(docker|kubernetes|k8s|ci\/cd|github.actions|devops)\b/i, 'DevOps'],
   [/\b(graphql|rest.api|api.route|endpoint)\b/i, 'API'],
   [/\b(solidity|evm|hardhat|foundry)\b/i, 'Solidity'],
-  [/\b(move)\b/i, 'Move'],
+  [/\b(aptos\.move|sui\.move|move\.lang(?:uage)?)\b/i, 'Move'],
   [/\b(swift|swiftui|ios)\b/i, 'Swift/iOS'],
   [/\b(kotlin|android)\b/i, 'Kotlin/Android'],
-  [/\b(go|golang)\b/i, 'Go'],
+  [/\b(golang|go\.lang)\b/i, 'Go'],
 ]
 
 const PROTOCOL_PATTERNS: [RegExp, string][] = [
@@ -39,7 +39,7 @@ const PROTOCOL_PATTERNS: [RegExp, string][] = [
   [/\b(irys|arweave|bundlr)\b/i, 'Irys'],
   [/\b(jupiter|jup)\b/i, 'Jupiter'],
   [/\b(metaplex|candy.machine|umi)\b/i, 'Metaplex'],
-  [/\b(solana|spl|sol)\b/i, 'Solana'],
+  [/\b(solana|spl.token|sol.pay|solana.program|solana.sdk)\b/i, 'Solana'],
   [/\b(ethereum|eth|erc)\b/i, 'Ethereum'],
   [/\b(ipfs|filecoin)\b/i, 'IPFS'],
   [/\b(superteam)\b/i, 'Superteam'],
