@@ -20,7 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 import { checkRateLimit } from '@/app/lib/rateLimiter'
 import { decodeBase58 } from '@/app/lib/canonicalMessage'
 import { classifyLog } from '@/app/lib/classifier'
-import { getBuilderLevel, checkNewMilestoneReached, calculateStreak } from '@/app/lib/milestones'
+import { calculateStreak, checkNewMilestoneReached, getBuilderLevel, toLocalDateString } from '@/app/lib/milestones'
 
 export async function POST(req: NextRequest) {
   try {
@@ -114,9 +114,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 5. Atomic Daily Log Quota Check (via Postgres SECURITY DEFINER RPC)
-    const startOfDay = new Date()
-    startOfDay.setUTCHours(0, 0, 0, 0)
+    // 5. Server-Enforced Daily Log Quota Check (via Postgres RPC)
+    const todayISTString = toLocalDateString(new Date(), 'Asia/Kolkata')
+    const startOfDay = new Date(`${todayISTString}T00:00:00+05:30`)
 
     let todayCount = 0
     const { data: rpcCount, error: rpcError } = await supabase
