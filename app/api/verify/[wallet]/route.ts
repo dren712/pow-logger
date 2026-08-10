@@ -89,7 +89,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && l.archival_state === 'archived'
     )
 
-    const processedRecentLogs = logs.slice(0, 5).map((l) => {
+    const allProcessedLogs = logs.map((l) => {
       let isCryptoVerified = false
       let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
 
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       }
     })
 
-    const verifiedLogsCount = processedRecentLogs.filter((l) => l.cryptographically_verified).length
+    const verifiedLogsCount = allProcessedLogs.filter((l) => l.cryptographically_verified).length
     const legacyCount = logs.filter((l) => !l.nonce).length
 
     return NextResponse.json(
@@ -187,7 +187,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
             days_remaining: badgeSummary.nextMilestone.daysRemaining,
           } : null,
         },
-        recent_logs: processedRecentLogs,
+        recent_logs: allProcessedLogs.slice(0, 5),
       },
       {
         headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' },
