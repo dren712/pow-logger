@@ -40,13 +40,6 @@ export async function POST(req: NextRequest) {
 
     const { content, walletAddress, timestamp, nonce, signature, evidenceUrl, githubUrl } = body
 
-    if (walletAddress && typeof walletAddress === 'string') {
-      const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
-      if (!walletLimit.allowed) {
-        return NextResponse.json({ error: walletLimit.error }, { status: 429 })
-      }
-    }
-
     // 1. Mandatory Input Sanitization & Boundaries
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return NextResponse.json({ error: 'Log content cannot be empty' }, { status: 400 })
@@ -112,6 +105,12 @@ export async function POST(req: NextRequest) {
         { error: 'Cryptographic signature verification failed. Tampered or unauthorized payload rejected.' },
         { status: 401 }
       )
+    }
+
+    // Wallet Rate Limiting (ENFORCED AFTER SUCCESSFUL ED25519 SIGNATURE VERIFICATION TO PREVENT DOS GRIEFING)
+    const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
+    if (!walletLimit.allowed) {
+      return NextResponse.json({ error: walletLimit.error }, { status: 429 })
     }
 
     // 5. Server-Enforced Daily Log Quota Check (via Postgres RPC)

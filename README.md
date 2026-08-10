@@ -93,7 +93,7 @@ PROVN binds daily work logs to wallet-signed **Sign-In-With-Solana (SIWS)** payl
 │   • Daily Quota Enforcement (3 logs/day via get_daily_log_count RPC)        │
 │   • Replay Protection (15-minute strict timestamp window)                   │
 │   • Off-chain Ed25519 Signature Verification (TweetNaCl)                    │
-│   • Automated Skill & Category Classifier (16 regex categories)             │
+│   • Automated Classifier (16 skill, 15 protocol, 10 work categories)        │
 └──────────────────────┬──────────────────────────────┬───────────────────────┘
                        │                              │
                        ▼                              ▼
@@ -145,7 +145,7 @@ PROVN implements a 3-tier reputation model:
 - **Replay Attack Defense**: Timestamps older than 15 minutes (`900,000ms`) are rejected.
 - **Database Signature Uniqueness**: PostgreSQL enforces a `UNIQUE INDEX` on the `signature` column to prevent replaying valid signatures.
 - **Row-Level Security (RLS)**: Anonymous clients only have `SELECT` access. All database writes require server-side execution via `service_role`.
-- **Atomic Quota RPC**: Quotas (3 logs/day) checked via `get_daily_log_count` SECURITY DEFINER RPC. Implemented in [`supabase/migrations/20260803_provn_security_hardening.sql`](supabase/migrations/20260803_provn_security_hardening.sql#L35).
+- **Server-Enforced Daily Log Quota RPC**: Quotas (3 logs/day) checked via `get_daily_log_count` SECURITY DEFINER RPC. Implemented in [`supabase/migrations/20260803_provn_security_hardening.sql`](supabase/migrations/20260803_provn_security_hardening.sql#L35).
 
 ---
 

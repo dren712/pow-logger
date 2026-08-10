@@ -30,13 +30,6 @@ export async function POST(req: NextRequest) {
 
     const { logId, walletAddress, timestamp, nonce, signature } = body
 
-    if (walletAddress && typeof walletAddress === 'string') {
-      const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
-      if (!walletLimit.allowed) {
-        return NextResponse.json({ error: walletLimit.error }, { status: 429 })
-      }
-    }
-
     // 1. Input Validation
     if (!logId || typeof logId !== 'number') {
       return NextResponse.json({ error: 'Valid numeric logId is required' }, { status: 400 })
@@ -88,6 +81,12 @@ export async function POST(req: NextRequest) {
         { error: 'Unauthorized retry signature verification failed. Retry attempt rejected.' },
         { status: 401 }
       )
+    }
+
+    // Wallet Rate Limiting (ENFORCED AFTER SUCCESSFUL ED25519 SIGNATURE VERIFICATION TO PREVENT DOS GRIEFING)
+    const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
+    if (!walletLimit.allowed) {
+      return NextResponse.json({ error: walletLimit.error }, { status: 429 })
     }
 
     // 4. Fetch log record from database & verify ownership

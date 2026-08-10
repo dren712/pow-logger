@@ -74,7 +74,7 @@ CREATE POLICY "Service Role Full Access" ON public.logs
 -- NOTE: Direct INSERT, UPDATE, DELETE policies for anon/public are EXPLICITLY DENIED.
 -- API routes use the SUPABASE_SERVICE_ROLE_KEY which bypasses RLS safely.
 
--- 6. Atomic Daily Log Quota RPC
+-- 6. Server-Enforced Daily Log Quota RPC
 CREATE OR REPLACE FUNCTION public.get_daily_log_count(
     p_wallet TEXT,
     p_start_time TIMESTAMPTZ
