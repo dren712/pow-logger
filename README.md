@@ -244,9 +244,10 @@ npm run build
 
 ## ⚠️ Known Limitations & Technical Trade-Offs
 
-1. **cNFT Minting Status**: cNFT metadata generation and integration scaffolding are implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts); on-chain Concurrent Merkle Tree minting is feature-flagged off until Phase 2 mainnet deployment.
-2. **Serverless In-Memory Rate Limiting**: The current rate limiter uses an in-memory token bucket (`app/lib/rateLimiter.ts`), enforcing per-serverless instance quotas. Distributed sliding-window rate limiting via Upstash Redis is scheduled for Phase 3.
-3. **Timezone Day Boundaries**: Protocol server APIs default to Indian Standard Time (IST, UTC+5:30) for Solana India / Superteam India builders, while client UI auto-detects browser locale (`Intl.DateTimeFormat`), and API endpoints accept custom `?tz=` query overrides.
+1. **Independent Arweave Verification Envelopes**: Every JSON envelope uploaded to Arweave includes `nonce`, `domain`, `walletAddress`, `timestamp`, `content`, `signature`, `evidenceUrl`, `githubUrl`, `canonicalMessage`, and `classification`, enabling third parties to independently verify Ed25519 signatures directly from Arweave gateways.
+2. **cNFT Minting Status**: cNFT metadata generation and integration scaffolding are implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts); on-chain Concurrent Merkle Tree minting is feature-flagged off until Phase 2 mainnet deployment.
+3. **Serverless Fixed-Window Rate Limiting**: The rate limiter uses a fixed-window counter (`app/lib/rateLimiter.ts`), enforcing per-serverless instance quotas. Distributed sliding-window rate limiting via Upstash Redis is scheduled for Phase 3.
+4. **Timezone Day Boundaries**: Protocol server APIs default to Indian Standard Time (IST, UTC+5:30) for Solana India / Superteam India builders, while client UI auto-detects browser locale (`Intl.DateTimeFormat`), and API endpoints accept custom `?tz=` query overrides.
 
 ---
 

@@ -31,7 +31,7 @@ PROVN operates as a 4-tier decentralized verification pipeline:
 │                         2. SERVER VERIFICATION ENGINE                       │
 │  • Off-Chain Signature Re-derivation & TweetNaCl Ed25519 Verification        │
 │  • Replay Attack Defense (15-minute strict timestamp window)                │
-│  • Automatic Regex Skill & Category Classifier (16 distinct categories)     │
+│  • Automatic Regex Classifier (16 skill, 15 protocol, 10 work categories)   │
 │  • Daily Quota Enforcement (3 logs/day via get_daily_log_count RPC)        │
 └──────────────────────┬──────────────────────────────┬───────────────────────┘
                        │                              │

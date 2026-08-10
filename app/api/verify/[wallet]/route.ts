@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import nacl from 'tweetnacl'
+import { buildCanonicalSubmitMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
 import { computeBadgeSummary, calculateStreak, calculateLongestStreak } from '@/app/lib/milestones'
 
 const supabase = createClient(
@@ -22,6 +24,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         { status: 400, headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' } }
       )
     }
+
+    let publicKeyBytes: Uint8Array | null = null
+    try {
+      publicKeyBytes = decodeBase58(wallet)
+    } catch {}
 
     const { data: logs, error } = await supabase
       .from('logs')
@@ -119,17 +126,38 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
             days_remaining: badgeSummary.nextMilestone.daysRemaining,
           } : null,
         },
-        recent_logs: logs.slice(0, 5).map((l) => ({
-          id: l.id,
-          content: l.content,
-          category: l.category,
-          skills: l.skills,
-          created_at: l.created_at,
-          archival_state: l.archival_state || 'pending',
-          evidence_url: l.evidence_url || null,
-          github_url: l.github_url || null,
-          irys_url: l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
-        })),
+        recent_logs: logs.slice(0, 5).map((l) => {
+          let isCryptoVerified = false
+          if (l.signature && publicKeyBytes) {
+            try {
+              const canonicalMsg = buildCanonicalSubmitMessage({
+                walletAddress: wallet,
+                content: l.content,
+                timestamp: l.created_at,
+                nonce: l.nonce || 'legacy',
+                githubUrl: l.github_url || undefined,
+                evidenceUrl: l.evidence_url || undefined,
+              })
+              const msgBytes = new TextEncoder().encode(canonicalMsg)
+              const sigBytes = decodeBase58(l.signature)
+              isCryptoVerified = nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)
+            } catch {
+              isCryptoVerified = false
+            }
+          }
+          return {
+            id: l.id,
+            content: l.content,
+            category: l.category,
+            skills: l.skills,
+            created_at: l.created_at,
+            archival_state: l.archival_state || 'pending',
+            evidence_url: l.evidence_url || null,
+            github_url: l.github_url || null,
+            irys_url: l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
+            cryptographically_verified: isCryptoVerified,
+          }
+        }),
       },
       {
         headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' },

@@ -185,9 +185,11 @@ export default function LoggerApp() {
   }
 
   const shareOnTwitter = (logText: string, txId?: string) => {
-    const irysUrl = txId ? `https://gateway.irys.xyz/${txId}` : 'https://provn-sol.vercel.app'
     const previewText = logText.length > 80 ? `${logText.slice(0, 80)}...` : logText
-    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\nVerified on Arweave: ${irysUrl}\nBuild your reputation: provn-sol.vercel.app\n#PROVN #Solana #BuildInPublic`
+    const proofLink = txId
+      ? `Verified on Arweave: https://gateway.irys.xyz/${txId}`
+      : `Verified SIWS Proof: https://provn-sol.vercel.app`
+    const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\n${proofLink}\nBuild your reputation: provn-sol.vercel.app\n#PROVN #Solana #BuildInPublic`
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank', 'noopener')
   }
 

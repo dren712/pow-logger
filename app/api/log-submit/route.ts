@@ -205,15 +205,28 @@ export async function POST(req: NextRequest) {
     const savedLog = insertRes.data[0]
 
     // 9. Upload Envelope to Arweave via Irys Node #1 (After DB reservation)
+    const canonicalMessage = buildCanonicalSubmitMessage({
+      domain: reqHost,
+      walletAddress,
+      content: content.trim(),
+      timestamp,
+      nonce: typeof nonce === 'string' ? nonce : 'legacy',
+      githubUrl: cleanGithubUrl,
+      evidenceUrl: cleanEvidenceUrl,
+    })
+
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
       version: 1,
+      domain: reqHost,
       walletAddress,
       timestamp,
+      nonce: typeof nonce === 'string' ? nonce : 'legacy',
       content: content.trim(),
       signature,
       evidenceUrl: cleanEvidenceUrl,
       githubUrl: cleanGithubUrl,
+      canonicalMessage,
       classification,
     }, null, 2)
 
@@ -251,7 +264,8 @@ export async function POST(req: NextRequest) {
 
     const createdAts = (allLogs || []).map((l: { created_at: string }) => l.created_at)
     const newStreak = calculateStreak(createdAts)
-    const previousStreak = Math.max(0, newStreak - 1)
+    const previousLogs = createdAts.slice(1)
+    const previousStreak = calculateStreak(previousLogs)
 
     const newMilestone = checkNewMilestoneReached(previousStreak, newStreak)
     const builderLevel = getBuilderLevel(createdAts.length)

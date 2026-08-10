@@ -251,7 +251,7 @@ export interface SkillBadge {
   color: string
   category: 'skill' | 'quality' | 'volume'
   description: string
-  checkUnlocked: (logs: Array<{ skills?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>) => boolean
+  checkUnlocked: (logs: Array<{ skills?: string[]; protocols?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>) => boolean
 }
 
 export const SKILL_BADGES: SkillBadge[] = [
@@ -261,21 +261,20 @@ export const SKILL_BADGES: SkillBadge[] = [
     emoji: '⚓',
     color: '#ff0055',
     category: 'skill',
-    description: 'Logged 3+ Solana Smart Contract / Anchor work logs',
+    description: 'Logged 3+ Anchor Framework smart contract work logs',
     checkUnlocked: (logs) =>
       logs.filter((l) =>
-        (l.skills || []).some(
-          (s) => s.toLowerCase().includes('anchor') || s.toLowerCase().includes('rust') || s.toLowerCase().includes('solana')
-        )
+        (l.skills || []).some((s) => s.toLowerCase().includes('anchor')) ||
+        (l.protocols || []).some((p) => p.toLowerCase().includes('anchor'))
       ).length >= 3,
   },
   {
     id: 'security_auditor',
-    title: 'Security Auditor',
+    title: 'Security Specialist',
     emoji: '🛡️',
     color: '#ff4444',
     category: 'skill',
-    description: 'Logged 2+ Security or Authentication work logs',
+    description: 'Logged 2+ Security or Authentication focused work logs',
     checkUnlocked: (logs) =>
       logs.filter(
         (l) =>
@@ -289,7 +288,7 @@ export const SKILL_BADGES: SkillBadge[] = [
     emoji: '🐙',
     color: '#ab9ff2',
     category: 'quality',
-    description: 'Attached 3+ verified GitHub PR/Commit links',
+    description: 'Attached 3+ GitHub-linked proof repository/PR URLs',
     checkUnlocked: (logs) => logs.filter((l) => l.github_url && l.github_url.includes('github.com')).length >= 3,
   },
   {
@@ -299,7 +298,12 @@ export const SKILL_BADGES: SkillBadge[] = [
     color: '#00e5ff',
     category: 'quality',
     description: 'Archived 5+ logs permanently to Arweave',
-    checkUnlocked: (logs) => logs.filter((l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_')).length >= 5,
+    checkUnlocked: (logs) =>
+      logs.filter(
+        (l: Record<string, unknown>) =>
+          (l.irys_tx_id && typeof l.irys_tx_id === 'string' && !l.irys_tx_id.startsWith('powl_')) ||
+          l.archival_state === 'archived'
+      ).length >= 5,
   },
   {
     id: 'century_builder',
@@ -307,13 +311,13 @@ export const SKILL_BADGES: SkillBadge[] = [
     emoji: '💯',
     color: '#ff00ff',
     category: 'volume',
-    description: 'Submitted 100+ verified proof logs',
+    description: 'Submitted 100+ total verified proof logs',
     checkUnlocked: (logs) => logs.length >= 100,
   },
 ]
 
 export function getEarnedSkillBadges(
-  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>
+  logs: Array<{ skills?: string[]; protocols?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>
 ): SkillBadge[] {
   if (!logs || !Array.isArray(logs)) return []
   return SKILL_BADGES.filter((b) => b.checkUnlocked(logs))

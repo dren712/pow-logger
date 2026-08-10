@@ -126,10 +126,12 @@ export async function POST(req: NextRequest) {
       logId: logRow.id,
       walletAddress,
       timestamp: logRow.created_at,
+      nonce: typeof nonce === 'string' ? nonce : 'legacy',
       content: logRow.content.trim(),
       signature: logRow.signature,
       evidenceUrl: logRow.evidence_url,
       githubUrl: logRow.github_url,
+      canonicalRetryMessage: expectedRetryMessage,
     }, null, 2)
 
     const tags = [
