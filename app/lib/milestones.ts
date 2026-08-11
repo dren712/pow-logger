@@ -141,6 +141,7 @@ export function getProtocolStartOfDay(dateInput: string | Date = new Date()): Da
 
 /**
  * Helper to fetch ALL logs for a given wallet address from Supabase, paging past default 1,000 row limits.
+ * Guarantees a fail-closed contract: throws on any query failure rather than returning partial results.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: string): Promise<any[]> {
@@ -157,9 +158,18 @@ export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: str
       .select('*')
       .eq('wallet_address', walletAddress)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .range(from, to)
 
-    if (error || !data || data.length === 0) {
+    if (error) {
+      throw new Error(`Failed to fetch wallet logs at offset ${from}: ${error.message}`)
+    }
+
+    if (!data) {
+      throw new Error(`Failed to fetch wallet logs at offset ${from}: Empty response data`)
+    }
+
+    if (data.length === 0) {
       fetchMore = false
       break
     }

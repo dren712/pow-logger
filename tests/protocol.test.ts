@@ -24,7 +24,7 @@ import {
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
-import { calculateStreak, toLocalDateString, getProtocolStartOfDay, PROTOCOL_TIMEZONE } from '../app/lib/milestones'
+import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE } from '../app/lib/milestones'
 
 import fs from 'fs'
 import path from 'path'
@@ -101,6 +101,52 @@ async function runProductionTestSuite() {
 
   const startOfDayBound = getProtocolStartOfDay(nextDayInstant)
   assert(startOfDayBound.toISOString() === '2026-08-10T18:30:00.000Z', 'getProtocolStartOfDay resolves to exact 00:00:00 IST (18:30:00Z UTC)')
+
+  // Unit Test: fetchAllWalletLogs paginated query helper & fail-closed contract
+  const mockLogs = Array.from({ length: 1050 }, (_, i) => ({ id: 1050 - i, created_at: '2026-08-10T12:00:00Z' }))
+  const mockSuccessClient = {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          order: () => ({
+            order: () => ({
+              range: (from: number, to: number) => Promise.resolve({ data: mockLogs.slice(from, to + 1), error: null })
+            })
+          })
+        })
+      })
+    })
+  }
+
+  let fetchedLogsResult: any[] = []
+  let errorCaught = false
+  try {
+    fetchedLogsResult = await fetchAllWalletLogs(mockSuccessClient, 'testWallet')
+  } catch {}
+  assert(fetchedLogsResult.length === 1050, 'fetchAllWalletLogs pages 1050 logs cleanly across 1,000-row boundaries')
+
+  const mockErrorClient = {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          order: () => ({
+            order: () => ({
+              range: () => Promise.resolve({ data: null, error: { message: 'Database Connection Timeout' } })
+            })
+          })
+        })
+      })
+    })
+  }
+
+  try {
+    await fetchAllWalletLogs(mockErrorClient, 'testWallet')
+  } catch (err: any) {
+    if (err && err.message.includes('Database Connection Timeout')) {
+      errorCaught = true
+    }
+  }
+  assert(errorCaught === true, 'fetchAllWalletLogs strictly fails closed (throws Error) on database query failures')
 
   // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
   console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')

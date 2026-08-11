@@ -14,7 +14,7 @@ import MobileWalletNotice from './components/MobileWalletNotice'
 import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
 import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
-import { computeBadgeSummary, calculateStreak, calculateLongestStreak, toLocalDateString, PROTOCOL_TIMEZONE } from './lib/milestones'
+import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs, toLocalDateString, PROTOCOL_TIMEZONE } from './lib/milestones'
 import { LogItem } from '@/app/u/[wallet]/ProfileClient'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
@@ -68,11 +68,7 @@ export default function LoggerApp() {
     const fetchLogs = async () => {
       try {
         const walletAddress = publicKey.toBase58()
-        const { data } = await supabase
-          .from('logs')
-          .select('*')
-          .eq('wallet_address', walletAddress)
-          .order('created_at', { ascending: false })
+        const data = await fetchAllWalletLogs(supabase, walletAddress)
         if (data && active) setLogs(data as LogItem[])
       } catch (err) {
         console.error('Fetch logs error:', err)

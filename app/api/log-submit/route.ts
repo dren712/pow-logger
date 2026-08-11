@@ -61,8 +61,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Timestamp is required' }, { status: 400 })
     }
 
-    if (nonce && (typeof nonce !== 'string' || nonce.trim().length < 8)) {
-      return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters' }, { status: 400 })
+    if (nonce) {
+      if (typeof nonce !== 'string' || nonce.trim().length < 8) {
+        return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters' }, { status: 400 })
+      }
+      try {
+        decodeBase58(nonce)
+      } catch {
+        return NextResponse.json({ error: 'Nonce must be a valid Base58 encoded string' }, { status: 400 })
+      }
     }
 
     // 2. Strict Replay Attack Mitigation (15-min window limit)

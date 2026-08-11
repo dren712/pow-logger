@@ -26,11 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let logs: { created_at: string }[] | null = null
   if (isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
-      const { data } = await supabase
-        .from('logs')
-        .select('created_at')
-        .eq('wallet_address', wallet)
-      logs = data
+      logs = await fetchAllWalletLogs(supabase, wallet)
     } catch {
       logs = null
     }
