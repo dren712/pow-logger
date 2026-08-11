@@ -20,7 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 import { checkRateLimit } from '@/app/lib/rateLimiter'
 import { decodeBase58 } from '@/app/lib/canonicalMessage'
 import { classifyLog } from '@/app/lib/classifier'
-import { calculateStreak, checkNewMilestoneReached, getBuilderLevel, getProtocolStartOfDay } from '@/app/lib/milestones'
+import { calculateStreak, checkNewMilestoneReached, getBuilderLevel, getProtocolStartOfDay, fetchAllWalletLogs } from '@/app/lib/milestones'
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,6 +59,10 @@ export async function POST(req: NextRequest) {
 
     if (!timestamp || typeof timestamp !== 'string') {
       return NextResponse.json({ error: 'Timestamp is required' }, { status: 400 })
+    }
+
+    if (nonce && (typeof nonce !== 'string' || nonce.trim().length < 8)) {
+      return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters' }, { status: 400 })
     }
 
     // 2. Strict Replay Attack Mitigation (15-min window limit)
@@ -256,11 +260,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Milestone Detection ─────────────────────────────────────────────
-    const { data: allLogs } = await supabase
-      .from('logs')
-      .select('id, created_at')
-      .eq('wallet_address', walletAddress)
-      .order('created_at', { ascending: false })
+    const allLogs = await fetchAllWalletLogs(supabase, walletAddress)
 
     const createdAts = (allLogs || []).map((l: { id: number; created_at: string }) => l.created_at)
     const newStreak = calculateStreak(createdAts)

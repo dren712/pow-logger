@@ -67,8 +67,8 @@ PROVN implements a **Canonical Protocol Timezone Standard**:
 PROVN binds daily work logs to wallet-signed **Sign-In-With-Solana (SIWS)** payloads.
 
 ### Core Verification Flow
-1. **Cryptographic Signing**: The developer signs a canonical SIWS message containing work content, timestamp, nonce, and proof links using their Solana wallet (Ed25519 keypair).
-2. **Server-Side Attestation**: The backend re-derives the SIWS payload and verifies the signature off-chain using TweetNaCl (`nacl.sign.detached.verify`).
+1. **Cryptographic Signing**: The developer signs a canonical SIWS-inspired proof message containing work content, timestamp, nonce, and proof links using their Solana wallet (Ed25519 keypair).
+2. **Server-Side Attestation**: The backend re-derives the canonical payload and verifies the signature off-chain using TweetNaCl (`nacl.sign.detached.verify`).
 3. **Permanent Arweave Archival**: Verified logs are packaged into a JSON envelope and stored permanently on **Arweave** via Irys Node #1.
 4. **Database Indexing & RLS**: Log metadata is indexed in Supabase PostgreSQL, strictly protected by Row-Level Security (RLS) policies.
 5. **Multi-Pillar Reputation Engine**: Computes builder levels (Apprentice → Grand Legend), streak trophies (7d, 30d, 100d), and skill badges.

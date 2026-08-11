@@ -140,6 +140,44 @@ export function getProtocolStartOfDay(dateInput: string | Date = new Date()): Da
 }
 
 /**
+ * Helper to fetch ALL logs for a given wallet address from Supabase, paging past default 1,000 row limits.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: string): Promise<any[]> {
+  const PAGE_SIZE = 1000
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let allLogs: any[] = []
+  let from = 0
+  let to = PAGE_SIZE - 1
+  let fetchMore = true
+
+  while (fetchMore) {
+    const { data, error } = await supabaseClient
+      .from('logs')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .order('created_at', { ascending: false })
+      .range(from, to)
+
+    if (error || !data || data.length === 0) {
+      fetchMore = false
+      break
+    }
+
+    allLogs = allLogs.concat(data)
+
+    if (data.length < PAGE_SIZE) {
+      fetchMore = false
+    } else {
+      from += PAGE_SIZE
+      to += PAGE_SIZE
+    }
+  }
+
+  return allLogs
+}
+
+/**
  * Normalizes a Date or ISO string to a UTC Date object at midnight UTC (00:00:00.000).
  */
 export function toUTCDay(dateInput: string | Date): Date {

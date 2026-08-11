@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import { buildCanonicalSubmitMessage, decodeBase58, getVerifiedDomain } from '@/app/lib/canonicalMessage'
-import { computeBadgeSummary, calculateStreak, calculateLongestStreak, PROTOCOL_TIMEZONE } from '@/app/lib/milestones'
+import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs, PROTOCOL_TIMEZONE } from '@/app/lib/milestones'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -30,14 +30,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       publicKeyBytes = decodeBase58(wallet)
     } catch {}
 
-    const { data: logs, error } = await supabase
-      .from('logs')
-      .select('*')
-      .eq('wallet_address', wallet)
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
+    const logs = await fetchAllWalletLogs(supabase, wallet)
 
-    if (error || !logs || logs.length === 0) {
+    if (!logs || logs.length === 0) {
       return NextResponse.json(
         { verified: false, message: 'Builder profile not found' },
         {

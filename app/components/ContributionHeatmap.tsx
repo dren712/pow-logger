@@ -64,18 +64,18 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
 
     const dayCells: DayCell[] = []
     const currInstant = new Date(startInstant.getTime())
-    let lastMonth = -1
+    let lastYearMonth = ''
 
     const monthFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short' })
-    const monthNumFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'numeric' })
+    const yearMonthFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, year: 'numeric', month: '2-digit' })
     const dateFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short', day: 'numeric', year: 'numeric' })
 
     while (toLocalDateString(currInstant, PROTOCOL_TIMEZONE) <= todayProtocolStr) {
       const key = toLocalDateString(currInstant, PROTOCOL_TIMEZONE)
       const monthName = monthFormatter.format(currInstant)
-      const monthNum = parseInt(monthNumFormatter.format(currInstant), 10)
-      const isFirstDayOfMonth = monthNum !== lastMonth
-      if (isFirstDayOfMonth) lastMonth = monthNum
+      const yearMonthKey = yearMonthFormatter.format(currInstant)
+      const isFirstDayOfMonth = yearMonthKey !== lastYearMonth
+      if (isFirstDayOfMonth) lastYearMonth = yearMonthKey
 
       dayCells.push({
         dateStr: key,

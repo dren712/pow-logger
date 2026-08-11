@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { computeBadgeSummary, calculateStreak, calculateLongestStreak } from '@/app/lib/milestones'
+import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs } from '@/app/lib/milestones'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
@@ -33,14 +33,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       })
     }
 
-    const { data: logs } = await supabase
-      .from('logs')
-      .select('*')
-      .eq('wallet_address', wallet)
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
-
-    const logList = logs || []
+    const logList = await fetchAllWalletLogs(supabase, wallet)
     const totalLogs = logList.length
 
     const createdAts = logList.map((l) => l.created_at)

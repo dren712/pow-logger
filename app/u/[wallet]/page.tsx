@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import ProfileClient, { LogItem } from './ProfileClient'
-import { getBuilderLevel, calculateStreak } from '@/app/lib/milestones'
+import { getBuilderLevel, calculateStreak, fetchAllWalletLogs } from '@/app/lib/milestones'
 import { isConfiguredSupabaseUrl } from '@/app/lib/canonicalMessage'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
@@ -72,13 +72,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
-      const res = await supabase
-        .from('logs')
-        .select('*')
-        .eq('wallet_address', wallet)
-        .order('created_at', { ascending: false })
-      logs = res.data
-      error = res.error
+      logs = await fetchAllWalletLogs(supabase, wallet)
     } catch (e) {
       error = e
     }
