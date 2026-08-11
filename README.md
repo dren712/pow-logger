@@ -122,7 +122,7 @@ PROVN implements a 3-tier reputation model:
 
 | Subsystem / Feature | Live Status | Implementation File |
 | :--- | :--- | :--- |
-| **Sign-In-With-Solana (SIWS)** | 🟢 **LIVE & VERIFIED** | [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts) |
+| **Solana SIWS-Inspired Verification** | 🟢 **LIVE & VERIFIED** | [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts) |
 | **Ed25519 Off-Chain Verification** | 🟢 **LIVE & VERIFIED** | [`app/api/log-submit/route.ts`](app/api/log-submit/route.ts#L80-L107) |
 | **Arweave Permanent Storage** | 🟢 **LIVE & VERIFIED** | [`app/lib/irysUploader.ts`](app/lib/irysUploader.ts) |
 | **Serverless Rate Limiter** | 🟢 **LIVE & VERIFIED** | [`app/lib/rateLimiter.ts`](app/lib/rateLimiter.ts) |
@@ -133,21 +133,12 @@ PROVN implements a 3-tier reputation model:
 
 ---
 
-## 🛡️ Security Implementation Details
-
-- **Cryptographic Binding**: Work logs are signed using the wallet's private key (`nacl.sign.detached.verify`). Verified in [`app/api/log-submit/route.ts`](app/api/log-submit/route.ts#L100).
-- **Serverless Rate Limiting**: Enforces 10 requests per 15 minutes per IP and per Wallet Address. Implemented in [`app/lib/rateLimiter.ts`](app/lib/rateLimiter.ts).
-- **Host Header Spoof Mitigation**: Host headers validated against whitelisted domains via `getVerifiedDomain()`. Implemented in [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts#L59-L80).
-- **Replay Attack Defense**: Timestamps older than 15 minutes (`900,000ms`) are rejected.
-- **Database Signature Uniqueness**: PostgreSQL enforces a `UNIQUE INDEX` on the `signature` column to prevent replaying valid signatures.
-- **Row-Level Security (RLS)**: Anonymous clients only have `SELECT` access. All database writes require server-side execution via `service_role`.
-- **Server-Enforced Daily Log Quota RPC**: Quotas (3 logs/day) checked via `get_daily_log_count` SECURITY DEFINER RPC. Implemented in [`supabase/migrations/20260803_provn_security_hardening.sql`](supabase/migrations/20260803_provn_security_hardening.sql#L35).
 
 ---
 
-## 📖 Canonical SIWS Specification
+## 📜 Canonical Proof Message Specification (SIWS-Inspired)
 
-Log submissions use a canonical SIWS message format defined in [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts):
+Log submissions use a canonical SIWS-inspired proof message format defined in [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts):
 
 ```text
 provn-sol.vercel.app wants you to sign in with your Solana account:

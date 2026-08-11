@@ -11,24 +11,11 @@ import {
   buildCanonicalRetryMessage,
   getVerifiedDomain,
 } from './canonicalMessage'
+import { WalletLog } from './milestones'
 
 export type ArchivalState = 'pending' | 'archived' | 'failed' | 'legacy_unverified'
 
-export interface LogRecord {
-  id: number
-  wallet_address: string
-  content: string
-  category?: string
-  skills?: string[]
-  protocols?: string[]
-  created_at: string
-  irys_tx_id?: string | null
-  archival_state?: ArchivalState
-  signature?: string
-  evidence_url?: string | null
-  github_url?: string | null
-  [key: string]: unknown
-}
+export type LogRecord = WalletLog
 
 export interface SubmitLogResponse {
   success: boolean

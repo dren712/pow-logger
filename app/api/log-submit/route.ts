@@ -62,11 +62,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (nonce !== undefined && nonce !== null) {
-      if (typeof nonce !== 'string' || nonce.trim().length < 8) {
-        return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters' }, { status: 400 })
+      if (typeof nonce !== 'string' || nonce.trim().length < 8 || nonce !== nonce.trim()) {
+        return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters with no leading or trailing whitespace' }, { status: 400 })
       }
       try {
-        decodeBase58(nonce.trim())
+        decodeBase58(nonce)
       } catch {
         return NextResponse.json({ error: 'Nonce must be a valid Base58 encoded string' }, { status: 400 })
       }

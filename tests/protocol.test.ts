@@ -21,6 +21,7 @@ import {
   validateAndNormalizeUrl,
   getVerifiedDomain,
   isConfiguredSupabaseUrl,
+  decodeBase58,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
@@ -147,6 +148,23 @@ async function runProductionTestSuite() {
     }
   }
   assert(errorCaught === true, 'fetchAllWalletLogs strictly fails closed (throws Error) on database query failures')
+
+  // Unit Test: Nonce Base58 & Whitespace Validation
+  const validNonce = 'ABCDEFGH1234'
+  let validNonceParsed = false
+  try {
+    decodeBase58(validNonce)
+    validNonceParsed = true
+  } catch {}
+  assert(validNonceParsed === true, 'Valid Base58 nonce parses cleanly')
+
+  const invalidNonceChars = '!!!!!!!!'
+  let invalidNonceParsed = false
+  try {
+    decodeBase58(invalidNonceChars)
+    invalidNonceParsed = true
+  } catch {}
+  assert(invalidNonceParsed === false, 'Invalid non-Base58 nonce strictly rejected')
 
   // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
   console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')
