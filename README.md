@@ -55,14 +55,10 @@ Developers can embed their real-time PROVN badge directly inside any GitHub `REA
 
 ## 🌏 Timezone Standard & Protocol Day-Boundary Specification
 
-PROVN implements a **Universal Timezone Engine**:
-- **Protocol Default (API & Badge Server)**: By default, server APIs (`/api/badge/[wallet]`, `/api/verify/[wallet]`, `/api/log-submit`) evaluate streak day boundaries using **Indian Standard Time (IST, UTC+5:30)** — aligning with Superteam India & Solana India builder cohorts.
-- **Client UI (Automatic Browser Locale)**: Client interfaces (`ProfileClient.tsx`) automatically detect the builder's local browser timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone` (e.g. `Asia/Kolkata` for India, `America/New_York` for US, `Europe/London` for UK).
-- **API Timezone Overrides**: API endpoints support custom timezone parameters via query string:
-  ```markdown
-  https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?tz=Asia/Kolkata
-  https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?tz=UTC
-  ```
+PROVN implements a **Canonical Protocol Timezone Standard**:
+- **Protocol Timezone (`PROTOCOL_TIMEZONE`)**: Official reputation, streaks, builder levels, daily quotas, and 365-day contribution heatmaps evaluate day boundaries using **Indian Standard Time (IST, UTC+5:30)** (`Asia/Kolkata`).
+- **Objective Parity Across Viewers**: Public SVG badge generation and profile reputation metrics are protocol-timezone locked, guaranteeing objective 1-to-1 parity regardless of viewer locale.
+- **Reporting Override**: The public verification API (`/api/verify/[wallet]`) optionally accepts a `?tz=` query parameter for custom reporting.
 
 ---
 
@@ -73,7 +69,7 @@ PROVN binds daily work logs to wallet-signed **Sign-In-With-Solana (SIWS)** payl
 ### Core Verification Flow
 1. **Cryptographic Signing**: The developer signs a canonical SIWS message containing work content, timestamp, nonce, and proof links using their Solana wallet (Ed25519 keypair).
 2. **Server-Side Attestation**: The backend re-derives the SIWS payload and verifies the signature off-chain using TweetNaCl (`nacl.sign.detached.verify`).
-3. **Decentralized Archival**: Verified logs are packaged into a JSON envelope and stored permanently on **Arweave** via Irys Node #1.
+3. **Permanent Arweave Archival**: Verified logs are packaged into a JSON envelope and stored permanently on **Arweave** via Irys Node #1.
 4. **Database Indexing & RLS**: Log metadata is indexed in Supabase PostgreSQL, strictly protected by Row-Level Security (RLS) policies.
 5. **Multi-Pillar Reputation Engine**: Computes builder levels (Apprentice → Grand Legend), streak trophies (7d, 30d, 100d), and skill badges.
 

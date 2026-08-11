@@ -132,12 +132,11 @@ export function toLocalDateString(dateInput: string | Date, timeZone: string = P
 }
 
 /**
- * Calculates the start-of-day (00:00:00.000) Date object in the target protocol timezone.
+ * Calculates the start-of-day (00:00:00.000) Date object in the canonical protocol timezone (Asia/Kolkata / IST, +05:30).
  */
-export function getProtocolStartOfDay(dateInput: string | Date = new Date(), timeZone: string = PROTOCOL_TIMEZONE): Date {
-  const dateStr = toLocalDateString(dateInput, timeZone)
-  const offset = timeZone === 'Asia/Kolkata' ? '+05:30' : 'Z'
-  return new Date(`${dateStr}T00:00:00.000${offset}`)
+export function getProtocolStartOfDay(dateInput: string | Date = new Date()): Date {
+  const dateStr = toLocalDateString(dateInput, PROTOCOL_TIMEZONE)
+  return new Date(`${dateStr}T00:00:00.000+05:30`)
 }
 
 /**

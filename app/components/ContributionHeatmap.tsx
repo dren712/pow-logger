@@ -36,9 +36,6 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
   }, [])
 
   const { weeks, totalContributions } = useMemo(() => {
-    const today = new Date()
-    today.setHours(23, 59, 59, 999)
-
     // Build count map using canonical protocol timezone
     const countMap: Record<string, number> = {}
     logs.forEach((l) => {
@@ -48,38 +45,48 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
       }
     })
 
-    // Compute start date: 52 weeks ago, aligned to the previous Sunday (matching GitHub)
-    const startDate = new Date(today)
-    startDate.setDate(startDate.getDate() - 364)
-    // Align to Sunday (day 0)
-    while (startDate.getDay() !== 0) {
-      startDate.setDate(startDate.getDate() - 1)
+    // Protocol Day-of-Week helper (Sun=0, Mon=1, ..., Sat=6 in PROTOCOL_TIMEZONE)
+    const getProtocolDayOfWeek = (d: Date): number => {
+      const dayStr = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, weekday: 'short' }).format(d)
+      const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+      return map[dayStr] ?? 0
+    }
+
+    // Protocol Today string & noon instant (IST)
+    const todayProtocolStr = toLocalDateString(new Date(), PROTOCOL_TIMEZONE)
+    const todayNoon = new Date(`${todayProtocolStr}T12:00:00.000+05:30`)
+
+    // Compute start date: 364 days ago, aligned to previous Sunday in PROTOCOL_TIMEZONE
+    const startInstant = new Date(todayNoon.getTime() - 364 * 86400000)
+    while (getProtocolDayOfWeek(startInstant) !== 0) {
+      startInstant.setTime(startInstant.getTime() - 86400000)
     }
 
     const dayCells: DayCell[] = []
-    const currentDate = new Date(startDate)
+    const currInstant = new Date(startInstant.getTime())
     let lastMonth = -1
 
-    while (currentDate <= today) {
-      const key = toLocalDateString(currentDate, PROTOCOL_TIMEZONE)
-      const monthFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short' })
-      const dateFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short', day: 'numeric', year: 'numeric' })
-      
-      const monthName = monthFormatter.format(currentDate)
-      const currentMonth = currentDate.getMonth()
-      const isFirstDayOfMonth = currentMonth !== lastMonth
-      if (isFirstDayOfMonth) lastMonth = currentMonth
+    const monthFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short' })
+    const monthNumFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'numeric' })
+    const dateFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short', day: 'numeric', year: 'numeric' })
+
+    while (toLocalDateString(currInstant, PROTOCOL_TIMEZONE) <= todayProtocolStr) {
+      const key = toLocalDateString(currInstant, PROTOCOL_TIMEZONE)
+      const monthName = monthFormatter.format(currInstant)
+      const monthNum = parseInt(monthNumFormatter.format(currInstant), 10)
+      const isFirstDayOfMonth = monthNum !== lastMonth
+      if (isFirstDayOfMonth) lastMonth = monthNum
 
       dayCells.push({
         dateStr: key,
-        formattedDate: dateFormatter.format(currentDate),
+        formattedDate: dateFormatter.format(currInstant),
         count: countMap[key] || 0,
-        dayOfWeek: currentDate.getDay(),
+        dayOfWeek: getProtocolDayOfWeek(currInstant),
         monthName,
         isFirstDayOfMonth,
       })
 
-      currentDate.setDate(currentDate.getDate() + 1)
+      currInstant.setTime(currInstant.getTime() + 86400000)
     }
 
     // Group into 7-day week columns
