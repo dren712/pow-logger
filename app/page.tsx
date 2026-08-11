@@ -14,7 +14,7 @@ import MobileWalletNotice from './components/MobileWalletNotice'
 import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
 import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
-import { computeBadgeSummary, calculateStreak, calculateLongestStreak, toLocalDateString } from './lib/milestones'
+import { computeBadgeSummary, calculateStreak, calculateLongestStreak, toLocalDateString, PROTOCOL_TIMEZONE } from './lib/milestones'
 import { LogItem } from '@/app/u/[wallet]/ProfileClient'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
@@ -95,10 +95,10 @@ export default function LoggerApp() {
     [logs, streakCount, longestStreak]
   )
 
-  // Calculate today's log count & daily limit (standardized to protocol IST midnight)
+  // Calculate today's log count & daily limit (standardized to PROTOCOL_TIMEZONE midnight)
   const todayLogsCount = useMemo(() => {
-    const todayIST = toLocalDateString(new Date(), 'Asia/Kolkata')
-    return logs.filter((l) => toLocalDateString(l.created_at, 'Asia/Kolkata') === todayIST).length
+    const today = toLocalDateString(new Date(), PROTOCOL_TIMEZONE)
+    return logs.filter((l) => toLocalDateString(l.created_at, PROTOCOL_TIMEZONE) === today).length
   }, [logs])
 
   const isDailyLimitReached = todayLogsCount >= 3

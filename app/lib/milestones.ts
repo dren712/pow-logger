@@ -109,16 +109,18 @@ export function checkNewMilestoneReached(previousStreak: number, newStreak: numb
   return null
 }
 
+export const PROTOCOL_TIMEZONE = 'Asia/Kolkata'
+
 /**
  * Formats a Date or ISO timestamp into YYYY-MM-DD string according to a specific timezone.
- * Defaults to 'Asia/Kolkata' (IST, UTC+5:30) for Solana India / Superteam India builders.
+ * Defaults to PROTOCOL_TIMEZONE ('Asia/Kolkata' / IST, UTC+5:30).
  */
-export function toLocalDateString(dateInput: string | Date, timeZone: string = 'Asia/Kolkata'): string {
+export function toLocalDateString(dateInput: string | Date, timeZone: string = PROTOCOL_TIMEZONE): string {
   const d = new Date(dateInput)
   if (isNaN(d.getTime())) return '1970-01-01'
   try {
     const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timeZone || 'Asia/Kolkata',
+      timeZone: timeZone || PROTOCOL_TIMEZONE,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -149,15 +151,15 @@ export function toUTCDayString(dateInput: string | Date): string {
 
 /**
  * Calculates current active streak from an array of ISO date strings or Date objects.
- * Single source of truth for streak calculation, evaluating day boundaries in target timezone (default: 'Asia/Kolkata' / IST).
+ * Single source of truth for streak calculation, evaluating day boundaries in PROTOCOL_TIMEZONE ('Asia/Kolkata' / IST).
  */
 export function calculateStreak(
   createdAts: (string | Date)[],
-  timeZone: string = 'Asia/Kolkata'
+  timeZone: string = PROTOCOL_TIMEZONE
 ): number {
   if (!createdAts || createdAts.length === 0) return 0
 
-  const tz = timeZone || 'Asia/Kolkata'
+  const tz = timeZone || PROTOCOL_TIMEZONE
   const uniqueDays = Array.from(
     new Set(
       createdAts
@@ -202,15 +204,15 @@ export function calculateStreak(
 
 /**
  * Calculates the longest streak achieved in days for a target timezone.
- * Defaults to 'Asia/Kolkata' (IST, UTC+5:30).
+ * Defaults to PROTOCOL_TIMEZONE ('Asia/Kolkata' / IST, UTC+5:30).
  */
 export function calculateLongestStreak(
   createdAts: (string | Date)[],
-  timeZone: string = 'Asia/Kolkata'
+  timeZone: string = PROTOCOL_TIMEZONE
 ): number {
   if (!createdAts || createdAts.length === 0) return 0
 
-  const tz = timeZone || 'Asia/Kolkata'
+  const tz = timeZone || PROTOCOL_TIMEZONE
   const uniqueDays = Array.from(
     new Set(
       createdAts

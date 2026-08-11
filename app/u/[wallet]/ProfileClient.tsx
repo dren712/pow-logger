@@ -68,12 +68,9 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
     return formatDate(sorted[0].created_at)
   }, [initialLogs])
 
-  const userTz = useMemo(() => {
-    return typeof window !== 'undefined' && window.Intl ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata' : 'Asia/Kolkata'
-  }, [])
   const createdAts = useMemo(() => initialLogs.map((l) => l.created_at), [initialLogs])
-  const streakCount = useMemo(() => calculateStreak(createdAts, userTz), [createdAts, userTz])
-  const longestStreak = useMemo(() => calculateLongestStreak(createdAts, userTz), [createdAts, userTz])
+  const streakCount = useMemo(() => calculateStreak(createdAts), [createdAts])
+  const longestStreak = useMemo(() => calculateLongestStreak(createdAts), [createdAts])
 
   // Compute badge summary
   const badgeSummary = useMemo(

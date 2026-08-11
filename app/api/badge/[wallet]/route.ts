@@ -43,10 +43,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const logList = logs || []
     const totalLogs = logList.length
 
-    const tz = req.nextUrl.searchParams.get('tz') || 'Asia/Kolkata'
     const createdAts = logList.map((l) => l.created_at)
-    const streak = calculateStreak(createdAts, tz)
-    const longestStreak = calculateLongestStreak(createdAts, tz)
+    const streak = calculateStreak(createdAts)
+    const longestStreak = calculateLongestStreak(createdAts)
 
     const rawShort = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
     const shortWallet = rawShort.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
