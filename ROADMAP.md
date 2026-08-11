@@ -23,7 +23,7 @@
 
 - [x] **Sign-In-With-Solana (SIWS)**: Cryptographic binding of wallet, content, timestamp, nonce, and proof links using Ed25519 keypairs.
 - [x] **Server-Side Verification Engine**: Off-chain signature verification using TweetNaCl (`nacl.sign.detached.verify()`).
-- [x] **Permanent Decentralized Archival**: Packaging log envelopes into JSON metadata and archiving to Arweave via Irys Node #1.
+- [x] **Permanent Arweave Archival**: Packaging log envelopes into JSON metadata and archiving to Arweave via Irys Node #1.
 - [x] **Database Security & RLS**: Supabase PostgreSQL with strict `service_role` write policies, anonymous `SELECT` read access, and unique signature indexing.
 - [x] **Automated Classification Engine**: 16-skill regex classification for Solana, Rust, Anchor, Next.js, Security, and DeFi work categories.
 - [x] **Automated CI/CD**: Comprehensive protocol and security test suite running on GitHub Actions.
