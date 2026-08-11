@@ -132,6 +132,15 @@ export function toLocalDateString(dateInput: string | Date, timeZone: string = P
 }
 
 /**
+ * Calculates the start-of-day (00:00:00.000) Date object in the target protocol timezone.
+ */
+export function getProtocolStartOfDay(dateInput: string | Date = new Date(), timeZone: string = PROTOCOL_TIMEZONE): Date {
+  const dateStr = toLocalDateString(dateInput, timeZone)
+  const offset = timeZone === 'Asia/Kolkata' ? '+05:30' : 'Z'
+  return new Date(`${dateStr}T00:00:00.000${offset}`)
+}
+
+/**
  * Normalizes a Date or ISO string to a UTC Date object at midnight UTC (00:00:00.000).
  */
 export function toUTCDay(dateInput: string | Date): Date {

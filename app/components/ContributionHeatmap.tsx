@@ -61,21 +61,21 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
     let lastMonth = -1
 
     while (currentDate <= today) {
-      const key = currentDate.toISOString().split('T')[0]
+      const key = toLocalDateString(currentDate, PROTOCOL_TIMEZONE)
+      const monthFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short' })
+      const dateFormatter = new Intl.DateTimeFormat('en-US', { timeZone: PROTOCOL_TIMEZONE, month: 'short', day: 'numeric', year: 'numeric' })
+      
+      const monthName = monthFormatter.format(currentDate)
       const currentMonth = currentDate.getMonth()
       const isFirstDayOfMonth = currentMonth !== lastMonth
       if (isFirstDayOfMonth) lastMonth = currentMonth
 
       dayCells.push({
         dateStr: key,
-        formattedDate: currentDate.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }),
+        formattedDate: dateFormatter.format(currentDate),
         count: countMap[key] || 0,
         dayOfWeek: currentDate.getDay(),
-        monthName: currentDate.toLocaleDateString('en-US', { month: 'short' }),
+        monthName,
         isFirstDayOfMonth,
       })
 
