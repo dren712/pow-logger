@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react'
 
+import { toLocalDateString, PROTOCOL_TIMEZONE } from '@/app/lib/milestones'
+
 interface LogEntry {
   id: number
   created_at: string
@@ -37,12 +39,11 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
     const today = new Date()
     today.setHours(23, 59, 59, 999)
 
-    // Build count map
+    // Build count map using canonical protocol timezone
     const countMap: Record<string, number> = {}
     logs.forEach((l) => {
-      const d = new Date(l.created_at)
-      if (!isNaN(d.getTime())) {
-        const key = d.toISOString().split('T')[0]
+      const key = toLocalDateString(l.created_at, PROTOCOL_TIMEZONE)
+      if (key !== '1970-01-01') {
         countMap[key] = (countMap[key] || 0) + 1
       }
     })

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import { buildCanonicalSubmitMessage, decodeBase58, getVerifiedDomain } from '@/app/lib/canonicalMessage'
-import { computeBadgeSummary, calculateStreak, calculateLongestStreak } from '@/app/lib/milestones'
+import { computeBadgeSummary, calculateStreak, calculateLongestStreak, PROTOCOL_TIMEZONE } from '@/app/lib/milestones'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     }
 
     const createdAts = logs.map((l) => l.created_at)
-    const tz = req.nextUrl.searchParams.get('tz') || 'Asia/Kolkata'
+    const tz = req.nextUrl.searchParams.get('tz') || PROTOCOL_TIMEZONE
     const streak = calculateStreak(createdAts, tz)
     const longestStreak = calculateLongestStreak(createdAts, tz)
 

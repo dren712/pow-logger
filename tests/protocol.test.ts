@@ -24,7 +24,7 @@ import {
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
-import { calculateStreak } from '../app/lib/milestones'
+import { calculateStreak, PROTOCOL_TIMEZONE } from '../app/lib/milestones'
 
 import fs from 'fs'
 import path from 'path'
@@ -92,6 +92,7 @@ async function runProductionTestSuite() {
   ]
   const currentStreakCount = calculateStreak(sampleDates)
   assert(currentStreakCount === 3, 'Consecutive 3-day IST streak calculated correctly')
+  assert(PROTOCOL_TIMEZONE === 'Asia/Kolkata', 'PROTOCOL_TIMEZONE is exported as canonical Asia/Kolkata')
 
   // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
   console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')

@@ -12,7 +12,7 @@
 │                                                                             │
 │  [ Phase 1: Proof Foundry Core ] ─────────────► ✅ COMPLETED & SECURITY-TESTED
 │  [ Phase 2: Dual-Tier Reputation & Badges ] ──► ✅ COMPLETED & LIVE        │
-│  [ Phase 3: B2B DAO Grant Gating & SDK ] ─────► 🚧 IN PROGRESS (Q3 2026)    │
+│  [ Phase 3: B2B DAO Grant Gating & SDK ] ─────► 🔮 PLANNED (Q3 2026)    │
 │  [ Phase 4: Metaplex cNFT On-Chain Badges ] ──► 🔮 UPCOMING (Q4 2026)      │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -45,7 +45,7 @@
 
 ---
 
-## 🚧 Phase 3: Ecosystem B2B API & DAO Grant Gating (In Progress / Q3 2026)
+## 🔮 Phase 3: Ecosystem B2B API & DAO Grant Gating (Planned / Q3 2026)
 
 - [ ] **Global Builder Leaderboard (`/leaderboard`)**: Public ranking of top Solana builders by level, active streak, and verified contributions.
 - [ ] **Developer SDK (`@provn/sdk`)**: TypeScript client library for querying builder reputation scores programmatically.
