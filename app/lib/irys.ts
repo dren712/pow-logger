@@ -72,7 +72,7 @@ export async function submitVerifiedLog(
   const timestamp = new Date().toISOString()
   const nonce = generateNonce()
 
-  // 1. Build canonical SIWS message cryptographically binding content AND evidence URLs
+  // 1. Build canonical proof message cryptographically binding content AND evidence URLs
   const clientDomain = typeof window !== 'undefined' && window.location?.host
     ? getVerifiedDomain(window.location.host)
     : 'provn-sol.vercel.app'

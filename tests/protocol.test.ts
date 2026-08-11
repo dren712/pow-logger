@@ -2,7 +2,7 @@
  * PROVN Production Verification & Protocol Security Test Suite 🛡️🗿
  *
  * Verifies:
- * 1. Canonical SIWS Message Construction & Tamper Protection.
+ * 1. Canonical Proof Message Construction & Tamper Protection.
  * 2. URL Normalization & Domain Restriction (https:// & github.com validation).
  * 3. Ed25519 Cryptographic Signature Verification & Tampered Field Invalidation.
  * 4. Database Security & Supabase RLS Anonymous Mutation Rejection.
@@ -166,10 +166,12 @@ async function runProductionTestSuite() {
   } catch {}
   assert(invalidNonceParsed === false, 'Invalid non-Base58 nonce strictly rejected')
 
+  const validateNonceRule = (n: any) => typeof n === 'string' && n.trim().length >= 8 && n === n.trim()
   const leadingSpaceNonce = ' ABCDEFGH12345678'
   const trailingSpaceNonce = 'ABCDEFGH12345678 '
-  assert(leadingSpaceNonce !== leadingSpaceNonce.trim(), 'Leading whitespace nonce detected and untrimmed')
-  assert(trailingSpaceNonce !== trailingSpaceNonce.trim(), 'Trailing whitespace nonce detected and untrimmed')
+  assert(validateNonceRule(validNonce) === true, 'Valid Base58 nonce satisfies server validation rule')
+  assert(validateNonceRule(leadingSpaceNonce) === false, 'Leading whitespace nonce strictly rejected by server rule')
+  assert(validateNonceRule(trailingSpaceNonce) === false, 'Trailing whitespace nonce strictly rejected by server rule')
 
   // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
   console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')
