@@ -1,8 +1,9 @@
 /**
- * PROVN Canonical SIWS (Sign-In-With-Solana) Message Builder
+ * PROVN Canonical Proof Message Builder (SIWS-Inspired)
  *
  * Cryptographically binds wallet address, content, evidence links (GitHub & Demo URLs),
- * timestamp, and unique nonce into a standardized, tamper-evident SIWS message.
+ * timestamp, and unique nonce into a standardized, tamper-evident Solana signed proof message.
+ * Follows Sign-In-With-Solana (SIWS) domain-binding and wallet authentication principles.
  */
 
 import bs58 from 'bs58'
@@ -103,7 +104,7 @@ export function isConfiguredSupabaseUrl(url?: string): boolean {
 }
 
 /**
- * Builds canonical SIWS prompt for initial log submission.
+ * Builds canonical proof message for initial log submission (SIWS-inspired format).
  * Cryptographically binds content AND normalized evidence URLs.
  */
 export function buildCanonicalSubmitMessage(params: CanonicalSubmitParams): string {

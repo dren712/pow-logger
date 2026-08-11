@@ -139,15 +139,34 @@ export function getProtocolStartOfDay(dateInput: string | Date = new Date()): Da
   return new Date(`${dateStr}T00:00:00.000+05:30`)
 }
 
+import { ArchivalState } from './irys'
+
+export interface WalletLog {
+  id: number
+  wallet_address: string
+  created_at: string
+  content: string
+  signature?: string
+  nonce?: string
+  domain?: string
+  evidence_url?: string | null
+  github_url?: string | null
+  skills?: string[]
+  protocols?: string[]
+  category?: string
+  irys_tx_id?: string | null
+  archival_state?: ArchivalState
+  [key: string]: unknown
+}
+
 /**
  * Helper to fetch ALL logs for a given wallet address from Supabase, paging past default 1,000 row limits.
  * Guarantees a fail-closed contract: throws on any query failure rather than returning partial results.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: string): Promise<any[]> {
+export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: string): Promise<WalletLog[]> {
   const PAGE_SIZE = 1000
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let allLogs: any[] = []
+  let allLogs: WalletLog[] = []
   let from = 0
   let to = PAGE_SIZE - 1
   let fetchMore = true
@@ -174,7 +193,7 @@ export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: str
       break
     }
 
-    allLogs = allLogs.concat(data)
+    allLogs = allLogs.concat(data as WalletLog[])
 
     if (data.length < PAGE_SIZE) {
       fetchMore = false

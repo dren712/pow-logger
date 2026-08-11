@@ -61,12 +61,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Timestamp is required' }, { status: 400 })
     }
 
-    if (nonce) {
+    if (nonce !== undefined && nonce !== null) {
       if (typeof nonce !== 'string' || nonce.trim().length < 8) {
         return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters' }, { status: 400 })
       }
       try {
-        decodeBase58(nonce)
+        decodeBase58(nonce.trim())
       } catch {
         return NextResponse.json({ error: 'Nonce must be a valid Base58 encoded string' }, { status: 400 })
       }
