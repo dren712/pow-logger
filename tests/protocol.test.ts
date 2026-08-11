@@ -61,8 +61,8 @@ async function runProductionTestSuite() {
     }
   }
 
-  // --- SUITE 1: Canonical Message Construction & URL Security ---
-  console.log('► SUITE 1: Canonical SIWS Payload Construction & URL Normalization')
+  // --- SUITE 1: Canonical Proof Message Construction & URL Security ---
+  console.log('► SUITE 1: Canonical Proof Message Construction & URL Normalization')
   
   const validGithub = validateAndNormalizeUrl('https://github.com/dren712/pow-logger/pull/1', 'github')
   assert(validGithub === 'https://github.com/dren712/pow-logger/pull/1', 'Valid GitHub PR URL normalized correctly')
@@ -150,7 +150,7 @@ async function runProductionTestSuite() {
   assert(errorCaught === true, 'fetchAllWalletLogs strictly fails closed (throws Error) on database query failures')
 
   // Unit Test: Nonce Base58 & Whitespace Validation
-  const validNonce = 'ABCDEFGH1234'
+  const validNonce = 'ABCDEFGH12345678'
   let validNonceParsed = false
   try {
     decodeBase58(validNonce)
@@ -166,6 +166,11 @@ async function runProductionTestSuite() {
   } catch {}
   assert(invalidNonceParsed === false, 'Invalid non-Base58 nonce strictly rejected')
 
+  const leadingSpaceNonce = ' ABCDEFGH12345678'
+  const trailingSpaceNonce = 'ABCDEFGH12345678 '
+  assert(leadingSpaceNonce !== leadingSpaceNonce.trim(), 'Leading whitespace nonce detected and untrimmed')
+  assert(trailingSpaceNonce !== trailingSpaceNonce.trim(), 'Trailing whitespace nonce detected and untrimmed')
+
   // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
   console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')
   const testIp = '192.168.1.100'
@@ -179,11 +184,11 @@ async function runProductionTestSuite() {
   assert(rateLimitTest3.allowed === false, 'Excessive request beyond rate limit strictly rejected (429)')
 
   // --- SUITE 3: Ed25519 Cryptographic Tamper Evidence ---
-  console.log('\n► SUITE 3: Ed25519 SIWS Cryptographic Signature Tamper Protection')
+  console.log('\n► SUITE 3: Ed25519 Cryptographic Proof Signature Tamper Protection')
   const keypair = nacl.sign.keyPair()
   const walletAddress = bs58.encode(keypair.publicKey)
   const timestamp = new Date().toISOString()
-  const nonce = 'test_nonce_999'
+  const nonce = 'ABCDEFGH12345678'
 
   const canonicalMsg = buildCanonicalSubmitMessage({
     walletAddress,
@@ -293,10 +298,10 @@ async function runProductionTestSuite() {
   }
 
   // --- SUITE 5: Authorized Archival Retry Logic ---
-  console.log('\n► SUITE 5: Authorized Archival Retry SIWS Verification')
+  console.log('\n► SUITE 5: Authorized Archival Retry Proof Verification')
   const retryLogId = 42
   const retryTimestamp = new Date().toISOString()
-  const retryNonce = 'retry_nonce_888'
+  const retryNonce = 'ABCDEFGH88888888'
 
   const canonicalRetryMsg = buildCanonicalRetryMessage({
     walletAddress,

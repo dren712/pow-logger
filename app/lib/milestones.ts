@@ -139,25 +139,8 @@ export function getProtocolStartOfDay(dateInput: string | Date = new Date()): Da
   return new Date(`${dateStr}T00:00:00.000+05:30`)
 }
 
-import { ArchivalState } from './irys'
-
-export interface WalletLog {
-  id: number
-  wallet_address: string
-  created_at: string
-  content: string
-  signature?: string
-  nonce?: string
-  domain?: string
-  evidence_url?: string | null
-  github_url?: string | null
-  skills?: string[]
-  protocols?: string[]
-  category?: string
-  irys_tx_id?: string | null
-  archival_state?: ArchivalState
-  [key: string]: unknown
-}
+import { WalletLog } from './types'
+export type { WalletLog }
 
 /**
  * Helper to fetch ALL logs for a given wallet address from Supabase, paging past default 1,000 row limits.

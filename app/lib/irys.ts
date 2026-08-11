@@ -1,7 +1,7 @@
 /**
  * Cryptographic Log Submission Client Helper
  *
- * Prompts the user's Solana wallet to sign structured SIWS messages,
+ * Prompts the user's Solana wallet to sign canonical proof messages (SIWS-inspired),
  * encodes signatures in Base58, and communicates with verified API routes.
  */
 
@@ -11,11 +11,9 @@ import {
   buildCanonicalRetryMessage,
   getVerifiedDomain,
 } from './canonicalMessage'
-import { WalletLog } from './milestones'
+import { ArchivalState, LogRecord } from './types'
 
-export type ArchivalState = 'pending' | 'archived' | 'failed' | 'legacy_unverified'
-
-export type LogRecord = WalletLog
+export type { ArchivalState, LogRecord }
 
 export interface SubmitLogResponse {
   success: boolean
