@@ -1,16 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
-  --font-geist-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --background: #060709;
-  --foreground: #f0f3f8;
-  --accent: #00ff88;
-  --accent-cyan: #00e5ff;
-  --accent-amber: #ffb800;
-  --accent-glow: rgba(0, 255, 136, 0.15);
-  --card-bg: #0d0f14;
-  --card-border: #1a1e28;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-geist-mono: var(--font-mono);
+  
+  --bg-base: #06080c;
+  --bg-surface: #0b0e14;
+  --bg-elevated: #111622;
+  --bg-subtle: #080a10;
+  
+  --border-subtle: #171d2a;
+  --border-strong: #232d3f;
+  
+  --text-main: #f1f5f9;
+  --text-muted: #8892b0;
+  --text-faint: #4e5d78;
+  
+  /* Protocol Semantic Color System */
+  --accent-verified: #00ff88;
+  --accent-protocol: #00e5ff;
+  --accent-evidence: #ab9ff2;
+  --accent-achievement: #ffb800;
+  --accent-danger: #ff4444;
+  
+  --background: var(--bg-base);
+  --foreground: var(--text-main);
 }
 
 *, *::before, *::after {
@@ -28,185 +44,194 @@ img, svg, video {
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-mono);
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  font-family: var(--font-sans);
   min-height: 100vh;
   margin: 0;
   background-image: 
-    linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px),
-    radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.08) 0%, transparent 65%),
-    radial-gradient(circle at 100% 100%, rgba(0, 229, 255, 0.05) 0%, transparent 55%);
-  background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+    radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(0, 229, 255, 0.04) 0%, transparent 50%);
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphic Cards */
+/* Typography Utilities */
+.font-sans {
+  font-family: var(--font-sans) !important;
+}
+
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+/* Surface Cards */
+.card-surface {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-surface:hover {
+  border-color: var(--border-strong);
+}
+
 .glass-card {
-  background: rgba(12, 14, 18, 0.8);
+  background: rgba(11, 14, 20, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 255, 136, 0.12);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   transition: border-color 0.2s ease;
 }
+
 .glass-card:hover {
-  border-color: rgba(0, 255, 136, 0.25);
+  border-color: var(--border-strong);
 }
 
-/* Primary Button Styling */
-.btn-primary {
-  background: transparent;
-  border: 1px solid #00ff88;
-  color: #00ff88;
-  transition: all 0.2s ease;
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-family: var(--font-geist-mono), monospace;
-  cursor: pointer;
-  font-weight: 700;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.btn-primary:hover {
-  background: #00ff88;
-  color: #060709;
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.25);
-}
-
-/* Hero Radial Glow */
-.hero-glow {
-  background: radial-gradient(
-    ellipse at 50% -20%,
-    rgba(0, 255, 136, 0.08) 0%,
-    transparent 60%
-  );
-}
-
-/* Micro-Neon Borders on Stat Cards */
-.stat-card {
-  border: 1px solid rgba(0, 255, 136, 0.1);
-  border-radius: 8px;
-  padding: 16px;
-  background: rgba(12, 14, 18, 0.6);
-  position: relative;
-}
-.stat-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 8px;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(0,255,136,0.2), transparent);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* Custom Wallet Adapter Button Override */
-.wallet-adapter-button {
-  background-color: #12151c !important;
-  color: #00ff88 !important;
-  border: 1px solid rgba(0, 255, 136, 0.3) !important;
-  border-radius: 8px !important;
-  font-family: var(--font-geist-mono), monospace !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  height: 42px !important;
-  padding: 0 18px !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
-  transition: all 0.2s ease !important;
-}
-
-.wallet-adapter-button:hover {
-  background-color: rgba(0, 255, 136, 0.12) !important;
-  border-color: #00ff88 !important;
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.25) !important;
-  transform: translateY(-1px);
-}
-
-.wallet-adapter-button-trigger {
-  background-color: #12151c !important;
-}
-
-.wallet-adapter-modal-wrapper {
-  background: #0d0f14 !important;
-  border: 1px solid #1a1e28 !important;
-  border-radius: 12px !important;
-  color: #fff !important;
-  font-family: var(--font-geist-mono), monospace !important;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8) !important;
-}
-
-.wallet-adapter-modal-button-close {
-  background: #181c26 !important;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.2; }
-}
-
-.animate-blink {
-  animation: blink 1.2s infinite ease-in-out;
-}
-
+/* Terminal Card (Precision Evidence Studio) */
 .terminal-card {
-  background: #0c0e12;
-  border: 1px solid #1a1e28;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .terminal-card:hover {
-  border-color: rgba(0, 255, 136, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 255, 136, 0.05);
+  border-color: rgba(0, 255, 136, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 255, 136, 0.03);
 }
 
-/* Neon Corner Accents */
+/* Precise Terminal Corner Accents */
 .corner-accent {
   position: absolute;
   width: 6px;
   height: 6px;
-  border-color: #00ff88;
+  border-color: rgba(0, 255, 136, 0.4);
 }
 
 .corner-top-left {
   top: 0;
   left: 0;
-  border-top: 2px solid #00ff88;
-  border-left: 2px solid #00ff88;
+  border-top: 2px solid rgba(0, 255, 136, 0.5);
+  border-left: 2px solid rgba(0, 255, 136, 0.5);
 }
 
 .corner-top-right {
   top: 0;
   right: 0;
-  border-top: 2px solid #00ff88;
-  border-right: 2px solid #00ff88;
+  border-top: 2px solid rgba(0, 255, 136, 0.5);
+  border-right: 2px solid rgba(0, 255, 136, 0.5);
 }
 
 .corner-bottom-left {
   bottom: 0;
   left: 0;
-  border-bottom: 2px solid #00ff88;
-  border-left: 2px solid #00ff88;
+  border-bottom: 2px solid rgba(0, 255, 136, 0.5);
+  border-left: 2px solid rgba(0, 255, 136, 0.5);
 }
 
 .corner-bottom-right {
   bottom: 0;
   right: 0;
-  border-bottom: 2px solid #00ff88;
-  border-right: 2px solid #00ff88;
+  border-bottom: 2px solid rgba(0, 255, 136, 0.5);
+  border-right: 2px solid rgba(0, 255, 136, 0.5);
+}
+
+/* Button System */
+.btn-primary {
+  background: #00ff88;
+  border: 1px solid #00ff88;
+  color: #06080c;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 10px 18px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #05e67c;
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #0e121a;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #141a26;
+  border-color: var(--border-strong);
+  color: #ffffff;
+}
+
+/* Custom Wallet Adapter Button Override */
+.wallet-adapter-button {
+  background-color: #0e121a !important;
+  color: #00ff88 !important;
+  border: 1px solid rgba(0, 255, 136, 0.3) !important;
+  border-radius: 8px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  transition: all 0.15s ease !important;
+}
+
+.wallet-adapter-button:hover {
+  background-color: rgba(0, 255, 136, 0.1) !important;
+  border-color: #00ff88 !important;
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+.wallet-adapter-button-trigger {
+  background-color: #0e121a !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: #0b0e14 !important;
+  border: 1px solid #1f2738 !important;
+  border-radius: 14px !important;
+  color: #fff !important;
+  font-family: var(--font-sans) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9) !important;
+}
+
+.wallet-adapter-modal-button-close {
+  background: #161c28 !important;
 }
 
 /* Universal Responsive Layout Base */
 main {
-  width: min(820px, 94vw) !important;
+  width: min(840px, 94vw) !important;
   margin: 0 auto !important;
   padding: 32px 16px 100px 16px !important;
   box-sizing: border-box !important;
@@ -218,24 +243,11 @@ main {
     width: 96vw !important;
     padding: 20px 12px 80px 12px !important;
   }
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
-  }
   .header-bar {
     flex-direction: column !important;
     gap: 16px !important;
     align-items: center !important;
     text-align: center !important;
-  }
-  .wallet-adapter-button {
-    width: 100% !important;
-    justify-content: center !important;
-  }
-  .log-footer {
-    flex-direction: column !important;
-    gap: 10px !important;
-    align-items: stretch !important;
   }
 }
 
@@ -245,208 +257,20 @@ main {
     width: 100vw !important;
     padding: 12px 10px 70px 10px !important;
   }
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
-  }
-  .terminal-card {
-    padding: 12px !important;
-    border-radius: 10px !important;
-  }
-  .telemetry-bar {
-    flex-direction: column !important;
-    gap: 6px !important;
-    text-align: center !important;
-    padding: 8px 10px !important;
-    font-size: 10px !important;
-  }
-  .telemetry-right {
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    gap: 8px !important;
-  }
-  .hero-buttons {
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 8px !important;
-  }
-  .hero-buttons > * {
-    width: 100% !important;
-    justify-content: center !important;
-  }
-  .verify-form {
-    width: 100% !important;
-    flex-direction: row !important;
-    gap: 6px !important;
-  }
-  .verify-input {
-    flex: 1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  .btn-primary {
-    padding: 8px 14px !important;
-    font-size: 11px !important;
-    touch-action: manipulation;
-  }
-  .heatmap-scroll-container {
-    padding: 10px 8px !important;
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
-button:focus-visible, a:focus-visible, textarea:focus-visible {
-  outline: 2px solid #00ff88;
-  outline-offset: 2px;
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+::-webkit-scrollbar-track {
+  background: #06080c;
 }
-.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-blink, .animate-fade-in { animation: none; }
-  .terminal-card { transition: none; }
-}
-
-/* Selection Highlight */
-::selection {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-}
-
-.mobile-wallet-banner {
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(0, 255, 136, 0.08));
-  border: 1px solid rgba(0, 229, 255, 0.25);
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-.mobile-wallet-banner a {
-  color: #00e5ff;
-  text-decoration: underline;
-  font-weight: 700;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #060709; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 136, 0.3);
-  border-radius: 2px;
+  background: #1c2230;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 255, 136, 0.6);
-}
-
-/* ==========================================================================
-   PRINT / PDF STYLESHEET (@media print)
-   ========================================================================== */
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 12mm 15mm;
-  }
-
-  body {
-    background: #ffffff !important;
-    color: #111111 !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-    font-size: 11pt !important;
-    line-height: 1.4 !important;
-  }
-
-  /* Hide screen chrome, headers, modals, and buttons */
-  header,
-  footer,
-  nav,
-  button,
-  .btn-primary,
-  .no-print,
-  .telemetry-bar,
-  .glass-card:not(.printable),
-  .terminal-card:not(.printable) {
-    display: none !important;
-  }
-
-  /* Hide modal overlays during print except the printable container */
-  div[style*="position: fixed"] {
-    position: static !important;
-    background: none !important;
-    backdrop-filter: none !important;
-    padding: 0 !important;
-    inset: auto !important;
-    display: block !important;
-  }
-
-  main {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Show dedicated print dossier */
-  .provn-print-dossier {
-    display: block !important;
-    background: #ffffff !important;
-    color: #111111 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  .provn-print-dossier * {
-    color: #111111 !important;
-    border-color: #dddddd !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  .provn-print-dossier h1,
-  .provn-print-dossier h2,
-  .provn-print-dossier h3 {
-    color: #000000 !important;
-    font-weight: 800 !important;
-  }
-
-  .provn-print-dossier table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    margin-top: 12px !important;
-    font-size: 9pt !important;
-  }
-
-  .provn-print-dossier th {
-    background: #f4f4f4 !important;
-    border-bottom: 2px solid #000000 !important;
-    padding: 6px 8px !important;
-    text-align: left !important;
-  }
-
-  .provn-print-dossier td {
-    border-bottom: 1px solid #e0e0e0 !important;
-    padding: 6px 8px !important;
-    vertical-align: top !important;
-  }
-
-  .provn-print-dossier tr {
-    page-break-inside: avoid !important;
-  }
-
-  .provn-print-dossier a {
-    text-decoration: none !important;
-    color: #0044cc !important;
-  }
-}
-
-/* Hide print dossier on screens */
-@media screen {
-  .provn-print-dossier {
-    display: none !important;
-  }
+  background: #2b354b;
 }

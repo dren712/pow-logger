@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: ProofPageProps): Promise<Meta
   const resolvedParams = await params
   const proofId = resolvedParams.id
   return {
-    title: `PROVN Proof #${proofId} — Cryptographically Verified`,
-    description: `Inspect individual proof-of-work record #${proofId} with live Ed25519 signature verification on Solana.`,
+    title: `PROVN Proof #${proofId} — Cryptographically Verified Record`,
+    description: `Inspect individual proof record #${proofId} with live Ed25519 signature verification on Solana.`,
   }
 }
 
@@ -31,9 +31,9 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
 
   if (isNaN(proofId) || proofId <= 0) {
     return (
-      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ff4444', fontFamily: 'monospace' }}>
+      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: 'var(--accent-danger)' }}>
         <h1>Invalid Proof ID</h1>
-        <Link href="/" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
+        <Link href="/" className="btn-secondary" style={{ marginTop: '16px' }}>← Back to Terminal</Link>
       </main>
     )
   }
@@ -46,10 +46,10 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
 
   if (!log) {
     return (
-      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ff4444', fontFamily: 'monospace' }}>
+      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: 'var(--accent-danger)' }}>
         <h1>Proof #{proofId} Not Found</h1>
-        <p style={{ color: '#888' }}>No proof record exists with this identifier.</p>
-        <Link href="/" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
+        <p style={{ color: 'var(--text-muted)' }}>No proof record exists with this identifier.</p>
+        <Link href="/" className="btn-secondary" style={{ marginTop: '16px' }}>← Back to Terminal</Link>
       </main>
     )
   }
@@ -78,10 +78,9 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
   return (
     <main
       style={{
-        width: 'min(760px, 94vw)',
+        width: 'min(800px, 94vw)',
         margin: '0 auto',
         padding: '32px 16px 80px 16px',
-        fontFamily: 'var(--font-geist-mono), monospace',
         boxSizing: 'border-box',
       }}
     >
@@ -89,21 +88,22 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         <Link
           href={`/u/${proof.wallet_address}`}
           style={{
-            color: '#666',
+            color: 'var(--text-muted)',
             textDecoration: 'none',
             fontSize: '12px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
+            fontWeight: 500,
           }}
         >
           ← Back to Builder Passport ({walletShort})
         </Link>
       </div>
 
-      {/* Header */}
+      {/* Proof Header Document Banner */}
       <div
-        className="glass-card"
+        className="terminal-card"
         style={{
           padding: '24px',
           marginBottom: '20px',
@@ -116,13 +116,12 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>🗿</span>
-            <h1 style={{ color: '#00ff88', fontSize: '1.4rem', margin: 0, fontWeight: 800 }}>
+            <h1 style={{ color: '#ffffff', fontSize: '1.4rem', margin: 0, fontWeight: 800 }}>
               Proof #{proof.id}
             </h1>
           </div>
-          <div style={{ color: '#888', fontSize: '11px', marginTop: '4px' }}>
-            Recorded on {new Date(proof.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+          <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
+            Recorded at {new Date(proof.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
           </div>
         </div>
 
@@ -130,13 +129,16 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
           {isSignatureValid ? (
             <span
               style={{
-                background: 'rgba(0, 255, 136, 0.1)',
-                border: '1px solid #00ff88',
+                background: 'rgba(0, 255, 136, 0.08)',
+                border: '1px solid rgba(0, 255, 136, 0.3)',
                 color: '#00ff88',
                 padding: '6px 12px',
                 borderRadius: '6px',
                 fontSize: '11px',
                 fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
               }}
             >
               ✓ ED25519 SIGNATURE VALID
@@ -144,56 +146,56 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
           ) : (
             <span
               style={{
-                background: 'rgba(255, 68, 68, 0.1)',
-                border: '1px solid #ff4444',
-                color: '#ff4444',
+                background: 'rgba(255, 184, 0, 0.08)',
+                border: '1px solid rgba(255, 184, 0, 0.3)',
+                color: 'var(--accent-achievement)',
                 padding: '6px 12px',
                 borderRadius: '6px',
                 fontSize: '11px',
                 fontWeight: 700,
               }}
             >
-              ⚠ UNVERIFIED / LEGACY
+              HISTORICAL / UNVERIFIED
             </span>
           )}
         </div>
       </div>
 
-      {/* Verification Layer Breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+      {/* Verification Breakdown Strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginBottom: '20px' }}>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>1. Claim</div>
-          <div style={{ color: '#fff', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>Builder Statement</div>
+          <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>1. Claim</div>
+          <div style={{ color: '#ffffff', fontSize: '12px', fontWeight: 600, marginTop: '2px' }}>Signed Statement</div>
         </div>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>2. Provenance</div>
-          <div style={{ color: isSignatureValid ? '#00ff88' : '#ff4444', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {isSignatureValid ? 'Ed25519 Verified ✓' : 'Unsigned / Legacy'}
+          <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>2. Provenance</div>
+          <div style={{ color: isSignatureValid ? '#00ff88' : 'var(--accent-achievement)', fontSize: '12px', fontWeight: 600, marginTop: '2px' }}>
+            {isSignatureValid ? 'Ed25519 Verified ✓' : 'Historical Record'}
           </div>
         </div>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>3. Evidence</div>
-          <div style={{ color: proof.github_url || proof.evidence_url ? '#ab9ff2' : '#666', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {proof.github_url ? 'GitHub Link Attached' : proof.evidence_url ? 'Demo Link Attached' : 'None Attached'}
+          <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>3. Evidence</div>
+          <div style={{ color: proof.github_url || proof.evidence_url ? '#ab9ff2' : 'var(--text-faint)', fontSize: '12px', fontWeight: 600, marginTop: '2px' }}>
+            {proof.github_url ? 'GitHub Attached' : proof.evidence_url ? 'Demo Attached' : 'None Attached'}
           </div>
         </div>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>4. Storage</div>
-          <div style={{ color: proof.archival_state === 'archived' ? '#27c93f' : '#ffb800', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {proof.archival_state === 'archived' ? 'Arweave Confirmed' : 'Database Stored'}
+          <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>4. Storage</div>
+          <div style={{ color: proof.archival_state === 'archived' ? '#00e5ff' : 'var(--accent-achievement)', fontSize: '12px', fontWeight: 600, marginTop: '2px' }}>
+            {proof.archival_state === 'archived' ? 'Arweave Archived' : 'Database Stored'}
           </div>
         </div>
       </div>
 
-      {/* Proof Content Card */}
+      {/* Claim Statement Body */}
       <div className="terminal-card" style={{ padding: '24px', marginBottom: '20px' }}>
-        <h2 style={{ color: '#aaa', fontSize: '12px', textTransform: 'uppercase', margin: '0 0 12px 0' }}>
+        <h2 style={{ color: 'var(--text-faint)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 12px 0', fontWeight: 600 }}>
           Signed Work Claim
         </h2>
         <p
           style={{
-            color: '#fff',
-            fontSize: '14px',
+            color: '#ffffff',
+            fontSize: '15px',
             lineHeight: '1.6',
             whiteSpace: 'pre-wrap',
             margin: '0 0 20px 0',
@@ -202,15 +204,16 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
           {proof.content}
         </p>
 
+        {/* Evidence Links Strip */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
           {proof.github_url && (
-            <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>GitHub Evidence (Self-Attested)</div>
+            <div style={{ background: 'var(--bg-base)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>GitHub Evidence</div>
               <a
                 href={proof.github_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: '#ab9ff2', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
+                style={{ color: '#ab9ff2', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all', fontFamily: 'var(--font-mono)' }}
               >
                 {proof.github_url} ↗
               </a>
@@ -218,13 +221,13 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
           )}
 
           {proof.evidence_url && (
-            <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Live Demo / Evidence URL</div>
+            <div style={{ background: 'var(--bg-base)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>Live Demo / Evidence</div>
               <a
                 href={proof.evidence_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: '#00e5ff', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
+                style={{ color: '#00e5ff', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all', fontFamily: 'var(--font-mono)' }}
               >
                 {proof.evidence_url} ↗
               </a>
@@ -232,13 +235,13 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
           )}
 
           {proof.irys_tx_id && !proof.irys_tx_id.startsWith('powl_') && (
-            <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave L1 Permanent Storage</div>
+            <div style={{ background: 'var(--bg-base)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>Arweave Permanent TX</div>
               <a
                 href={`https://gateway.irys.xyz/${proof.irys_tx_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: '#27c93f', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
+                style={{ color: '#ffb800', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all', fontFamily: 'var(--font-mono)' }}
               >
                 {proof.irys_tx_id} ↗
               </a>
@@ -247,28 +250,28 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         </div>
       </div>
 
-      {/* Cryptographic Provenance Inspector */}
+      {/* Cryptographic Provenance Data */}
       <div className="terminal-card" style={{ padding: '20px', marginBottom: '20px' }}>
-        <h3 style={{ color: '#00ff88', fontSize: '12px', margin: '0 0 12px 0', textTransform: 'uppercase' }}>
-          🔍 Cryptographic Provenance Inspector
+        <h3 style={{ color: '#00ff88', fontSize: '12px', margin: '0 0 12px 0', textTransform: 'uppercase', fontWeight: 700 }}>
+          Cryptographic Provenance Data
         </h3>
 
-        <div style={{ display: 'grid', gap: '8px', fontSize: '11px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Signer Wallet:</span>
-            <code style={{ color: '#ffb800', wordBreak: 'break-all', fontSize: '10px' }}>{proof.wallet_address}</code>
+        <div style={{ display: 'grid', gap: '8px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+            <span style={{ color: 'var(--text-faint)' }}>Signer Wallet:</span>
+            <code style={{ color: '#ffb800', wordBreak: 'break-all', fontSize: '11px' }}>{proof.wallet_address}</code>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Domain Bound:</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+            <span style={{ color: 'var(--text-faint)' }}>Domain Bound:</span>
             <span style={{ color: '#00e5ff', wordBreak: 'break-all' }}>{proof.domain || 'provn-sol.vercel.app'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Anti-Replay Nonce:</span>
-            <span style={{ color: '#aaa', wordBreak: 'break-all' }}>{proof.nonce || 'N/A'}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+            <span style={{ color: 'var(--text-faint)' }}>Anti-Replay Nonce:</span>
+            <span style={{ color: '#ffffff', wordBreak: 'break-all' }}>{proof.nonce || 'N/A'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Archival State:</span>
-            <span style={{ color: proof.archival_state === 'archived' ? '#00ff88' : '#ffb800' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+            <span style={{ color: 'var(--text-faint)' }}>Archival State:</span>
+            <span style={{ color: proof.archival_state === 'archived' ? '#00ff88' : '#ffb800', fontWeight: 700 }}>
               {proof.archival_state?.toUpperCase() || 'PENDING'}
             </span>
           </div>
@@ -276,17 +279,18 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
 
         {reconstructedMessage && (
           <div style={{ marginTop: '16px' }}>
-            <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>
+            <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 600 }}>
               Reconstructed Canonical SIWS Message:
             </div>
             <pre
               style={{
-                background: '#060709',
-                border: '1px solid #161c28',
+                background: 'var(--bg-base)',
+                border: '1px solid var(--border-subtle)',
                 padding: '12px',
                 borderRadius: '6px',
                 color: '#ab9ff2',
-                fontSize: '10px',
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
                 overflowX: 'auto',
                 whiteSpace: 'pre-wrap',
                 margin: 0,
@@ -298,22 +302,23 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         )}
       </div>
 
-      {/* Independent Verification Instructions */}
+      {/* Independent Verification CLI Section */}
       <div className="terminal-card" style={{ padding: '20px' }}>
-        <h3 style={{ color: '#00e5ff', fontSize: '12px', margin: '0 0 8px 0', textTransform: 'uppercase' }}>
-          💻 Independent Verification CLI
+        <h3 style={{ color: '#00e5ff', fontSize: '12px', margin: '0 0 8px 0', textTransform: 'uppercase', fontWeight: 700 }}>
+          Independent Verification CLI
         </h3>
-        <p style={{ color: '#888', fontSize: '11px', margin: '0 0 12px 0', lineHeight: '1.4' }}>
-          You do not need to trust the PROVN web server. You can independently verify this proof using our open-source CLI:
+        <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+          PROVN is designed with zero-trust verification. Anyone can verify this proof offline with TweetNaCl Ed25519:
         </p>
         <pre
           style={{
-            background: '#060709',
-            border: '1px solid #161c28',
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-subtle)',
             padding: '10px 14px',
             borderRadius: '6px',
             color: '#00ff88',
-            fontSize: '11px',
+            fontSize: '12px',
+            fontFamily: 'var(--font-mono)',
             overflowX: 'auto',
             margin: 0,
           }}

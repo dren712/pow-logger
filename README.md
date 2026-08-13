@@ -18,29 +18,35 @@ PROVN is a portable, cryptographically verifiable builder evidence protocol for 
 
 ---
 
-## 1. What is PROVN?
+## 1. Problem & Solution
 
-In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and social posts. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
+### The Problem
+In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and Discord messages. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted, lacking cryptographic attribution.
 
-PROVN gives developers a single, permanent record of their daily contributions:
+### The Solution
+PROVN creates wallet-authenticated proof records that allow builders to prove that a Solana wallet signed a specific contribution record:
 1. **Sign**: The builder signs a canonical message containing their work summary, evidence links, timestamp, and unique nonce with their Solana wallet.
 2. **Verify**: The server cryptographically validates the Ed25519 signature, checks the 15-minute anti-replay window, and indexes the attestation.
 3. **Archive**: The signed envelope is permanently stored on Arweave via the Irys L1 gateway.
-4. **Inspect**: Anyone can verify any proof record with cryptographic independence using the public verification API or on-page verifier inspector.
+4. **Share**: The builder exports or links their portable Proof Packet for DAOs, bounties, and grants.
 
 ---
 
-## 2. What Does PROVN Cryptographically Prove?
+## 2. What PROVN Proves vs What PROVN Does NOT Prove
 
-| Claim | Cryptographic Guarantee |
+### What PROVN Cryptographically Proves
+| Guarantee | Verification Mechanism |
 |---|---|
 | **Author Authenticity** | ✅ **Guaranteed** — The Ed25519 signature proves that the holder of the Solana private key authored the message. |
 | **Content Integrity** | ✅ **Guaranteed** — Any change to the text, GitHub link, or evidence URL invalidates the signature payload. |
 | **Timestamp Boundedness** | ✅ **Guaranteed** — Submissions are strictly verified against server clock within a ±15 minute window (`900,000ms`). |
 | **Replay Defense** | ✅ **Guaranteed** — Database-level `UNIQUE INDEX` on signatures prevents re-submitting previously signed messages. |
 | **Data Permanence** | ✅ **Guaranteed when archived** — Immutable Arweave storage via Irys receipts. |
-| **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
-| **GitHub Ownership** | 🔮 **Roadmap** — Self-attested PR/commit links; external OAuth/Oracle identity linking is planned for Phase 2. |
+
+### What PROVN Does NOT Prove (Protocol Boundaries)
+- **Code Quality**: PROVN does not evaluate whether the underlying code is bug-free, efficient, or well-written.
+- **External Acceptance**: PROVN does not prove that a pull request was merged upstream (until Phase 2 Oracle integration).
+- **Sole Authorship**: PROVN proves wallet attestation of a statement; it does not replace multi-signature code commit signing.
 
 ---
 
@@ -74,7 +80,7 @@ PROVN gives developers a single, permanent record of their daily contributions:
 
 ---
 
-## 4. Status Matrix: Shipped vs Experimental vs Roadmap
+## 4. Status Matrix: Shipped vs Labs vs Roadmap
 
 | Component | Status | Description |
 |---|---|---|
@@ -114,38 +120,9 @@ GitHub URL: <NORMALIZED_GITHUB_URL_OR_NONE>
 Evidence URL: <NORMALIZED_EVIDENCE_URL_OR_NONE>
 ```
 
-Modifying any character in the content, links, timestamp, or nonce breaks the Ed25519 signature, preventing client tampering or unauthorized modification.
-
 ---
 
-## 6. Reputation & Achievements
-
-Builder reputation is computed deterministically from verified logs:
-
-### Builder Levels ([`app/lib/milestones.ts`](app/lib/milestones.ts))
-- `LVL 1` 🔧 **Apprentice Builder** (0+ logs)
-- `LVL 2` ⚒️ **Verified Craftsman** (7+ logs)
-- `LVL 3` 🏗️ **Senior Architect** (30+ logs)
-- `LVL 4` 💎 **Protocol Master** (100+ logs)
-- `LVL 5` 👑 **Grand Legend** (365+ logs)
-
-### Builder Achievements ([`app/lib/achievements.ts`](app/lib/achievements.ts))
-- ⚡ **Genesis Proof**: Submit 1 verified proof log.
-- 🔥 **7-Day Builder**: Maintain an active or historical 7-day streak.
-- 🛡️ **30-Day Builder**: Maintain an active or historical 30-day streak.
-- 👑 **100-Day Builder**: Maintain an active or historical 100-day streak.
-- 🟣 **Solana Contributor**: Log 10+ proofs classified with Solana ecosystem protocols.
-- 🐙 **Open Source Contributor**: Submit 5+ verified Pull Request / Commit links.
-- 📦 **Permanent Provenance**: 10+ logs permanently archived on Arweave.
-- 💎 **Protocol Master**: Log 365+ lifetime verified proofs.
-
----
-
-## 7. Local Development & Testing
-
-### Prerequisites
-- Node.js >= 18.0.0
-- npm >= 9.0.0
+## 6. Local Development & Testing
 
 ### Quick Start
 ```bash
@@ -156,24 +133,16 @@ cd pow-logger
 # Install dependencies
 npm install
 
-# Run protocol verification test suite (90 assertions)
+# Run protocol verification test suite (102 assertions)
 npm test
 
 # Start local Next.js dev server
 npm run dev
 ```
 
-### Environment Configuration (`.env.local`)
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
-IRYS_PRIVATE_KEY=<optional-base58-or-json-keypair>
-```
-
 ---
 
-## 8. License & Attribution
+## 7. License & Attribution
 
 - **Author**: Darshan Gaikwad ([@dren712](https://github.com/dren712))
 - **Email**: darshangaikwad712@gmail.com

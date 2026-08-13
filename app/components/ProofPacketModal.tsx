@@ -40,7 +40,7 @@ export default function ProofPacketModal({
     let md = `# PROVN Proof Packet — ${walletShort}\n\n`
     md += `**Attested Solana Wallet:** \`${wallet}\`  \n`
     md += `**Verification Protocol:** [PROVN Solana Attestation Layer](${packetUrl})  \n`
-    md += `**Verified Proofs:** ${reputation.verifiedProofs} | **Active Streak:** ${reputation.currentStreak} Days | **30-Day Activity:** ${reputation.recentVerifiedProofs} Proofs\n\n`
+    md += `**Verified Proofs:** ${reputation.verifiedProofs} | **Recent (30d):** ${reputation.recentVerifiedProofs} | **Evidence Coverage:** ${reputation.proofsWithGithubEvidence}/${reputation.verifiedProofs}\n\n`
     md += `## Verified Proof-of-Work Records\n\n`
 
     if (topProofs.length === 0) {
@@ -147,34 +147,29 @@ export default function ProofPacketModal({
       }}
     >
       <div
+        className="terminal-card"
         style={{
-          background: '#0c0e14',
-          border: '1px solid #1f293d',
-          borderRadius: '12px',
           maxWidth: '680px',
           width: '100%',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.9)',
-          color: '#eee',
-          fontFamily: 'monospace',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.9)',
           overflow: 'hidden',
         }}
       >
         {/* Modal Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #1c2230' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '18px' }}>📦</span>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: '#00ff88' }}>PROVN Proof Packet Studio</div>
-              <div style={{ fontSize: '10px', color: '#888' }}>Portable evidence bundle for grants, bounties, and hiring</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff' }}>PROVN Proof Packet</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Portable evidence dossier for grants, DAOs, and bounties
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '18px' }}
+            style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: '18px' }}
           >
             ✕
           </button>
@@ -183,28 +178,28 @@ export default function ProofPacketModal({
         {/* Modal Body */}
         <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
           {/* Summary Strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px', marginBottom: '16px' }}>
-            <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
-              <div style={{ color: '#666' }}>BUILDER</div>
-              <div style={{ color: '#00ff88', fontWeight: 700 }}>{walletShort}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', padding: '10px 12px', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>Builder</div>
+              <div style={{ color: '#00ff88', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>{walletShort}</div>
             </div>
-            <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
-              <div style={{ color: '#666' }}>VERIFIED PROOFS</div>
-              <div style={{ color: '#00e5ff', fontWeight: 700 }}>{reputation.verifiedProofs}</div>
+            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', padding: '10px 12px', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>Verified Proofs</div>
+              <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>{reputation.verifiedProofs}</div>
             </div>
-            <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
-              <div style={{ color: '#666' }}>30-DAY ACTIVE</div>
-              <div style={{ color: '#ab9ff2', fontWeight: 700 }}>{reputation.recentVerifiedProofs}</div>
+            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', padding: '10px 12px', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>Recent (30d)</div>
+              <div style={{ color: '#00e5ff', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>{reputation.recentVerifiedProofs}</div>
             </div>
-            <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
-              <div style={{ color: '#666' }}>STREAK</div>
-              <div style={{ color: '#ffb800', fontWeight: 700 }}>🔥 {reputation.currentStreak}d</div>
+            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', padding: '10px 12px', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-faint)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>Evidence Coverage</div>
+              <div style={{ color: '#ab9ff2', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>{reputation.proofsWithGithubEvidence} / {reputation.verifiedProofs}</div>
             </div>
           </div>
 
           {/* Curated Proofs Preview */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Curated Evidence Proofs ({topProofs.length}):
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
@@ -212,22 +207,21 @@ export default function ProofPacketModal({
                 <div
                   key={p.id}
                   style={{
-                    background: '#07080c',
-                    border: '1px solid #1a2233',
+                    background: 'var(--bg-base)',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: '8px',
-                    padding: '12px',
-                    fontSize: '11px',
+                    padding: '12px 14px',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                    <span style={{ color: '#00ff88', fontWeight: 700 }}>Proof #{p.id}</span>
-                    <span style={{ color: '#666', fontSize: '10px' }}>{new Date(p.created_at).toLocaleDateString()}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ color: '#00ff88', fontWeight: 700, fontSize: '12px', fontFamily: 'var(--font-mono)' }}>Proof #{p.id}</span>
+                    <span style={{ color: 'var(--text-faint)', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>{new Date(p.created_at).toLocaleDateString()}</span>
                   </div>
-                  <div style={{ color: '#ddd', marginBottom: '6px', lineHeight: '1.4' }}>{p.content}</div>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '10px' }}>
-                    <span style={{ color: '#00e5ff' }}>✓ Ed25519 Verified</span>
-                    {p.github_url && <span style={{ color: '#ab9ff2' }}>🐙 GitHub Evidence</span>}
-                    {p.irys_tx_id && !p.irys_tx_id.startsWith('powl_') && <span style={{ color: '#27c93f' }}>📦 Arweave Archived</span>}
+                  <div style={{ color: '#ffffff', marginBottom: '8px', fontSize: '13px', lineHeight: 1.45 }}>{p.content}</div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '11px' }}>
+                    <span style={{ color: '#00ff88' }}>✓ Ed25519 Verified</span>
+                    {p.github_url && <span style={{ color: '#ab9ff2' }}>🐙 GitHub Attached</span>}
+                    {p.irys_tx_id && !p.irys_tx_id.startsWith('powl_') && <span style={{ color: '#00e5ff' }}>📦 Arweave Archived</span>}
                   </div>
                 </div>
               ))}
@@ -236,37 +230,21 @@ export default function ProofPacketModal({
         </div>
 
         {/* Modal Actions */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #1c2230', background: '#080a10' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               type="button"
               onClick={handleCopyLink}
-              style={{
-                background: '#161b26',
-                border: '1px solid #283144',
-                color: copiedLink ? '#00ff88' : '#ccc',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-              }}
+              className="btn-secondary"
+              style={{ fontSize: '11px', padding: '7px 12px' }}
             >
               {copiedLink ? '✓ Copied Link' : '🔗 Copy Link'}
             </button>
             <button
               type="button"
               onClick={handleCopyMarkdown}
-              style={{
-                background: '#161b26',
-                border: '1px solid #283144',
-                color: copiedMd ? '#00ff88' : '#ccc',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-              }}
+              className="btn-secondary"
+              style={{ fontSize: '11px', padding: '7px 12px' }}
             >
               {copiedMd ? '✓ Copied Markdown' : '📋 Copy Markdown'}
             </button>
@@ -276,16 +254,8 @@ export default function ProofPacketModal({
             <button
               type="button"
               onClick={handleDownloadJson}
-              style={{
-                background: '#161b26',
-                border: '1px solid #283144',
-                color: '#00e5ff',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-              }}
+              className="btn-secondary"
+              style={{ fontSize: '11px', padding: '7px 12px', color: '#00e5ff' }}
             >
               ↓ JSON
             </button>
@@ -293,12 +263,7 @@ export default function ProofPacketModal({
               type="button"
               onClick={handleDownloadMarkdown}
               className="btn-primary"
-              style={{
-                padding: '8px 14px',
-                fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
+              style={{ padding: '7px 14px', fontSize: '11px' }}
             >
               ↓ Markdown Dossier
             </button>

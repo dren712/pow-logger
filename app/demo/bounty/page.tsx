@@ -55,183 +55,221 @@ export default function BountyDemoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100 px-4 py-12">
-      <div className="max-w-3xl mx-auto space-y-8">
-        {/* Navigation */}
-        <div>
-          <Link href="/" className="text-xs font-mono text-emerald-400 hover:underline mb-2 block">
-            ← Back to PROVN Terminal
-          </Link>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎯</span>
-            <h1 className="text-2xl font-bold font-mono text-white">Ecosystem Policy & Bounty Integration Demo</h1>
-          </div>
-          <p className="text-xs text-gray-400 mt-1">
-            Interactive reference implementation showing how Superteam Earn, DAOs, or grant committees use the PROVN Policy Evaluation API to programmatically gate developer submissions.
-          </p>
+    <main
+      style={{
+        width: 'min(840px, 94vw)',
+        margin: '0 auto',
+        padding: '32px 16px 100px 16px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ marginBottom: '24px' }}>
+        <Link href="/" className="btn-secondary" style={{ fontSize: '11px', padding: '6px 12px' }}>
+          ← Back to Terminal
+        </Link>
+      </div>
+
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h1 style={{ color: '#ffffff', fontSize: '1.5rem', margin: 0, fontWeight: 800 }}>
+            Ecosystem Policy & Verification Engine
+          </h1>
         </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.5, margin: '6px 0 0 0' }}>
+          Demonstrates how Superteam Earn, DAOs, and grant evaluators programmatically gate developer submissions using PROVN proof verification.
+        </p>
+      </div>
 
-        {/* Policy Preset Selector */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-3">
-          <div className="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">
-            Select Evaluation Policy Preset:
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {Object.entries(STANDARD_POLICY_PRESETS).map(([key, preset]) => {
-              const isSelected = selectedPreset === key
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPreset(key)
-                    setEvaluation(null)
-                  }}
-                  className={`p-3 rounded-xl border text-left font-mono transition ${
-                    isSelected
-                      ? 'bg-emerald-950/30 border-emerald-500 text-white'
-                      : 'bg-[#0a0d14] border-gray-800 text-gray-400 hover:border-gray-700'
-                  }`}
-                >
-                  <div className="text-xs font-bold text-emerald-400">{preset.name}</div>
-                  <div className="text-[10px] text-gray-500 mt-1">
-                    Min {preset.minVerifiedProofs || 0} proofs • {preset.minStreak || 0}d streak
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+      {/* Preset Selector */}
+      <div className="terminal-card" style={{ padding: '20px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '11px', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.05em' }}>
+          Select Evaluation Policy Preset:
         </div>
-
-        {/* Selected Policy Card */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-            <div>
-              <span className="text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded">
-                EVALUATION POLICY: {activePolicy.name}
-              </span>
-              <h2 className="text-base sm:text-lg font-bold font-mono text-white mt-2">
-                Programmatic Evidence Gating Contract
-              </h2>
-            </div>
-            <div className="text-left sm:text-right">
-              <div className="text-emerald-400 font-mono font-bold text-lg">$2,500 USDC</div>
-              <div className="text-[10px] text-gray-500 font-mono">Bounty Reward / Allocation</div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800/80 pt-3">
-            <div className="text-xs font-mono text-gray-400 font-bold mb-2">Declared Policy Requirements:</div>
-            <ul className="text-xs font-mono space-y-1 text-gray-300">
-              {activePolicy.minVerifiedProofs && (
-                <li>• Minimum {activePolicy.minVerifiedProofs} Verified Cryptographic Proofs ⚡</li>
-              )}
-              {activePolicy.minRecentProofs && (
-                <li>• Minimum {activePolicy.minRecentProofs} Verified Proof in the last 30 days 📊</li>
-              )}
-              {activePolicy.minStreak && (
-                <li>• Minimum {activePolicy.minStreak}-Day Daily Building Streak 🔥</li>
-              )}
-              {activePolicy.requiredProtocols && (
-                <li>• Required Protocol Experience: {activePolicy.requiredProtocols.join(', ')} 🌐</li>
-              )}
-              {activePolicy.requiredSkills && (
-                <li>• Required Technical Skills: {activePolicy.requiredSkills.join(', ')} 🛠️</li>
-              )}
-              {activePolicy.requireGithubEvidence && (
-                <li>• Public GitHub Evidence Attached (PR / Commit) 🐙</li>
-              )}
-              {activePolicy.requireArchivedProof && (
-                <li>• Confirmed Arweave L1 Permanent Provenance 📦</li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        {/* Verification Form */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-bold font-mono text-white">Evaluate Solana Wallet</h3>
-            <div className="flex gap-2 text-[11px] font-mono text-gray-500">
-              <span>Try sample:</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+          {Object.entries(STANDARD_POLICY_PRESETS).map(([key, preset]) => {
+            const isSelected = selectedPreset === key
+            return (
               <button
+                key={key}
                 type="button"
-                onClick={() => handleUseSampleWallet('AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p')}
-                className="text-emerald-400 hover:underline"
+                onClick={() => {
+                  setSelectedPreset(key)
+                  setEvaluation(null)
+                }}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '8px',
+                  background: isSelected ? 'rgba(0, 255, 136, 0.08)' : 'var(--bg-base)',
+                  border: isSelected ? '1px solid #00ff88' : '1px solid var(--border-subtle)',
+                  color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
               >
-                Sample Builder
+                <div style={{ color: isSelected ? '#00ff88' : 'var(--text-main)', fontSize: '12px', fontWeight: 700 }}>
+                  {preset.name}
+                </div>
+                <div style={{ color: 'var(--text-faint)', fontSize: '11px', marginTop: '4px' }}>
+                  Min {preset.minVerifiedProofs || 0} proofs • {preset.minStreak || 0}d streak
+                </div>
               </button>
-            </div>
-          </div>
-
-          <form onSubmit={handleCheckEligibility} className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              placeholder="Enter Solana Wallet Address (Base58)..."
-              value={wallet}
-              onChange={(e) => setWallet(e.target.value)}
-              className="flex-1 bg-[#08080c] border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs px-4 py-2.5 rounded-lg transition disabled:opacity-50"
-            >
-              {loading ? 'Evaluating Policy...' : 'Evaluate Policy →'}
-            </button>
-          </form>
-
-          {error && <div className="text-xs font-mono text-red-400 bg-red-950/40 p-3 rounded-lg">{error}</div>}
-
-          {evaluation && (
-            <div
-              className={`p-4 rounded-xl border font-mono text-xs space-y-4 ${
-                evaluation.eligible
-                  ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
-                  : 'bg-yellow-950/20 border-yellow-500/40 text-yellow-300'
-              }`}
-            >
-              <div className="flex justify-between items-center font-bold">
-                <span>
-                  Status: {evaluation.eligible ? '✅ ELIGIBLE (POLICY SATISFIED)' : '❌ INELIGIBLE (REQUIREMENTS MISSING)'}
-                </span>
-                <span className="text-[10px] bg-black/40 px-2 py-1 rounded">
-                  Passed {evaluation.summary.passedCount} / {evaluation.summary.totalChecks} Checks
-                </span>
-              </div>
-
-              {/* Individual Checks Breakdown */}
-              <div className="space-y-2 pt-2 border-t border-gray-800">
-                {evaluation.checks.map((check) => (
-                  <div
-                    key={check.id}
-                    className="flex justify-between items-start text-[11px] bg-black/30 p-2 rounded"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{check.passed ? '✅' : '❌'}</span>
-                      <span className="text-white font-medium">{check.label}</span>
-                    </div>
-                    <div className="text-right text-[10px] text-gray-400">
-                      <div>Actual: {JSON.stringify(check.actual)}</div>
-                      <div>Required: {JSON.stringify(check.required)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-[10px] text-gray-400 pt-2 border-t border-gray-800 flex justify-between items-center">
-                <span>Evaluated at {new Date(evaluation.evaluatedAt).toLocaleTimeString()}</span>
-                <Link
-                  href={`/u/${evaluation.wallet}`}
-                  className="text-emerald-400 hover:underline"
-                >
-                  View Full Builder Passport →
-                </Link>
-              </div>
-            </div>
-          )}
+            )
+          })}
         </div>
       </div>
-    </div>
+
+      {/* Selected Policy Requirements */}
+      <div className="terminal-card" style={{ padding: '20px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+          <div>
+            <span style={{ fontSize: '10px', background: 'rgba(0, 229, 255, 0.1)', color: '#00e5ff', border: '1px solid rgba(0, 229, 255, 0.3)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+              POLICY CONTRACT: {activePolicy.name}
+            </span>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: '8px 0 0 0' }}>
+              Programmatic Verification Rules
+            </h2>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ color: '#00ff88', fontSize: '16px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>$2,500 USDC</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: '10px' }}>Example Bounty Allocation</div>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 600 }}>
+            Policy Requirements:
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', fontSize: '12px', color: 'var(--text-main)' }}>
+            {activePolicy.minVerifiedProofs && (
+              <div>• Min {activePolicy.minVerifiedProofs} Verified Proofs</div>
+            )}
+            {activePolicy.minRecentProofs && (
+              <div>• Min {activePolicy.minRecentProofs} Proof in last 30d</div>
+            )}
+            {activePolicy.minStreak && (
+              <div>• Min {activePolicy.minStreak}-Day Building Streak</div>
+            )}
+            {activePolicy.requiredProtocols && (
+              <div>• Required Protocol: {activePolicy.requiredProtocols.join(', ')}</div>
+            )}
+            {activePolicy.requireGithubEvidence && (
+              <div>• Public GitHub Evidence Attached</div>
+            )}
+            {activePolicy.requireArchivedProof && (
+              <div>• Confirmed Arweave Storage</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Verification Evaluator Form */}
+      <div className="terminal-card" style={{ padding: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+            Evaluate Builder Wallet
+          </h3>
+          <div style={{ display: 'flex', gap: '6px', fontSize: '11px', color: 'var(--text-faint)' }}>
+            <span>Try sample:</span>
+            <button
+              type="button"
+              onClick={() => handleUseSampleWallet('AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p')}
+              style={{ background: 'none', border: 'none', color: '#00ff88', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+            >
+              Sample Builder
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleCheckEligibility} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            placeholder="Enter Solana Wallet Address (Base58)..."
+            value={wallet}
+            onChange={(e) => setWallet(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: '260px',
+              background: 'var(--bg-base)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              padding: '9px 12px',
+              color: '#ffffff',
+              fontSize: '12px',
+              fontFamily: 'var(--font-mono)',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary"
+            style={{ whiteSpace: 'nowrap', padding: '9px 16px' }}
+          >
+            {loading ? 'Evaluating...' : 'Evaluate Policy →'}
+          </button>
+        </form>
+
+        {error && (
+          <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', background: 'rgba(255, 68, 68, 0.08)', border: '1px solid rgba(255, 68, 68, 0.3)', color: 'var(--accent-danger)', fontSize: '12px' }}>
+            {error}
+          </div>
+        )}
+
+        {evaluation && (
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '16px',
+              borderRadius: '8px',
+              background: evaluation.eligible ? 'rgba(0, 255, 136, 0.04)' : 'rgba(255, 184, 0, 0.04)',
+              border: evaluation.eligible ? '1px solid rgba(0, 255, 136, 0.3)' : '1px solid rgba(255, 184, 0, 0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ color: evaluation.eligible ? '#00ff88' : '#ffb800', fontWeight: 800, fontSize: '13px' }}>
+                {evaluation.eligible ? '✓ ELIGIBLE (POLICY SATISFIED)' : '❌ INELIGIBLE (CRITERIA NOT MET)'}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                Passed {evaluation.summary.passedCount} / {evaluation.summary.totalChecks} Checks
+              </div>
+            </div>
+
+            {/* Checks Breakdown */}
+            <div style={{ display: 'grid', gap: '6px', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', marginBottom: '12px' }}>
+              {evaluation.checks.map((check) => (
+                <div
+                  key={check.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    background: 'var(--bg-base)',
+                    fontSize: '11px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{check.passed ? '✓' : '✗'}</span>
+                    <span style={{ color: '#ffffff', fontWeight: 600 }}>{check.label}</span>
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '10px' }}>
+                    Actual: {JSON.stringify(check.actual)} · Required: {JSON.stringify(check.required)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-faint)' }}>
+              <span>Evaluated at {new Date(evaluation.evaluatedAt).toLocaleTimeString()}</span>
+              <Link href={`/u/${evaluation.wallet}`} style={{ color: '#00ff88', textDecoration: 'none', fontWeight: 600 }}>
+                View Builder Passport →
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   )
 }
