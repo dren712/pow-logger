@@ -26,6 +26,10 @@ import {
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
 import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE } from '../app/lib/milestones'
+import { calculateReputation } from '../app/lib/reputationEngine'
+import { evaluateAchievements } from '../app/lib/achievements'
+import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } from '../app/lib/cnftEligibility'
+import { ProvnClient } from '../sdk/index'
 
 import fs from 'fs'
 import path from 'path'
@@ -407,6 +411,89 @@ async function runProductionTestSuite() {
     content: 'Altered content payload',
   })
   assert(!nacl.sign.detached.verify(new TextEncoder().encode(tamperedE2EContentMsg), bs58.decode(mockStoredRow.signature), bs58.decode(mockStoredRow.wallet_address)), 'Tampered persisted content invalidates re-verification')
+
+  // --- SUITE 7: Deterministic Reputation Engine & Off-Chain Achievement System ---
+  console.log('\n► SUITE 7: Deterministic Reputation Engine & Off-Chain Achievement System')
+
+  const testLogs = [
+    {
+      id: 1,
+      wallet_address: walletAddress,
+      created_at: '2026-08-01T10:00:00.000Z',
+      content: 'Wrote Solana Anchor Program with Rust',
+      skills: ['Solana', 'Rust', 'Anchor'],
+      protocols: ['Solana', 'Anchor'],
+      category: 'Development',
+      signature: 'dummy_sig',
+      nonce: 'ABCDEFGH12345678',
+      archival_state: 'archived' as const,
+      irys_tx_id: 'irys_tx_genesis_1',
+    },
+    {
+      id: 2,
+      wallet_address: walletAddress,
+      created_at: '2026-08-02T10:00:00.000Z',
+      content: 'Integrated Metaplex Compressed NFTs',
+      skills: ['Solana', 'TypeScript', 'Metaplex'],
+      protocols: ['Metaplex'],
+      category: 'Development',
+      signature: 'dummy_sig_2',
+      nonce: 'ABCDEFGH12345679',
+      archival_state: 'archived' as const,
+      irys_tx_id: 'irys_tx_genesis_2',
+    },
+  ]
+
+  // Test 1: calculateReputation determinism
+  const rep1 = calculateReputation(walletAddress, testLogs)
+  const rep2 = calculateReputation(walletAddress, testLogs)
+  assert(rep1.totalProofs === 2, 'calculateReputation calculates correct total proofs count')
+  assert(rep1.archivedProofs === 2, 'calculateReputation calculates correct archived proofs count')
+  assert(rep1.archivalSuccessRate === 100, 'calculateReputation computes 100% archival success rate')
+  assert(JSON.stringify(rep1) === JSON.stringify(rep2), 'calculateReputation is 100% deterministic (same input -> same output)')
+
+  // Test 2: evaluateAchievements
+  const achievements = evaluateAchievements(testLogs, 7, 7)
+  const genesisAch = achievements.find((a) => a.id === 'FIRST_PROOF')
+  const streakAch = achievements.find((a) => a.id === '7_DAY_STREAK')
+  assert(genesisAch?.earned === true, 'FIRST_PROOF achievement unlocked for >=1 proof')
+  assert(streakAch?.earned === true, '7_DAY_STREAK achievement unlocked for >=7 day streak')
+
+  // Test 3: cNFT eligibility & metadata generator
+  const eligibility = checkCNFTEligibility('FIRST_PROOF', rep1)
+  assert(eligibility.eligible === true, 'checkCNFTEligibility evaluates eligible for earned achievement')
+
+  const meta = generateAchievementMetadata(genesisAch!, rep1)
+  assert(meta.name.includes('Genesis Proof'), 'generateAchievementMetadata generates valid Metaplex standard name')
+  assert(meta.attributes.some((a) => a.trait_type === 'Protocol' && a.value === 'PROVN'), 'Metadata contains PROVN protocol attribute')
+
+  // Test 4: LocalTestMinter mock mint execution
+  const minter = new LocalTestMinter()
+  const mintRes = await minter.mintAchievement(walletAddress, genesisAch!, rep1)
+  assert(mintRes.success === true && mintRes.isMock === true, 'LocalTestMinter simulates $0 achievement minting successfully')
+
+  // Test 5: SDK ProvnClient local proof verification
+  const isSdkValid = ProvnClient.verifyProofLocally({
+    walletAddress,
+    signature,
+    nonce,
+    timestamp,
+    content: 'Built Ed25519 anti-tamper security layer for PROVN',
+    githubUrl: 'https://github.com/dren712/pow-logger/pull/10',
+    evidenceUrl: 'https://provn-sol.vercel.app',
+  })
+  assert(isSdkValid === true, 'ProvnClient.verifyProofLocally verifies authentic signature successfully')
+
+  const isSdkTamperedInvalid = ProvnClient.verifyProofLocally({
+    walletAddress,
+    signature,
+    nonce,
+    timestamp,
+    content: 'TAMPERED CONTENT',
+    githubUrl: 'https://github.com/dren712/pow-logger/pull/10',
+    evidenceUrl: 'https://provn-sol.vercel.app',
+  })
+  assert(isSdkTamperedInvalid === false, 'ProvnClient.verifyProofLocally rejects tampered payload correctly')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')

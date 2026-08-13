@@ -23,3 +23,81 @@ export interface WalletLog {
 }
 
 export type LogRecord = WalletLog
+
+export interface Achievement {
+  id: string
+  name: string
+  description: string
+  criteria: string
+  icon: string
+  rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary'
+  earned: boolean
+  earnedAt?: string
+  mintable?: boolean
+}
+
+export interface AchievementEligibility {
+  eligible: boolean
+  achievementId: string
+  achievementName: string
+  reason: string
+  earnedAt?: string
+}
+
+export interface BuilderReputation {
+  wallet: string
+  totalProofs: number
+  verifiedProofs: number
+  archivedProofs: number
+  currentStreak: number
+  longestStreak: number
+  builderLevel: {
+    level: number
+    title: string
+    emoji: string
+    color: string
+  }
+  skills: { name: string; count: number }[]
+  protocols: { name: string; count: number }[]
+  categories: { name: string; count: number }[]
+  milestones: string[]
+  achievements: Achievement[]
+  archivalSuccessRate: number
+  firstProofAt?: string
+  latestProofAt?: string
+  activeDaysCount: number
+}
+
+export interface ProofDetail {
+  id: number
+  walletAddress: string
+  createdAt: string
+  content: string
+  githubUrl?: string | null
+  evidenceUrl?: string | null
+  signature?: string
+  nonce?: string
+  domain?: string
+  skills?: string[]
+  protocols?: string[]
+  category?: string
+  irysTxId?: string | null
+  archivalState: ArchivalState
+  isCryptographicallyVerified: boolean
+  verificationDetails?: {
+    canonicalMessageReconstructed: boolean
+    signatureValid: boolean
+    domainVerified: boolean
+    timestampIso: string
+  }
+}
+
+export interface PassportExport {
+  protocol: 'PROVN'
+  version: '1.0'
+  exportedAt: string
+  wallet: string
+  reputation: BuilderReputation
+  proofs: ProofDetail[]
+  verificationUrl: string
+}

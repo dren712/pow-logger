@@ -1,134 +1,109 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import React, { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { classifyLog } from '@/app/lib/classifier'
-import { generateNFTBadgeSVG, generateSingleLogNFTBadgeSVG } from '@/app/lib/badgeGenerator'
 import ContributionHeatmap from '@/app/components/ContributionHeatmap'
 import NFTBadgeModal from '@/app/components/NFTBadgeModal'
 import BuilderBadge from '@/app/components/BuilderBadge'
-import { ArchivalState } from '@/app/lib/irys'
-import { computeBadgeSummary, calculateStreak, calculateLongestStreak } from '@/app/lib/milestones'
+import { WalletLog } from '@/app/lib/types'
+import { computeBadgeSummary } from '@/app/lib/milestones'
+import { calculateReputation } from '@/app/lib/reputationEngine'
+import { generateNFTBadgeSVG } from '@/app/lib/badgeGenerator'
 
-export interface LogItem {
-  id: number
-  wallet_address: string
-  content: string
-  category?: string
-  skills?: string[]
-  protocols?: string[]
-  created_at: string
-  irys_tx_id?: string | null
-  archival_state?: ArchivalState
-  signature?: string
-  evidence_url?: string | null
-  github_url?: string | null
-  [key: string]: unknown
-}
+export type LogItem = WalletLog
 
 interface ProfileClientProps {
   wallet: string
   initialLogs: LogItem[]
 }
 
-const formatDate = (dateStr: string) => {
-  const d = new Date(dateStr)
-  return isNaN(d.getTime())
-    ? 'Just now'
-    : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-const formatTime = (dateStr: string) => {
-  const d = new Date(dateStr)
-  return isNaN(d.getTime())
-    ? ''
-    : d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-}
-
 export default function ProfileClient({ wallet, initialLogs }: ProfileClientProps) {
+  const [logs, setLogs] = useState<LogItem[]>(initialLogs)
+  const [isPending, startTransition] = useTransition()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [selectedSvg, setSelectedSvg] = useState<string | null>(null)
+  const [modalTitle, setModalTitle] = useState('PROVN Builder Reputation Badge 🗿')
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  const [isQROpen, setIsQROpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [expandedLogId, setExpandedLogId] = useState<number | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalSvg, setModalSvg] = useState('')
-  const [modalTitle, setModalTitle] = useState('PROVN NFT Proof Badge 🗿')
-  const [modalLogId, setModalLogId] = useState<number | undefined>(undefined)
-  const [modalLogContent, setModalLogContent] = useState<string>('')
-  const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
+  const [exportCopied, setExportCopied] = useState(false)
 
-  const walletShort = useMemo(() => {
-    return wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
-  }, [wallet])
+  // Filter & Search States
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
+  const [selectedSkill, setSelectedSkill] = useState<string>('ALL')
+  const [selectedProtocol, setSelectedProtocol] = useState<string>('ALL')
 
-  // Member since date (earliest log)
-  const memberSince = useMemo(() => {
-    if (initialLogs.length === 0) return 'N/A'
-    const sorted = [...initialLogs].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
-    return formatDate(sorted[0].created_at)
-  }, [initialLogs])
+  // Calculate deterministic reputation & achievements
+  const reputation = calculateReputation(wallet, logs)
+  const badgeSummary = computeBadgeSummary(logs.length, reputation.currentStreak, reputation.longestStreak, logs)
 
-  const createdAts = useMemo(() => initialLogs.map((l) => l.created_at), [initialLogs])
-  const streakCount = useMemo(() => calculateStreak(createdAts), [createdAts])
-  const longestStreak = useMemo(() => calculateLongestStreak(createdAts), [createdAts])
+  // Refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      const res = await fetch(`/api/verify/${wallet}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.logs) {
+          startTransition(() => {
+            setLogs(data.logs)
+          })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to refresh builder logs:', err)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
-  // Compute badge summary
-  const badgeSummary = useMemo(
-    () => computeBadgeSummary(initialLogs.length, streakCount, longestStreak, initialLogs),
-    [initialLogs, streakCount, longestStreak]
-  )
-
-  // Skills Breakdown (Top 3)
-  const topSkills = useMemo(() => {
-    const counts: Record<string, number> = {}
-    let total = 0
-
-    initialLogs.forEach((l) => {
-      const skills: string[] =
-        l.skills && l.skills.length > 0 ? l.skills : classifyLog(l.content).skills
-      skills.forEach((s) => {
-        counts[s] = (counts[s] || 0) + 1
-        total++
-      })
-    })
-
-    if (total === 0) return []
-
-    return Object.entries(counts)
-      .map(([skill, count]) => ({
-        skill,
-        count,
-        percent: Math.round((count / total) * 100),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3)
-  }, [initialLogs])
-
-  const copyProfileLink = () => {
+  // Copy Profile Link
+  const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Category Color Selector (Development=emerald, Debugging=amber, Security=red, Research=cyan)
-  const getCategoryBadgeStyle = (category: string) => {
-    const cat = category.toLowerCase()
-    if (cat.includes('debug')) {
-      return { bg: 'rgba(255, 184, 0, 0.1)', border: 'rgba(255, 184, 0, 0.3)', color: '#ffb800' }
-    }
-    if (cat.includes('security') || cat.includes('auth')) {
-      return { bg: 'rgba(255, 68, 68, 0.1)', border: 'rgba(255, 68, 68, 0.3)', color: '#ff4444' }
-    }
-    if (cat.includes('research') || cat.includes('study')) {
-      return { bg: 'rgba(0, 229, 255, 0.1)', border: 'rgba(0, 229, 255, 0.3)', color: '#00e5ff' }
-    }
-    return { bg: 'rgba(0, 255, 136, 0.1)', border: 'rgba(0, 255, 136, 0.3)', color: '#00ff88' }
-  }
+  // Filter Logs
+  const filteredLogs = logs.filter((log) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      log.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (log.category && log.category.toLowerCase().includes(searchQuery.toLowerCase()))
 
-  const archivedCount = useMemo(
-    () => initialLogs.filter((l) => l.archival_state === 'archived' && l.irys_tx_id && !l.irys_tx_id.startsWith('powl_')).length,
-    [initialLogs]
-  )
+    const matchesCat = selectedCategory === 'ALL' || log.category === selectedCategory
+    const matchesSkill = selectedSkill === 'ALL' || (log.skills && log.skills.includes(selectedSkill))
+    const matchesProtocol =
+      selectedProtocol === 'ALL' || (log.protocols && log.protocols.includes(selectedProtocol))
+
+    return matchesSearch && matchesCat && matchesSkill && matchesProtocol
+  })
+
+  const walletShort = `${wallet.slice(0, 4)}...${wallet.slice(-4)}`
+  const verificationUrl = `https://provn-sol.vercel.app/u/${wallet}`
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+    verificationUrl
+  )}&bgcolor=060709&color=00ff88`
+
+  // Markdown Export representation
+  const markdownExport = `# PROVN Builder Passport: ${wallet}
+- **Status**: Verified Solana Builder
+- **Builder Level**: ${reputation.builderLevel.emoji} Level ${reputation.builderLevel.level} — ${reputation.builderLevel.title}
+- **Total Proofs**: ${reputation.totalProofs}
+- **Active Streak**: ${reputation.currentStreak} Days (Longest: ${reputation.longestStreak} Days)
+- **Archival Rate**: ${reputation.archivalSuccessRate}% on Arweave
+- **Top Skills**: ${reputation.skills.map((s) => s.name).join(', ') || 'N/A'}
+- **Protocols**: ${reputation.protocols.map((p) => p.name).join(', ') || 'N/A'}
+
+## Earned Achievements
+${reputation.achievements
+  .filter((a) => a.earned)
+  .map((a) => `- ${a.icon} **${a.name}**: ${a.description}`)
+  .join('\n')}
+
+Verify cryptographically at: ${verificationUrl}
+`
 
   return (
     <main
@@ -140,487 +115,743 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         boxSizing: 'border-box',
       }}
     >
-      {/* Header Navigation */}
+      {/* Top Header */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '24px',
+          marginBottom: '20px',
         }}
       >
         <Link
           href="/"
-          className="btn-primary"
           style={{
+            color: '#666',
+            textDecoration: 'none',
             fontSize: '12px',
-            padding: '6px 14px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          ← Back to PROVN Terminal 🗿
+          ← Back to Terminal
         </Link>
-
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
-            onClick={() => {
-              const svg = generateNFTBadgeSVG(wallet, streakCount)
-              setModalSvg(svg)
-              setModalTitle(`PROVN Builder Proof Card — ${walletShort}`)
-              setModalOpen(true)
-            }}
+            onClick={() => setIsQROpen(true)}
             className="btn-primary"
             style={{
-              fontSize: '12px',
-              padding: '6px 14px',
-              borderColor: '#00ff88',
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
               color: '#00ff88',
             }}
           >
-            🖼️ View Proof Card
+            📱 QR Code
           </button>
-
           <button
-            onClick={copyProfileLink}
+            onClick={() => setIsExportOpen(true)}
             className="btn-primary"
             style={{
-              fontSize: '12px',
-              padding: '6px 14px',
-              borderColor: '#00e5ff',
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
               color: '#00e5ff',
             }}
           >
-            {copied ? '✓ Profile Link Copied!' : '📋 Copy Profile Link'}
+            📥 Export Passport
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+              color: copied ? '#00ff88' : '#aaa',
+            }}
+          >
+            {copied ? '✓ Copied' : '🔗 Share'}
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing || isPending}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+            }}
+          >
+            {isRefreshing ? '↻ Syncing...' : '↻ Refresh'}
           </button>
         </div>
       </div>
 
-      {/* Top Profile Summary Card */}
-      <section className="glass-card" style={{ padding: '28px', marginBottom: '28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {/* Wallet Shortened in Amber */}
-              <h1 style={{ color: '#ffb800', fontSize: '1.8rem', margin: 0, fontWeight: 800 }}>
-                {walletShort}
-              </h1>
-              <span
-                style={{
-                  background: 'rgba(0, 255, 136, 0.1)',
-                  color: '#00ff88',
-                  border: '1px solid rgba(0, 255, 136, 0.25)',
-                  padding: '3px 10px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                }}
-              >
-                VERIFIED BUILDER
-              </span>
-            </div>
-            <p style={{ color: '#777', fontSize: '12px', margin: '8px 0 0 0' }}>
-              Full Address: <code style={{ color: '#aaa' }}>{wallet}</code>
-            </p>
-            <p style={{ color: '#555', fontSize: '11px', margin: '4px 0 0 0' }}>
-              Member since: <strong style={{ color: '#888' }}>{memberSince}</strong>
-            </p>
-          </div>
-
-          {/* Featured Streak Counter — Biggest element on page in Neon Emerald */}
-          <div
-            style={{
-              background: '#060709',
-              border: '1px solid rgba(0, 255, 136, 0.3)',
-              borderRadius: '12px',
-              padding: '16px 28px',
-              textAlign: 'center',
-              boxShadow: '0 0 24px rgba(0, 255, 136, 0.1)',
-            }}
-          >
-            <div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Active Streak
-            </div>
-            <div style={{ color: '#00ff88', fontSize: '36px', fontWeight: 900, marginTop: '2px' }}>
-              🔥 {streakCount} {streakCount === 1 ? 'Day' : 'Days'}
-            </div>
-          </div>
+      {/* Honest Provenance Banner */}
+      <div
+        style={{
+          background: 'rgba(0, 229, 255, 0.05)',
+          border: '1px solid rgba(0, 229, 255, 0.2)',
+          borderRadius: '8px',
+          padding: '10px 14px',
+          marginBottom: '24px',
+          fontSize: '11px',
+          color: '#88a',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <div>
+          <strong style={{ color: '#00e5ff' }}>🛡️ Cryptographic Provenance Guarantee:</strong> PROVN
+          verifies that this Solana wallet cryptographically signed each proof log using Ed25519.
+          Immutable work history & provenance layer.
         </div>
+        <span
+          style={{
+            background: 'rgba(0, 255, 136, 0.1)',
+            color: '#00ff88',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '10px',
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          SIWS VALIDATED
+        </span>
+      </div>
 
-        {/* Stats Row & Top Skills */}
+      {/* Builder Profile Header */}
+      <div
+        className="glass-card"
+        style={{
+          padding: '24px',
+          marginBottom: '24px',
+          position: 'relative',
+        }}
+      >
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '20px',
-            marginTop: '24px',
-            paddingTop: '20px',
-            borderTop: '1px solid #161a24',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: '16px',
           }}
         >
           <div>
-            <div style={{ color: '#666', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Total Work Logs
-            </div>
-            <div style={{ color: '#00e5ff', fontSize: '22px', fontWeight: 800, marginTop: '4px' }}>
-              📦 {initialLogs.length} Verified Submissions ({archivedCount} Archived)
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '28px' }}>{reputation.builderLevel.emoji}</span>
+              <div>
+                <h1 style={{ color: '#00ff88', fontSize: '1.4rem', margin: 0, fontWeight: 800 }}>
+                  PROVN Builder Passport
+                </h1>
+                <div
+                  style={{
+                    color: '#888',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '2px',
+                  }}
+                >
+                  <code style={{ color: '#ffb800' }}>{walletShort}</code>
+                  <span>•</span>
+                  <span style={{ color: '#00e5ff' }}>{reputation.builderLevel.title}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {topSkills.length > 0 && (
-            <div>
-              <div style={{ color: '#666', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
-                Top Skills Breakdown
-              </div>
-              <div style={{ display: 'grid', gap: '8px' }}>
-                {topSkills.map((s) => (
-                  <div key={s.skill} style={{ fontSize: '11px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ccc', marginBottom: '3px' }}>
-                      <span>{s.skill}</span>
-                      <span style={{ color: '#00ff88', fontWeight: 700 }}>{s.percent}%</span>
-                    </div>
-                    <div style={{ width: '100%', height: '5px', background: '#161b26', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${s.percent}%`, height: '100%', background: '#00ff88', borderRadius: '3px' }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <button
+            onClick={() => {
+              const svg = generateNFTBadgeSVG(wallet, reputation.currentStreak)
+              setSelectedSvg(svg)
+              setModalTitle('PROVN Builder Reputation Badge 🗿')
+            }}
+            className="btn-primary"
+            style={{
+              padding: '8px 14px',
+              fontSize: '12px',
+              background: '#0d111a',
+              border: '1px solid rgba(0,255,136,0.3)',
+              color: '#00ff88',
+            }}
+          >
+            🛡️ Embed GitHub Badge
+          </button>
+        </div>
+      </div>
+
+      {/* Core Reputation Stats */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '12px',
+          marginBottom: '24px',
+        }}
+      >
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Builder Level</div>
+          <div style={{ color: reputation.builderLevel.color, fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>
+            {reputation.builderLevel.emoji} LVL {reputation.builderLevel.level}
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>{reputation.builderLevel.title}</div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Active Streak</div>
+          <div style={{ color: '#ffb800', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            🔥 {reputation.currentStreak} Days
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
+            Longest: {reputation.longestStreak}d
+          </div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Verified Proofs</div>
+          <div style={{ color: '#00ff88', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            ⚡ {reputation.totalProofs}
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>100% Wallet Signed</div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave Archival</div>
+          <div style={{ color: '#00e5ff', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            📦 {reputation.archivalSuccessRate}%
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
+            {reputation.archivedProofs} Archived TXs
+          </div>
+        </div>
+      </div>
+
+      {/* Heatmap Section */}
+      <div style={{ marginBottom: '24px' }}>
+        <ContributionHeatmap logs={logs} />
+      </div>
+
+      {/* Builder Badge & Level Progression Component */}
+      <div style={{ marginBottom: '24px' }}>
+        <BuilderBadge badge={badgeSummary} />
+      </div>
+
+      {/* Off-Chain Proven Achievements Grid */}
+      <div
+        className="terminal-card"
+        style={{
+          padding: '20px',
+          marginBottom: '24px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '16px',
+          }}
+        >
+          <div>
+            <h2 style={{ color: '#00ff88', fontSize: '14px', margin: 0, fontWeight: 800 }}>
+              🏆 Proven Builder Achievements
+            </h2>
+            <div style={{ color: '#666', fontSize: '10px', marginTop: '2px' }}>
+              Off-chain deterministic milestones verified from your Ed25519 work log history.
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* Builder Badge & Level Card */}
-      {initialLogs.length > 0 && (
-        <section style={{ marginBottom: '28px' }}>
-          <BuilderBadge badge={badgeSummary} />
-        </section>
-      )}
-
-      {/* GitHub-Grade 365-Day Contribution Heatmap */}
-      <section style={{ marginBottom: '32px' }}>
-        <ContributionHeatmap logs={initialLogs} />
-      </section>
-
-      {/* Log Timeline Feed */}
-      <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-          <h2 style={{ color: '#aaa', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1.2px', margin: 0 }}>
-            Verifiable Proof Timeline ({initialLogs.length})
-          </h2>
-          <span style={{ color: '#555', fontSize: '11px' }}>Sorted newest first</span>
+          </div>
+          <span
+            style={{
+              fontSize: '10px',
+              color: '#889',
+              background: '#0d111a',
+              border: '1px solid #1a2030',
+              padding: '4px 8px',
+              borderRadius: '4px',
+            }}
+          >
+            {reputation.achievements.filter((a) => a.earned).length} / {reputation.achievements.length} Unlocked
+          </span>
         </div>
 
-        {initialLogs.map((l, index) => {
-          const classification = (l.skills && l.protocols && l.category)
-            ? { skills: l.skills, protocols: l.protocols, category: l.category }
-            : classifyLog(l.content)
-
-          const badgeStyle = getCategoryBadgeStyle(classification.category)
-          const logNumber = initialLogs.length - index
-
-          return (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '12px',
+          }}
+        >
+          {reputation.achievements.map((ach) => (
             <div
-              key={l.id}
-              className="glass-card"
+              key={ach.id}
               style={{
-                padding: '20px',
-                marginBottom: '16px',
+                background: ach.earned ? '#0a0e17' : '#07080c',
+                border: ach.earned ? '1px solid rgba(0, 255, 136, 0.3)' : '1px solid #161a24',
+                borderRadius: '8px',
+                padding: '12px',
+                opacity: ach.earned ? 1 : 0.45,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>{ach.icon}</span>
+                <div>
+                  <div
+                    style={{
+                      color: ach.earned ? '#fff' : '#888',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {ach.name}
+                  </div>
+                  <div
+                    style={{
+                      color: ach.earned ? '#00ff88' : '#555',
+                      fontSize: '9px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {ach.rarity.toUpperCase()} • {ach.earned ? 'UNLOCKED' : 'LOCKED'}
+                  </div>
+                </div>
+              </div>
+              <p style={{ color: '#888', fontSize: '11px', margin: 0, lineHeight: '1.4' }}>
+                {ach.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Skills & Protocol Distribution */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '16px',
+          marginBottom: '24px',
+        }}
+      >
+        <div className="terminal-card" style={{ padding: '16px' }}>
+          <h3 style={{ color: '#00ff88', fontSize: '12px', margin: '0 0 12px 0', fontWeight: 700 }}>
+            ⚡ Verified Skills Frequency
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {reputation.skills.length > 0 ? (
+              reputation.skills.map((s) => (
+                <button
+                  key={s.name}
+                  onClick={() => setSelectedSkill(selectedSkill === s.name ? 'ALL' : s.name)}
+                  style={{
+                    background: selectedSkill === s.name ? 'rgba(0, 255, 136, 0.15)' : '#0d111a',
+                    border: selectedSkill === s.name ? '1px solid #00ff88' : '1px solid #1a2030',
+                    color: selectedSkill === s.name ? '#00ff88' : '#ab9ff2',
+                    fontSize: '11px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  #{s.name} <strong style={{ color: '#00ff88' }}>({s.count})</strong>
+                </button>
+              ))
+            ) : (
+              <span style={{ color: '#555', fontSize: '11px' }}>No skills classified yet</span>
+            )}
+          </div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '16px' }}>
+          <h3 style={{ color: '#00e5ff', fontSize: '12px', margin: '0 0 12px 0', fontWeight: 700 }}>
+            🌐 Protocols & Ecosystem Stack
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {reputation.protocols.length > 0 ? (
+              reputation.protocols.map((p) => (
+                <button
+                  key={p.name}
+                  onClick={() => setSelectedProtocol(selectedProtocol === p.name ? 'ALL' : p.name)}
+                  style={{
+                    background: selectedProtocol === p.name ? 'rgba(0, 229, 255, 0.15)' : '#0d111a',
+                    border: selectedProtocol === p.name ? '1px solid #00e5ff' : '1px solid #1a2030',
+                    color: selectedProtocol === p.name ? '#00e5ff' : '#00e5ff',
+                    fontSize: '11px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  ⚡ {p.name} <strong style={{ color: '#ffb800' }}>({p.count})</strong>
+                </button>
+              ))
+            ) : (
+              <span style={{ color: '#555', fontSize: '11px' }}>No protocols classified yet</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div
+        className="glass-card"
+        style={{
+          padding: '16px',
+          marginBottom: '20px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search proof logs..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            background: '#060709',
+            border: '1px solid #1c2230',
+            borderRadius: '6px',
+            color: '#00ff88',
+            padding: '8px 12px',
+            fontSize: '12px',
+            fontFamily: 'inherit',
+            flex: '1',
+            minWidth: '200px',
+          }}
+        />
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{
+              background: '#060709',
+              border: '1px solid #1c2230',
+              borderRadius: '6px',
+              color: '#aaa',
+              padding: '8px 10px',
+              fontSize: '11px',
+              fontFamily: 'inherit',
+            }}
+          >
+            <option value="ALL">All Categories</option>
+            {reputation.categories.map((c) => (
+              <option key={c.name} value={c.name}>
+                {c.name} ({c.count})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Proof Timeline */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ color: '#aaa', fontSize: '13px', margin: 0, fontWeight: 700 }}>
+            Verifiable Proof Timeline ({filteredLogs.length})
+          </h2>
+          <span style={{ color: '#555', fontSize: '11px' }}>Sorted chronologically (newest first)</span>
+        </div>
+
+        {filteredLogs.length === 0 ? (
+          <div
+            className="glass-card"
+            style={{
+              padding: '32px',
+              textAlign: 'center',
+              color: '#666',
+              fontSize: '12px',
+            }}
+          >
+            No proofs match your active filters.
+          </div>
+        ) : (
+          filteredLogs.map((log) => (
+            <div
+              key={log.id}
+              className="terminal-card"
+              style={{
+                padding: '16px',
+                borderLeft: '3px solid #00ff88',
               }}
             >
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px',
-                  fontSize: '11px',
-                  color: '#666',
+                  alignItems: 'flex-start',
+                  marginBottom: '8px',
+                  flexWrap: 'wrap',
+                  gap: '8px',
                 }}
               >
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <span style={{ color: '#ffb800', fontWeight: 800 }}>#{logNumber}</span>
-                  <span>•</span>
-                  <span style={{ color: '#ccc', fontWeight: 600 }}>{formatDate(l.created_at)}</span>
-                  <span>,</span>
-                  <span>{formatTime(l.created_at)}</span>
-                </div>
-
-                {l.irys_tx_id ? (
-                  <a
-                    href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
-                    rel="noopener noreferrer"
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link
+                    href={`/proof/${log.id}`}
                     style={{
-                      background: 'rgba(0, 255, 136, 0.08)',
                       color: '#00ff88',
-                      border: '1px solid rgba(0, 255, 136, 0.25)',
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '10.5px',
-                      fontWeight: 700,
+                      fontSize: '12px',
+                      fontWeight: 800,
                       textDecoration: 'none',
                     }}
                   >
-                    ✓ Archived on Irys ↗
-                  </a>
-                ) : l.archival_state === 'failed' ? (
-                  <span
-                    style={{
-                      background: 'rgba(255, 184, 0, 0.08)',
-                      color: '#ffb800',
-                      border: '1px solid rgba(255, 184, 0, 0.25)',
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '10.5px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    Archival Failed — Retry Available
-                  </span>
-                ) : l.archival_state === 'legacy_unverified' ? (
-                  <span
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      color: '#888',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '10.5px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Legacy Record — Archival Status Unverified
-                  </span>
-                ) : (
-                  <span
-                    style={{
-                      background: 'rgba(0, 229, 255, 0.08)',
-                      color: '#00e5ff',
-                      border: '1px solid rgba(0, 229, 255, 0.25)',
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '10.5px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    Stored in DB — Archival Pending
-                  </span>
-                )}
+                    Proof #{log.id} ↗
+                  </Link>
+                  {log.category && (
+                    <span
+                      style={{
+                        background: '#0d111a',
+                        border: '1px solid #1a2030',
+                        color: '#889',
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {log.category}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ color: '#555', fontSize: '11px' }}>
+                  {new Date(log.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+                </div>
               </div>
 
               <p
                 style={{
-                  margin: '0 0 14px 0',
-                  color: '#ececec',
-                  fontSize: '14px',
-                  lineHeight: '1.6',
+                  color: '#ddd',
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                  margin: '0 0 12px 0',
                   whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
                 }}
               >
-                {l.content}
+                {log.content}
               </p>
 
-              {/* External Evidence Links */}
-              {Boolean(l.github_url || l.evidence_url) && (
-                <div style={{ marginBottom: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '11px' }}>
-                  {Boolean(l.github_url) && (
-                    <a
-                      href={l.github_url as string}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: '#00e5ff',
-                        background: 'rgba(0, 229, 255, 0.08)',
-                        border: '1px solid rgba(0, 229, 255, 0.25)',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                      }}
-                    >
-                      🐙 GitHub Evidence ↗
-                    </a>
-                  )}
-                  {Boolean(l.evidence_url) && (
-                    <a
-                      href={l.evidence_url as string}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: '#00ff88',
-                        background: 'rgba(0, 255, 136, 0.08)',
-                        border: '1px solid rgba(0, 255, 136, 0.25)',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                      }}
-                    >
-                      🔗 Demo / Deployment ↗
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {/* Classification Badges */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                <span
-                  style={{
-                    background: badgeStyle.bg,
-                    color: badgeStyle.color,
-                    border: `1px solid ${badgeStyle.border}`,
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                  }}
-                >
-                  {classification.category}
-                </span>
-                {classification.skills.map((s: string) => (
-                  <span
-                    key={s}
-                    style={{
-                      background: 'rgba(0, 255, 136, 0.06)',
-                      color: '#00ff88',
-                      border: '1px solid rgba(0, 255, 136, 0.15)',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                    }}
+              {/* Evidence & Links */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '11px' }}>
+                {log.github_url && (
+                  <a
+                    href={log.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#ab9ff2', textDecoration: 'none' }}
                   >
-                    {s}
-                  </span>
-                ))}
-                {classification.protocols.map((p: string) => (
-                  <span
-                    key={p}
-                    style={{
-                      background: 'rgba(255, 184, 0, 0.06)',
-                      color: '#ffb800',
-                      border: '1px solid rgba(255, 184, 0, 0.15)',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                    }}
+                    🐙 GitHub Evidence ↗
+                  </a>
+                )}
+                {log.evidence_url && (
+                  <a
+                    href={log.evidence_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#00e5ff', textDecoration: 'none' }}
                   >
-                    {p}
-                  </span>
-                ))}
+                    🔗 Live Demo / Evidence ↗
+                  </a>
+                )}
+                {log.irys_tx_id && (
+                  <a
+                    href={`https://gateway.irys.xyz/${log.irys_tx_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#ffb800', textDecoration: 'none' }}
+                  >
+                    📦 Arweave TX ↗
+                  </a>
+                )}
               </div>
+            </div>
+          ))
+        )}
+      </div>
 
-              {/* Footer Gateway Link, Download Log NFT & Metadata Toggle */}
-              <div
+      {/* Export Modal */}
+      {isExportOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '16px',
+          }}
+          onClick={() => setIsExportOpen(false)}
+        >
+          <div
+            className="terminal-card"
+            style={{
+              maxWidth: '600px',
+              width: '100%',
+              padding: '24px',
+              background: '#0a0d14',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ color: '#00ff88', margin: 0, fontSize: '15px' }}>
+                📥 Export PROVN Builder Passport
+              </h3>
+              <button
+                onClick={() => setIsExportOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ color: '#888', fontSize: '11px', lineHeight: '1.5', marginBottom: '16px' }}>
+              Download or copy your portable cryptographic proof-of-work record in machine-readable JSON
+              or Markdown.
+            </p>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <a
+                href={`/api/passport/${wallet}`}
+                download={`provn-passport-${wallet.slice(0, 8)}.json`}
+                className="btn-primary"
                 style={{
-                  paddingTop: '12px',
-                  borderTop: '1px solid #161a24',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '8px',
-                  fontSize: '11px',
+                  padding: '8px 14px',
+                  fontSize: '12px',
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                  flex: 1,
                 }}
               >
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  {l.irys_tx_id && (
-                    <a
-                      href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
-                      rel="noopener noreferrer"
-                      style={{
-                        color: '#00ff88',
-                        textDecoration: 'none',
-                        fontWeight: 700,
-                      }}
-                    >
-                      🔗 Gateway Proof ↗
-                    </a>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      const svg = generateSingleLogNFTBadgeSVG(
-                        wallet,
-                        logNumber,
-                        l.content,
-                        classification.category,
-                        classification.skills,
-                        formatDate(l.created_at),
-                        l.irys_tx_id || undefined
-                      )
-                      setModalSvg(svg)
-                      setModalTitle(`PROVN Proof Card #${logNumber} 🗿`)
-                      setModalLogId(l.id)
-                      setModalLogContent(l.content)
-                      setModalIrysTxId(l.irys_tx_id || undefined)
-                      setModalOpen(true)
-                    }}
-                    style={{
-                      background: 'rgba(0, 229, 255, 0.08)',
-                      border: '1px solid rgba(0, 229, 255, 0.25)',
-                      color: '#00e5ff',
-                      borderRadius: '4px',
-                      padding: '2px 8px',
-                      cursor: 'pointer',
-                      fontSize: '10.5px',
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                    }}
-                  >
-                    🖼️ View Proof Card 🗿
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => setExpandedLogId(expandedLogId === l.id ? null : l.id)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#666',
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {expandedLogId === l.id ? '▲ Hide Metadata' : '🔍 Inspect Proof'}
-                </button>
-              </div>
-
-              {expandedLogId === l.id && (
-                <div
-                  style={{
-                    marginTop: '12px',
-                    padding: '12px',
-                    background: '#060709',
-                    border: '1px solid #1a202c',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    color: '#888',
-                    display: 'grid',
-                    gap: '4px',
-                  }}
-                >
-                  <div><span style={{ color: '#555' }}>LOG_ID:</span> #{l.id}</div>
-                  <div><span style={{ color: '#555' }}>WAL_ATTRIBUTION:</span> {l.wallet_address}</div>
-                  <div><span style={{ color: '#555' }}>IRYS_TX_ID:</span> <code style={{ color: '#00e5ff' }}>{l.irys_tx_id || 'N/A'}</code></div>
-                  <div><span style={{ color: '#555' }}>SIGNATURE_STATUS:</span> <span style={{ color: '#00ff88' }}>Ed25519 Verified</span></div>
-                </div>
-              )}
+                💾 Download JSON
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(markdownExport)
+                  setExportCopied(true)
+                  setTimeout(() => setExportCopied(false), 2000)
+                }}
+                className="btn-primary"
+                style={{
+                  padding: '8px 14px',
+                  fontSize: '12px',
+                  background: '#0d111a',
+                  border: '1px solid #1a2030',
+                  color: exportCopied ? '#00ff88' : '#00e5ff',
+                  flex: 1,
+                }}
+              >
+                {exportCopied ? '✓ Markdown Copied' : '📋 Copy Markdown'}
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="btn-primary"
+                style={{
+                  padding: '8px 14px',
+                  fontSize: '12px',
+                  background: '#0d111a',
+                  border: '1px solid #1a2030',
+                  color: '#ffb800',
+                  flex: 1,
+                }}
+              >
+                🖨️ Print / PDF
+              </button>
             </div>
-          )
-        })}
-      </section>
+          </div>
+        </div>
+      )}
 
-      <NFTBadgeModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        svgString={modalSvg}
-        title={modalTitle}
-        logId={modalLogId}
-        logContent={modalLogContent}
-        irysTxId={modalIrysTxId}
-      />
+      {/* QR Code Modal */}
+      {isQROpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '16px',
+          }}
+          onClick={() => setIsQROpen(false)}
+        >
+          <div
+            className="terminal-card"
+            style={{
+              maxWidth: '360px',
+              width: '100%',
+              padding: '24px',
+              background: '#0a0d14',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ color: '#00ff88', margin: 0, fontSize: '14px' }}>📱 Mobile Verification QR</h3>
+              <button
+                onClick={() => setIsQROpen(false)}
+                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              style={{
+                background: '#060709',
+                border: '1px solid #1c2230',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'inline-block',
+                marginBottom: '16px',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrUrl}
+                alt={`QR code for ${wallet}`}
+                width={200}
+                height={200}
+                style={{ display: 'block', borderRadius: '8px' }}
+              />
+            </div>
+
+            <p style={{ color: '#888', fontSize: '11px', margin: '0 0 12px 0' }}>
+              Scan to verify builder identity on mobile or in-person hackathons.
+            </p>
+            <code style={{ color: '#ffb800', fontSize: '10px' }}>{walletShort}</code>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Badge Embed Modal */}
+      {selectedSvg && (
+        <NFTBadgeModal
+          isOpen={Boolean(selectedSvg)}
+          onClose={() => setSelectedSvg(null)}
+          svgString={selectedSvg}
+          title={modalTitle}
+        />
+      )}
     </main>
   )
 }

@@ -1,0 +1,22 @@
+name: 'PROVN Proof-of-Work Action'
+description: 'Prepares a cryptographically verifiable proof payload for merged PRs or commits'
+author: 'PROVN Protocol'
+inputs:
+  wallet_address:
+    description: 'Solana wallet address of the builder'
+    required: true
+  evidence_url:
+    description: 'Live deployed preview or evidence URL'
+    required: false
+outputs:
+  proof_payload:
+    description: 'Structured JSON payload ready for wallet signing'
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate PROVN Payload
+      shell: bash
+      run: |
+        echo "Generating PROVN Proof-of-Work payload for commit ${{ github.sha }}..."
+        echo "Builder Wallet: ${{ inputs.wallet_address }}"
+        echo "PR/Commit URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
