@@ -3,16 +3,12 @@
 import React, { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import ContributionHeatmap from '@/app/components/ContributionHeatmap'
-import NFTBadgeModal from '@/app/components/NFTBadgeModal'
-import BuilderBadge from '@/app/components/BuilderBadge'
 import PassportCard from '@/app/components/cards/PassportCard'
 import AchievementCard from '@/app/components/cards/AchievementCard'
 import CardCustomizerModal from '@/app/components/cards/CardCustomizerModal'
 import { CARD_THEMES, CardTheme, getCardTheme } from '@/app/lib/cardThemes'
 import { Achievement, WalletLog } from '@/app/lib/types'
-import { computeBadgeSummary } from '@/app/lib/milestones'
 import { calculateReputation } from '@/app/lib/reputationEngine'
-import { generateNFTBadgeSVG } from '@/app/lib/badgeGenerator'
 
 export type LogItem = WalletLog
 
@@ -25,8 +21,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [logs, setLogs] = useState<LogItem[]>(initialLogs)
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [selectedSvg, setSelectedSvg] = useState<string | null>(null)
-  const [modalTitle, setModalTitle] = useState('PROVN Builder Reputation Badge 🗿')
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [isQROpen, setIsQROpen] = useState(false)
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false)
@@ -54,7 +48,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
 
   // Calculate deterministic reputation & achievements
   const reputation = calculateReputation(wallet, logs)
-  const badgeSummary = computeBadgeSummary(logs.length, reputation.currentStreak, reputation.longestStreak, logs)
 
   // Refresh handler
   const handleRefresh = async () => {
@@ -170,23 +163,6 @@ Verify cryptographically at: ${verificationUrl}
             🎨 Metal Studio ({activeTheme.name})
           </button>
           <button
-            onClick={() => {
-              const svg = generateNFTBadgeSVG(wallet, reputation.currentStreak)
-              setSelectedSvg(svg)
-              setModalTitle('PROVN Builder Reputation Badge 🗿')
-            }}
-            className="btn-primary"
-            style={{
-              padding: '6px 12px',
-              fontSize: '11px',
-              background: '#0d111a',
-              border: '1px solid #1e2638',
-              color: '#ab9ff2',
-            }}
-          >
-            🛡️ Badge
-          </button>
-          <button
             onClick={() => setIsQROpen(true)}
             className="btn-primary"
             style={{
@@ -239,42 +215,6 @@ Verify cryptographically at: ${verificationUrl}
             {isRefreshing ? '↻ Syncing...' : '↻ Refresh'}
           </button>
         </div>
-      </div>
-
-      {/* Honest Provenance Banner */}
-      <div
-        style={{
-          background: 'rgba(0, 229, 255, 0.05)',
-          border: '1px solid rgba(0, 229, 255, 0.2)',
-          borderRadius: '8px',
-          padding: '10px 14px',
-          marginBottom: '24px',
-          fontSize: '11px',
-          color: '#88a',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '12px',
-        }}
-      >
-        <div>
-          <strong style={{ color: '#00e5ff' }}>🛡️ Cryptographic Provenance Guarantee:</strong> PROVN
-          verifies that this Solana wallet cryptographically signed each proof log using Ed25519.
-          Immutable work history & provenance layer.
-        </div>
-        <span
-          style={{
-            background: 'rgba(0, 255, 136, 0.1)',
-            color: '#00ff88',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            fontSize: '10px',
-            fontWeight: 700,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          SIWS VALIDATED
-        </span>
       </div>
 
       {/* Metallic Builder Passport Hero Card */}
@@ -336,11 +276,6 @@ Verify cryptographically at: ${verificationUrl}
       {/* Heatmap Section */}
       <div style={{ marginBottom: '24px' }}>
         <ContributionHeatmap logs={logs} />
-      </div>
-
-      {/* Builder Badge & Level Progression Component */}
-      <div style={{ marginBottom: '24px' }}>
-        <BuilderBadge badge={badgeSummary} />
       </div>
 
       {/* Off-Chain Proven Achievements Grid */}
@@ -908,16 +843,6 @@ Verify cryptographically at: ${verificationUrl}
             </button>
           </div>
         </div>
-      )}
-
-      {/* GitHub Badge Embed Modal */}
-      {selectedSvg && (
-        <NFTBadgeModal
-          isOpen={Boolean(selectedSvg)}
-          onClose={() => setSelectedSvg(null)}
-          svgString={selectedSvg}
-          title={modalTitle}
-        />
       )}
     </main>
   )

@@ -4,9 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
-import TelemetryBar from './components/TelemetryBar'
 import HeroHeader from './components/HeroHeader'
-import StatsDashboard from './components/StatsDashboard'
 import TerminalStudio from './components/TerminalStudio'
 import ContributionHeatmap from './components/ContributionHeatmap'
 import NFTBadgeModal from './components/NFTBadgeModal'
@@ -15,12 +13,9 @@ import MobileWalletNotice from './components/MobileWalletNotice'
 import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
 import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
-import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs, toLocalDateString, PROTOCOL_TIMEZONE } from './lib/milestones'
+import { fetchAllWalletLogs, toLocalDateString, PROTOCOL_TIMEZONE } from './lib/milestones'
 import { LogItem } from '@/app/u/[wallet]/ProfileClient'
-import PassportCard from './components/cards/PassportCard'
-import CardCustomizerModal from './components/cards/CardCustomizerModal'
 import { calculateReputation } from './lib/reputationEngine'
-import { CARD_THEMES, CardTheme } from './lib/cardThemes'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
@@ -65,10 +60,6 @@ export default function LoggerApp() {
   const [modalLogContent, setModalLogContent] = useState<string>('')
   const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
 
-  // Metallic Card Theme State
-  const [activeTheme, setActiveTheme] = useState<CardTheme>(CARD_THEMES.steel)
-  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false)
-
   // Fetch logs when wallet connects
   useEffect(() => {
     if (!connected || !publicKey) return
@@ -88,17 +79,6 @@ export default function LoggerApp() {
       active = false
     }
   }, [connected, publicKey])
-
-  // Single Source of Truth for Streak Calculations
-  const createdAts = useMemo(() => logs.map((l) => l.created_at), [logs])
-  const streakCount = useMemo(() => calculateStreak(createdAts), [createdAts])
-  const longestStreak = useMemo(() => calculateLongestStreak(createdAts), [createdAts])
-
-  // Compute Badge Summary
-  const badgeSummary = useMemo(
-    () => computeBadgeSummary(logs.length, streakCount, longestStreak, logs),
-    [logs, streakCount, longestStreak]
-  )
 
   // Calculate today's log count & daily limit (standardized to PROTOCOL_TIMEZONE midnight)
   const todayLogsCount = useMemo(() => {
@@ -210,64 +190,89 @@ export default function LoggerApp() {
       style={{
         width: 'min(820px, 94vw)',
         margin: '0 auto',
-        padding: '32px 16px 100px 16px',
+        padding: '24px 16px 100px 16px',
         fontFamily: 'var(--font-geist-mono), monospace',
         boxSizing: 'border-box',
       }}
     >
-      <TelemetryBar />
-
       <HeroHeader connected={connected} walletAddress={publicKey?.toBase58()} />
 
-      {/* Featured 3D Metallic Builder Passport Credential */}
-      <section style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', padding: '0 4px' }}>
-          <div>
-            <h3 style={{ color: '#00ff88', fontSize: '13px', margin: 0, fontWeight: 800, letterSpacing: '1px' }}>
-              🗿 PROVN DIGITAL METAL PASSPORT
-            </h3>
-            <p style={{ color: '#889', fontSize: '10px', margin: '2px 0 0 0' }}>
-              {connected ? 'Your verified cryptographic proof-of-work identity' : 'Interactive demonstration credential (dren712 / Senior Architect)'}
-            </p>
+      {/* Connected Builder Quick Status Bar */}
+      {connected && (
+        <div
+          style={{
+            background: '#090b10',
+            border: '1px solid #1a2233',
+            borderRadius: '10px',
+            padding: '12px 16px',
+            marginBottom: '24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Rank
+              </div>
+              <div style={{ color: '#00ff88', fontWeight: 800, fontSize: '13px' }}>
+                {displayReputation.builderLevel.emoji} Level {displayReputation.builderLevel.level} — {displayReputation.builderLevel.title}
+              </div>
+            </div>
+
+            <div style={{ borderLeft: '1px solid #1a2233', paddingLeft: '14px' }}>
+              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Streak
+              </div>
+              <div style={{ color: '#ffb800', fontWeight: 800, fontSize: '13px' }}>
+                🔥 {displayReputation.currentStreak} {displayReputation.currentStreak === 1 ? 'Day' : 'Days'}
+              </div>
+            </div>
+
+            <div style={{ borderLeft: '1px solid #1a2233', paddingLeft: '14px' }}>
+              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Proofs
+              </div>
+              <div style={{ color: '#00e5ff', fontWeight: 800, fontSize: '13px' }}>
+                ⚡ {displayReputation.totalProofs} ({displayReputation.archivalSuccessRate}% Archived)
+              </div>
+            </div>
+
+            <div style={{ borderLeft: '1px solid #1a2233', paddingLeft: '14px' }}>
+              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Quota
+              </div>
+              <div style={{ color: isDailyLimitReached ? '#ff4444' : '#aaa', fontWeight: 800, fontSize: '13px' }}>
+                {todayLogsCount}/3 {isDailyLimitReached ? '🔒' : '⚡'}
+              </div>
+            </div>
           </div>
-          {connected && publicKey && (
-            <Link
-              href={`/u/${publicKey.toBase58()}`}
-              className="btn-primary"
-              style={{
-                fontSize: '11px',
-                padding: '4px 10px',
-                background: '#0d111a',
-                border: '1px solid #00e5ff',
-                color: '#00e5ff',
-                textDecoration: 'none',
-              }}
-            >
-              Full Profile →
-            </Link>
-          )}
+
+          <Link
+            href={`/u/${publicKey?.toBase58()}`}
+            className="btn-primary"
+            style={{
+              fontSize: '11px',
+              padding: '6px 12px',
+              background: '#0d121c',
+              border: '1px solid #00e5ff',
+              color: '#00e5ff',
+              textDecoration: 'none',
+            }}
+          >
+            🎴 View 3D Metal Passport →
+          </Link>
         </div>
-        <PassportCard
-          reputation={displayReputation}
-          theme={activeTheme}
-          onCustomizeClick={() => setIsCustomizerOpen(true)}
-          showControls={true}
-        />
-      </section>
+      )}
 
       <NetworkBanner />
 
       <MobileWalletNotice />
 
-      <StatsDashboard
-        connected={connected}
-        badgeSummary={badgeSummary}
-        streakCount={streakCount}
-        totalLogsCount={logs.length}
-        todayLogsCount={todayLogsCount}
-        isDailyLimitReached={isDailyLimitReached}
-      />
-
+      {/* Primary Work Logging Terminal */}
       <TerminalStudio
         log={log}
         setLog={setLog}
@@ -506,16 +511,6 @@ export default function LoggerApp() {
         logContent={modalLogContent}
         irysTxId={modalIrysTxId}
       />
-
-      {/* Metallic Card Studio Customizer Modal */}
-      {isCustomizerOpen && (
-        <CardCustomizerModal
-          reputation={displayReputation}
-          currentTheme={activeTheme}
-          onThemeSelect={(th) => setActiveTheme(th)}
-          onClose={() => setIsCustomizerOpen(false)}
-        />
-      )}
     </main>
   )
 }

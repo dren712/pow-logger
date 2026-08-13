@@ -126,6 +126,7 @@ export default function MetalCard({
           aspectRatio: aspectRatio,
           borderRadius: 'clamp(12px, 3vw, 16px)',
           transformStyle: 'preserve-3d',
+          WebkitTransformStyle: 'preserve-3d',
           transform: isFlipped
             ? `rotateY(${180 + rotateY}deg) rotateX(${rotateX}deg)`
             : `rotateY(${rotateY}deg) rotateX(${rotateX}deg)`,
@@ -149,6 +150,8 @@ export default function MetalCard({
             height: '100%',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
+            transform: 'translateZ(1px)',
+            WebkitTransform: 'translateZ(1px)',
             borderRadius: 'clamp(12px, 3vw, 16px)',
             background: theme.surfaceGradient,
             border: `1px solid ${theme.borderTone}`,
@@ -158,6 +161,7 @@ export default function MetalCard({
             justifyContent: 'space-between',
             boxSizing: 'border-box',
             overflow: 'hidden',
+            pointerEvents: isFlipped ? 'none' : 'auto',
           }}
         >
           {/* Procedural Metallic Grain / Texture Overlay */}
@@ -217,7 +221,8 @@ export default function MetalCard({
               height: '100%',
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
-              transform: 'rotateY(180deg)',
+              transform: 'rotateY(180deg) translateZ(1px)',
+              WebkitTransform: 'rotateY(180deg) translateZ(1px)',
               borderRadius: 'clamp(12px, 3vw, 16px)',
               background: theme.surfaceGradient,
               border: `1px solid ${theme.borderTone}`,
@@ -227,6 +232,7 @@ export default function MetalCard({
               justifyContent: 'space-between',
               boxSizing: 'border-box',
               overflow: 'hidden',
+              pointerEvents: isFlipped ? 'auto' : 'none',
             }}
           >
             {/* Procedural Grain Overlay */}
