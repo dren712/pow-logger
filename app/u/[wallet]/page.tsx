@@ -1,5 +1,4 @@
 import { Metadata } from 'next'
-import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import ProfileClient, { LogItem } from './ProfileClient'
 import { getBuilderLevel, calculateStreak, fetchAllWalletLogs } from '@/app/lib/milestones'
@@ -28,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     try {
       logs = await fetchAllWalletLogs(supabase, wallet)
     } catch {
-      logs = null
+      logs = []
     }
   }
 
@@ -63,53 +62,16 @@ export default async function ProfilePage({ params }: PageProps) {
   const resolvedParams = await params
   const wallet = resolvedParams.wallet
 
-  let logs: LogItem[] | null = null
-  let error: unknown = null
+  let logs: LogItem[] = []
 
   if (isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
-      logs = await fetchAllWalletLogs(supabase, wallet)
+      const fetchedLogs = await fetchAllWalletLogs(supabase, wallet)
+      logs = fetchedLogs || []
     } catch (e) {
-      error = e
+      console.warn('Could not fetch wallet logs from Supabase, rendering empty state:', e)
+      logs = []
     }
-  }
-
-  if (error || !logs || logs.length === 0) {
-    return (
-      <main
-        style={{
-          maxWidth: '820px',
-          margin: '0 auto',
-          padding: '80px 20px',
-          fontFamily: 'var(--font-geist-mono), monospace',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          className="glass-card"
-          style={{
-            padding: '48px 24px',
-            border: '1px dashed rgba(255, 68, 68, 0.3)',
-          }}
-        >
-          <h1 style={{ color: '#ff4444', fontSize: '1.8rem', marginBottom: '12px', fontWeight: 800 }}>
-            Builder Not Found 🔍
-          </h1>
-          <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>
-            No verified proof logs recorded for wallet <code style={{ color: '#ffb800' }}>{wallet}</code> yet.
-          </p>
-          <Link
-            href="/"
-            className="btn-primary"
-            style={{
-              display: 'inline-flex',
-            }}
-          >
-            Start building your proof of work at provn-sol.vercel.app →
-          </Link>
-        </div>
-      </main>
-    )
   }
 
   return <ProfileClient wallet={wallet} initialLogs={logs} />
