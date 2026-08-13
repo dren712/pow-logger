@@ -17,6 +17,10 @@ import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
 import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs, toLocalDateString, PROTOCOL_TIMEZONE } from './lib/milestones'
 import { LogItem } from '@/app/u/[wallet]/ProfileClient'
+import PassportCard from './components/cards/PassportCard'
+import CardCustomizerModal from './components/cards/CardCustomizerModal'
+import { calculateReputation } from './lib/reputationEngine'
+import { CARD_THEMES, CardTheme } from './lib/cardThemes'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
@@ -61,6 +65,10 @@ export default function LoggerApp() {
   const [modalLogContent, setModalLogContent] = useState<string>('')
   const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
 
+  // Metallic Card Theme State
+  const [activeTheme, setActiveTheme] = useState<CardTheme>(CARD_THEMES.steel)
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false)
+
   // Fetch logs when wallet connects
   useEffect(() => {
     if (!connected || !publicKey) return
@@ -97,6 +105,13 @@ export default function LoggerApp() {
     const today = toLocalDateString(new Date(), PROTOCOL_TIMEZONE)
     return logs.filter((l) => toLocalDateString(l.created_at, PROTOCOL_TIMEZONE) === today).length
   }, [logs])
+
+  // Reputation Calculation for Digital Metal Card
+  const activeWallet = publicKey?.toBase58() || 'AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p'
+  const displayReputation = useMemo(
+    () => calculateReputation(activeWallet, logs),
+    [activeWallet, logs]
+  )
 
   const isDailyLimitReached = todayLogsCount >= 3
 
@@ -203,6 +218,42 @@ export default function LoggerApp() {
       <TelemetryBar />
 
       <HeroHeader connected={connected} walletAddress={publicKey?.toBase58()} />
+
+      {/* Featured 3D Metallic Builder Passport Credential */}
+      <section style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', padding: '0 4px' }}>
+          <div>
+            <h3 style={{ color: '#00ff88', fontSize: '13px', margin: 0, fontWeight: 800, letterSpacing: '1px' }}>
+              🗿 PROVN DIGITAL METAL PASSPORT
+            </h3>
+            <p style={{ color: '#889', fontSize: '10px', margin: '2px 0 0 0' }}>
+              {connected ? 'Your verified cryptographic proof-of-work identity' : 'Interactive demonstration credential (dren712 / Senior Architect)'}
+            </p>
+          </div>
+          {connected && publicKey && (
+            <Link
+              href={`/u/${publicKey.toBase58()}`}
+              className="btn-primary"
+              style={{
+                fontSize: '11px',
+                padding: '4px 10px',
+                background: '#0d111a',
+                border: '1px solid #00e5ff',
+                color: '#00e5ff',
+                textDecoration: 'none',
+              }}
+            >
+              Full Profile →
+            </Link>
+          )}
+        </div>
+        <PassportCard
+          reputation={displayReputation}
+          theme={activeTheme}
+          onCustomizeClick={() => setIsCustomizerOpen(true)}
+          showControls={true}
+        />
+      </section>
 
       <NetworkBanner />
 
@@ -455,6 +506,16 @@ export default function LoggerApp() {
         logContent={modalLogContent}
         irysTxId={modalIrysTxId}
       />
+
+      {/* Metallic Card Studio Customizer Modal */}
+      {isCustomizerOpen && (
+        <CardCustomizerModal
+          reputation={displayReputation}
+          currentTheme={activeTheme}
+          onThemeSelect={(th) => setActiveTheme(th)}
+          onClose={() => setIsCustomizerOpen(false)}
+        />
+      )}
     </main>
   )
 }
