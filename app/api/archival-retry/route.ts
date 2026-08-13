@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import { buildCanonicalRetryMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
 
-export const maxDuration = 30 // Allow up to 30s execution for Irys Arweave upload
+export const maxDuration = 15 // Allow up to 15s execution for Irys Arweave upload
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey =

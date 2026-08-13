@@ -4,7 +4,7 @@ import nacl from 'tweetnacl'
 import { buildCanonicalSubmitMessage, validateAndNormalizeUrl, getVerifiedDomain } from '@/app/lib/canonicalMessage'
 import { ArchivalState } from '@/app/lib/irys'
 
-export const maxDuration = 30 // Allow up to 30s execution for Irys Arweave upload
+export const maxDuration = 15 // Allow up to 15s execution for Irys Arweave upload
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

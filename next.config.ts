@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  turbopack: {},
   transpilePackages: ['@irys/upload', '@irys/upload-solana', 'rpc-websockets'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
