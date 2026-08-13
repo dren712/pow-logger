@@ -28,6 +28,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [inspectedAchievement, setInspectedAchievement] = useState<Achievement | null>(null)
   const [activeTheme, setActiveTheme] = useState<CardTheme>(CARD_THEMES.steel)
   const [copied, setCopied] = useState(false)
+  const [achievementFilter, setAchievementFilter] = useState<'all' | 'unlocked' | 'locked'>('all')
 
   // Initialize theme from URL if present
   useEffect(() => {
@@ -273,6 +274,8 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: '16px',
+            flexWrap: 'wrap',
+            gap: '12px',
           }}
         >
           <div>
@@ -280,39 +283,85 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
               🏆 Proven Builder Achievements
             </h2>
             <div style={{ color: '#666', fontSize: '10px', marginTop: '2px' }}>
-              Off-chain deterministic milestones verified from your Ed25519 work log history.
+              Deterministic milestones verified from your Ed25519 work log history.
             </div>
           </div>
-          <span
-            style={{
-              fontSize: '10px',
-              color: '#889',
-              background: '#0d111a',
-              border: '1px solid #1a2030',
-              padding: '4px 8px',
-              borderRadius: '4px',
-            }}
-          >
-            {reputation.achievements.filter((a) => a.earned).length} / {reputation.achievements.length} Unlocked
-          </span>
+
+          {/* Achievement Status Filters */}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button
+              onClick={() => setAchievementFilter('all')}
+              style={{
+                background: achievementFilter === 'all' ? 'rgba(0, 255, 136, 0.15)' : '#0d111a',
+                border: achievementFilter === 'all' ? '1px solid #00ff88' : '1px solid #1a2030',
+                color: achievementFilter === 'all' ? '#00ff88' : '#889',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                fontWeight: achievementFilter === 'all' ? 700 : 400,
+              }}
+            >
+              All ({reputation.achievements.length})
+            </button>
+            <button
+              onClick={() => setAchievementFilter('unlocked')}
+              style={{
+                background: achievementFilter === 'unlocked' ? 'rgba(0, 255, 136, 0.15)' : '#0d111a',
+                border: achievementFilter === 'unlocked' ? '1px solid #00ff88' : '1px solid #1a2030',
+                color: achievementFilter === 'unlocked' ? '#00ff88' : '#889',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                fontWeight: achievementFilter === 'unlocked' ? 700 : 400,
+              }}
+            >
+              ✓ Unlocked ({reputation.achievements.filter((a) => a.earned).length})
+            </button>
+            <button
+              onClick={() => setAchievementFilter('locked')}
+              style={{
+                background: achievementFilter === 'locked' ? 'rgba(255, 255, 255, 0.1)' : '#0d111a',
+                border: achievementFilter === 'locked' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #1a2030',
+                color: achievementFilter === 'locked' ? '#f0f4fc' : '#889',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                fontWeight: achievementFilter === 'locked' ? 700 : 400,
+              }}
+            >
+              🔒 Locked ({reputation.achievements.filter((a) => !a.earned).length})
+            </button>
+          </div>
         </div>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '14px',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: '16px',
           }}
         >
-          {reputation.achievements.map((ach) => (
-            <AchievementCard
-              key={ach.id}
-              achievement={ach}
-              reputation={reputation}
-              customTheme={activeTheme}
-              onClick={() => setInspectedAchievement(ach)}
-            />
-          ))}
+          {reputation.achievements
+            .filter((ach) => {
+              if (achievementFilter === 'unlocked') return ach.earned
+              if (achievementFilter === 'locked') return !ach.earned
+              return true
+            })
+            .map((ach) => (
+              <AchievementCard
+                key={ach.id}
+                achievement={ach}
+                reputation={reputation}
+                customTheme={activeTheme}
+                onClick={() => setInspectedAchievement(ach)}
+              />
+            ))}
         </div>
       </div>
 
