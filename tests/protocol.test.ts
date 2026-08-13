@@ -173,8 +173,8 @@ async function runProductionTestSuite() {
   assert(validateNonceRule(leadingSpaceNonce) === false, 'Leading whitespace nonce strictly rejected by server rule')
   assert(validateNonceRule(trailingSpaceNonce) === false, 'Trailing whitespace nonce strictly rejected by server rule')
 
-  // --- SUITE 2: Serverless Token-Bucket Rate Limiter ---
-  console.log('\n► SUITE 2: Serverless Token-Bucket Rate Limiting (IP & Wallet)')
+  // --- SUITE 2: Serverless Fixed-Window Rate Limiter ---
+  console.log('\n► SUITE 2: Serverless Fixed-Window Rate Limiting (IP & Wallet)')
   const testIp = '192.168.1.100'
   const rateLimitTest1 = checkRateLimit(testIp, 'ip', 2, 1000)
   assert(rateLimitTest1.allowed === true && rateLimitTest1.remaining === 1, 'First request within rate limit allowed')
@@ -211,7 +211,7 @@ async function runProductionTestSuite() {
     bs58.decode(signature),
     bs58.decode(walletAddress)
   )
-  assert(isOriginalValid === true, 'Original SIWS payload verifies correctly with wallet public key')
+  assert(isOriginalValid === true, 'Original canonical proof message verifies correctly with wallet public key')
 
   // Test Tampered Content
   const tamperedContentMsg = buildCanonicalSubmitMessage({
@@ -335,7 +335,7 @@ async function runProductionTestSuite() {
 
   // --- SUITE 6: Persisted Proof Reconstruction & Multi-Field Tamper Validation ---
   console.log('\n► SUITE 6: Persisted Proof Reconstruction & Multi-Field Tamper Validation')
-  const testNonce = 'nonce_e2e_9999'
+  const testNonce = 'ABCDEFGH99999999'
   const testDomain = 'provn-sol.vercel.app'
   const testContent = 'Persisted Proof Reconstruction Test Log'
   const testTimestamp = new Date().toISOString()
