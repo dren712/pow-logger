@@ -119,7 +119,7 @@ async function runProductionTestSuite() {
     })
   }
 
-  let fetchedLogsResult: any[] = []
+  let fetchedLogsResult: unknown[] = []
   let errorCaught = false
   try {
     fetchedLogsResult = await fetchAllWalletLogs(mockSuccessClient, 'testWallet')
@@ -142,8 +142,8 @@ async function runProductionTestSuite() {
 
   try {
     await fetchAllWalletLogs(mockErrorClient, 'testWallet')
-  } catch (err: any) {
-    if (err && err.message.includes('Database Connection Timeout')) {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('Database Connection Timeout')) {
       errorCaught = true
     }
   }
@@ -166,7 +166,7 @@ async function runProductionTestSuite() {
   } catch {}
   assert(invalidNonceParsed === false, 'Invalid non-Base58 nonce strictly rejected')
 
-  const validateNonceRule = (n: any) => typeof n === 'string' && n.trim().length >= 8 && n === n.trim()
+  const validateNonceRule = (n: unknown) => typeof n === 'string' && n.trim().length >= 8 && n === n.trim()
   const leadingSpaceNonce = ' ABCDEFGH12345678'
   const trailingSpaceNonce = 'ABCDEFGH12345678 '
   assert(validateNonceRule(validNonce) === true, 'Valid Base58 nonce satisfies server validation rule')
