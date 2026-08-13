@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { fetchAllWalletLogs } from '@/app/lib/milestones'
 import { calculateReputation } from '@/app/lib/reputationEngine'
 import { PassportExport, ProofDetail } from '@/app/lib/types'
+import { verifyLogCryptographically } from '@/app/lib/canonicalMessage'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
 
     const reputation = calculateReputation(wallet, logs)
 
+    const hostHeader = req.headers.get('host')
     const proofDetails: ProofDetail[] = logs.map((l) => ({
       id: l.id,
       walletAddress: l.wallet_address,
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       category: l.category,
       irysTxId: l.irys_tx_id || null,
       archivalState: l.archival_state || 'pending',
-      isCryptographicallyVerified: Boolean(l.signature && l.nonce),
+      isCryptographicallyVerified: verifyLogCryptographically(l, hostHeader),
     }))
 
     const passportData: PassportExport = {

@@ -7,10 +7,18 @@
  */
 
 import bs58 from 'bs58'
+import nacl from 'tweetnacl'
 
-/**
- * Shared Base58 decoder helper with CJS/ESM interop safety.
- */
+export interface VerifiableLog {
+  wallet_address: string
+  signature?: string | null
+  nonce?: string | null
+  domain?: string | null
+  created_at: string
+  content: string
+  github_url?: string | null
+  evidence_url?: string | null
+}
 export function decodeBase58(str: string): Uint8Array {
   const bs58Obj = bs58 as unknown as { decode?: (s: string) => Uint8Array; default?: { decode: (s: string) => Uint8Array } }
   const fn = bs58Obj.decode || bs58Obj.default?.decode
@@ -140,3 +148,53 @@ Log ID: ${params.logId}
 Nonce: ${params.nonce}
 Timestamp: ${params.timestamp}`
 }
+
+/**
+ * The single canonical cryptographic verification function across the PROVN protocol.
+ * Reconstructs the canonical SIWS-inspired proof message and executes TweetNaCl Ed25519
+ * detached signature verification against the signer's public key.
+ *
+ * Guaranteed Invariant: Returns true IF AND ONLY IF the signature is cryptographically authentic.
+ */
+export function verifyLogCryptographically(
+  log: VerifiableLog,
+  candidateHost?: string | null
+): boolean {
+  if (!log.wallet_address || !log.signature || !log.nonce || !log.created_at || !log.content) {
+    return false
+  }
+
+  try {
+    const publicKeyBytes = decodeBase58(log.wallet_address)
+    if (publicKeyBytes.length !== 32) return false
+
+    const signatureBytes = decodeBase58(log.signature)
+    if (signatureBytes.length !== 64) return false
+
+    const reqHost = candidateHost ? getVerifiedDomain(candidateHost) : undefined
+    const candidateDomains = Array.from(
+      new Set([log.domain, reqHost, 'provn-sol.vercel.app', 'localhost'].filter(Boolean) as string[])
+    )
+
+    for (const domain of candidateDomains) {
+      const canonicalMsg = buildCanonicalSubmitMessage({
+        domain,
+        walletAddress: log.wallet_address,
+        content: log.content,
+        timestamp: log.created_at,
+        nonce: log.nonce,
+        githubUrl: log.github_url || undefined,
+        evidenceUrl: log.evidence_url || undefined,
+      })
+      const msgBytes = new TextEncoder().encode(canonicalMsg)
+      if (nacl.sign.detached.verify(msgBytes, signatureBytes, publicKeyBytes)) {
+        return true
+      }
+    }
+
+    return false
+  } catch {
+    return false
+  }
+}
+

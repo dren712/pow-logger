@@ -22,6 +22,7 @@ import {
   getVerifiedDomain,
   isConfiguredSupabaseUrl,
   decodeBase58,
+  verifyLogCryptographically,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
@@ -567,6 +568,46 @@ async function runProductionTestSuite() {
   })
   assert(retryMsg.includes('Action: Retry Archival'), 'Canonical retry message contains Action: Retry Archival header')
   assert(retryMsg.includes('Log ID: 42') && retryMsg.includes('retry_nonce_1234'), 'Canonical retry message includes logId and nonce')
+
+  // Test 5: verifyLogCryptographically Unified Verification Invariant
+  const suite9Keypair = nacl.sign.keyPair()
+  const suite9Wallet = bs58.encode(suite9Keypair.publicKey)
+  const suite9Timestamp = '2026-08-14T01:00:00.000Z'
+  const suite9Nonce = 'nonce_crypto_9999'
+  const suite9Content = 'Verified cryptographic invariant log'
+  const suite9Domain = 'provn-sol.vercel.app'
+  const suite9Github = 'https://github.com/dren712/pow-logger/pull/99'
+  const suite9Evidence = 'https://provn-sol.vercel.app/demo'
+
+  const canonicalPrompt = buildCanonicalSubmitMessage({
+    domain: suite9Domain,
+    walletAddress: suite9Wallet,
+    timestamp: suite9Timestamp,
+    nonce: suite9Nonce,
+    content: suite9Content,
+    githubUrl: suite9Github,
+    evidenceUrl: suite9Evidence,
+  })
+  const validSigBytes = nacl.sign.detached(new TextEncoder().encode(canonicalPrompt), suite9Keypair.secretKey)
+  const testSignature = bs58.encode(validSigBytes)
+
+  const validLogObj = {
+    wallet_address: suite9Wallet,
+    signature: testSignature,
+    nonce: suite9Nonce,
+    domain: suite9Domain,
+    created_at: suite9Timestamp,
+    content: suite9Content,
+    github_url: suite9Github,
+    evidence_url: suite9Evidence,
+  }
+
+  assert(verifyLogCryptographically(validLogObj) === true, 'verifyLogCryptographically returns true for valid authentic Ed25519 signature')
+  assert(verifyLogCryptographically({ ...validLogObj, content: 'Tampered work text' }) === false, 'verifyLogCryptographically returns false for tampered content')
+  assert(verifyLogCryptographically({ ...validLogObj, github_url: 'https://github.com/dren712/pow-logger/pull/100' }) === false, 'verifyLogCryptographically returns false for tampered GitHub link')
+  assert(verifyLogCryptographically({ ...validLogObj, nonce: null }) === false, 'verifyLogCryptographically returns false when nonce is missing')
+  assert(verifyLogCryptographically({ ...validLogObj, signature: null }) === false, 'verifyLogCryptographically returns false when signature is missing')
+  assert(verifyLogCryptographically({ ...validLogObj, signature: 'FakeSig1234567890123456789012345678901234567890123456789012345678901234' }) === false, 'verifyLogCryptographically returns false for invalid forged signature')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')

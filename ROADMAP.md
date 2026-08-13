@@ -1,74 +1,69 @@
 # 🗺️ PROVN Protocol — Engineering Roadmap
 
-*A Solana-Native, Cryptographically Verifiable Builder Reputation Protocol with Permanent Arweave Archival*
+*A Solana-Native, Cryptographically Verifiable Builder Provenance Protocol with Permanent Arweave Archival*
 
 ---
 
-## 📍 Phase Status Overview
+## 📍 Phase Overview
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            PROVN ROADMAP PHASES                             │
 │                                                                             │
-│  [ Phase 1: Proof Foundry Core ] ─────────────► ✅ COMPLETED & SECURITY-TESTED
-│  [ Phase 2: Dual-Tier Reputation & Badges ] ──► ✅ COMPLETED & LIVE        │
-│  [ Phase 3: B2B DAO Grant Gating & SDK ] ─────► 🔮 PLANNED (Q3 2026)    │
-│  [ Phase 4: Metaplex cNFT On-Chain Badges ] ──► 🔮 UPCOMING (Q4 2026)      │
+│  [ Phase 0: Core Protocol Engine ] ──────────► ✅ SHIPPED & VERIFIED        │
+│  [ Phase 1: Builder Passport & Identity ] ───► ✅ SHIPPED & LIVE            │
+│  [ Phase 2: Ecosystem Integrations ] ────────► 🧪 EXPERIMENTAL / IN PROGRESS │
+│  [ Phase 3: Portable cNFT Achievements ] ────► 🔮 PLANNED (GRANT-FUNDED)    │
+│  [ Phase 4: Scale & Infrastructure ] ────────► 🔮 FUTURE                    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ✅ Phase 1: Proof Foundry Core & Security Hardening (Completed)
+## ✅ Phase 0: Core Protocol Engine (Shipped & Live)
 
-- [x] **Sign-In-With-Solana (SIWS)**: Cryptographic binding of wallet, content, timestamp, nonce, and proof links using Ed25519 keypairs.
-- [x] **Server-Side Verification Engine**: Off-chain signature verification using TweetNaCl (`nacl.sign.detached.verify()`).
-- [x] **Permanent Arweave Archival**: Packaging log envelopes into JSON metadata and archiving to Arweave via Irys Node #1.
-- [x] **Database Security & RLS**: Supabase PostgreSQL with strict `service_role` write policies, anonymous `SELECT` read access, and unique signature indexing.
-- [x] **Automated Classification Engine**: 16-skill regex classification for Solana, Rust, Anchor, Next.js, Security, and DeFi work categories.
-- [x] **Automated CI/CD**: Comprehensive protocol and security test suite running on GitHub Actions.
-
----
-
-## ✅ Phase 2: Multi-Pillar Reputation & Badge Engine (Completed / Live)
-
-- [x] **Tier 1: Dynamic Evolving Builder Levels**: 5-tier builder progression (Apprentice → Verified Craftsman → Senior Architect → Protocol Master → Grand Legend).
-- [x] **Tier 2: Streak Milestone Trophies**: Earnable trophy cards for 7, 14, 30, 60, 100, and 365 consecutive days of verified logging.
-- [x] **Tier 3: LeetCode / Codeforces Skill Badges**:
-  - ⚓ **Anchor Specialist**: 3+ Solana / Anchor smart contract logs.
-  - 🛡️ **Security Auditor**: 2+ Security / Auth work logs.
-  - 🐙 **Open Source Builder**: 3+ GitHub-linked proof logs.
-  - 📜 **Arweave Archivist**: 5+ Permanent Arweave archived logs.
-  - 💯 **Century Club**: 100+ Total signed proof logs.
-- [x] **GitHub README Live SVG Badge Engine**: Public SVG endpoint (`/api/badge/[wallet].svg`) for developer GitHub profiles.
-- [x] **Glassmorphic Builder Dashboard**: 4-column stats grid, level progress bar, and 365-day contribution heatmap.
+- [x] **Canonical Proof Payloads**: SIWS-inspired deterministic message format binding wallet, content, timestamp, nonce, and normalized URLs.
+- [x] **Cryptographic Verification**: Server-side Ed25519 detached signature verification using TweetNaCl.
+- [x] **Replay Protection**: Strict 15-minute validity window (`900,000ms`) + database-level unique signature index.
+- [x] **Permanent Arweave Archival**: Zero-fee (<100KB) immutable storage via Irys L1 gateway.
+- [x] **Public Verifier Inspector**: Individual proof lookup (`/proof/[id]`) and public REST verification API (`/api/verify/[wallet]`).
+- [x] **Single Database Contract**: PostgreSQL `logs` table with strict Row-Level Security (`SELECT` public, mutations strictly via `service_role`).
 
 ---
 
-## 🔮 Phase 3: Ecosystem B2B API & DAO Grant Gating (Planned / Q3 2026)
+## ✅ Phase 1: Builder Passport & Identity (Shipped & Live)
 
-- [ ] **Global Builder Leaderboard (`/leaderboard`)**: Public ranking of top Solana builders by level, active streak, and verified contributions.
-- [ ] **Developer SDK (`@provn/sdk`)**: TypeScript client library for querying builder reputation scores programmatically.
-- [ ] **DAO & Hackathon Grant Gating**: API integration for Superteam Earn and Colosseum to require 7-day or 30-day verified PROVN streaks for bounty claims.
-- [ ] **Whitelabel Proof Cards**: Custom DAO watermarking and branded SVG export badges.
-
----
-
-## 🔮 Phase 4: Metaplex cNFT Merkle Tree & Solana Protocol (Upcoming / Q4 2026)
-
-- [ ] **Metaplex Bubblegum Merkle Tree Deployment**: Deploying an on-chain Concurrent Merkle Tree (Depth 14, 16,384 badge capacity) on Solana Mainnet.
-- [ ] **Helius RPC Indexer Integration**: Utilizing Helius DAS API for indexing compressed NFT badges.
-- [ ] **Dynamic On-Chain Soulbound Badges**: Automatically updating on-chain cNFT metadata upon builder level-up milestones.
+- [x] **Builder Passport UI**: Public builder profile showing verified history, skills, and protocols (`/u/[wallet]`).
+- [x] **Deterministic Streak Engine**: Canonical Indian Standard Time (`Asia/Kolkata`) streak calculation ensuring global display parity.
+- [x] **Export Studio**: Client-side zero-latency export to Markdown (`.md`), REST JSON (`.json`), CSV spreadsheet (`.csv`), and printable A4 dossier.
+- [x] **GitHub Profile Badge**: Dynamic SVG endpoint (`/api/badge/[wallet].svg`) for developer README embeds.
+- [x] **Material Themes**: Data-driven metallic UI customizer with instant SVG generation (`/api/passport-card/[wallet]`).
 
 ---
 
-## 🎯 Production Engineering Deliverables & Milestones
+## 🧪 Phase 2: Ecosystem Integrations (Experimental / In Progress)
 
-| Milestone Phase | Technical Scope & Objective | Deliverables |
-| :--- | :--- | :--- |
-| **Milestone 1** | **Ecosystem Onboarding & Profile Embedding** | Onboard 10+ active Solana builders with 7-day streaks & live GitHub SVG embeds |
-| **Milestone 2** | **Solana Mainnet Metaplex cNFT Engine** | Deploy Concurrent Merkle Tree (Depth 14) & automated Helius DAS badge minting |
-| **Milestone 3** | **Developer SDK & Superteam Earn Integration** | Package `@provn/sdk` TypeScript client & build bounty-gating verification webhooks |
+- [x] **TypeScript Client SDK**: Programmatic passport querying and local offline signature verifier in [`sdk/index.ts`](sdk/index.ts).
+- [x] **CLI Prototype**: Terminal utility for inspecting builder reputation in [`cli/provn.mjs`](cli/provn.mjs).
+- [x] **Bounty Gating Demo**: Prototype verification flow evaluating builder streak and proof criteria for bounty eligibility (`/demo/bounty`).
+- [ ] **GitHub OAuth & Commit Oracle**: Automated verification linking Solana wallet to GitHub username and commit history.
+- [ ] **Published npm Package**: Publishing `@provn/sdk` to npm registry with zero external runtime dependencies.
+
+---
+
+## 🔮 Phase 3: Portable cNFT Achievements (Planned / Grant-Funded)
+
+- [ ] **Metaplex Bubblegum Deployment**: Deploying an on-chain Concurrent Merkle Tree on Solana for low-cost compressed NFT achievement minting.
+- [ ] **Helius DAS Integration**: Querying builder cNFT holdings directly via Helius Digital Asset Standard RPC endpoints.
+- [ ] **Automated Minting Pipeline**: Gasless relayer for issuing achievement cNFTs upon verified milestone triggers.
+
+---
+
+## 🔮 Phase 4: Scale & Infrastructure (Future)
+
+- [ ] **Distributed Rate Limiting**: Redis/Upstash backing for high-concurrency multi-region API routes.
+- [ ] **Public RPC Nodes**: Dedicated Solana RPC pool for enterprise and bounty platform integration.
+- [ ] **Cross-Ecosystem Bridging**: Verifiable credentials export compatible with W3C DID standards.
 
 ---
 

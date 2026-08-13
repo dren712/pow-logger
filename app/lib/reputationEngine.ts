@@ -18,11 +18,12 @@ import {
   PROTOCOL_TIMEZONE,
 } from './milestones'
 import { evaluateAchievements } from './achievements'
+import { verifyLogCryptographically } from './canonicalMessage'
 
 export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderReputation {
   const safeLogs = logs || []
   const totalProofs = safeLogs.length
-  const verifiedProofs = safeLogs.filter((l) => Boolean(l.signature)).length
+  const verifiedProofs = safeLogs.filter((l) => verifyLogCryptographically(l)).length
   const archivedProofs = safeLogs.filter((l) => l.archival_state === 'archived' || Boolean(l.irys_tx_id)).length
 
   // Extract timestamps

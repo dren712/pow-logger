@@ -5,8 +5,7 @@
  * for PROVN Proof-of-Work Protocol on Solana.
  */
 
-import nacl from 'tweetnacl'
-import { decodeBase58, buildCanonicalSubmitMessage } from '../app/lib/canonicalMessage'
+import { verifyLogCryptographically } from '../app/lib/canonicalMessage'
 import { BuilderReputation, PassportExport, ProofDetail } from '../app/lib/types'
 
 export interface ProvnClientOptions {
@@ -112,25 +111,15 @@ export class ProvnClient {
     githubUrl?: string
     evidenceUrl?: string
   }): boolean {
-    try {
-      const domain = proof.domain || 'provn-sol.vercel.app'
-      const canonicalMsg = buildCanonicalSubmitMessage({
-        domain,
-        walletAddress: proof.walletAddress,
-        timestamp: proof.timestamp,
-        nonce: proof.nonce,
-        content: proof.content,
-        githubUrl: proof.githubUrl,
-        evidenceUrl: proof.evidenceUrl,
-      })
-
-      const msgBytes = new TextEncoder().encode(canonicalMsg)
-      const sigBytes = decodeBase58(proof.signature)
-      const pubKeyBytes = decodeBase58(proof.walletAddress)
-
-      return nacl.sign.detached.verify(msgBytes, sigBytes, pubKeyBytes)
-    } catch {
-      return false
-    }
+    return verifyLogCryptographically({
+      wallet_address: proof.walletAddress,
+      signature: proof.signature,
+      nonce: proof.nonce,
+      domain: proof.domain,
+      created_at: proof.timestamp,
+      content: proof.content,
+      github_url: proof.githubUrl,
+      evidence_url: proof.evidenceUrl,
+    })
   }
 }

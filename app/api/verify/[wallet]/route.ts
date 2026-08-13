@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import nacl from 'tweetnacl'
-import { buildCanonicalSubmitMessage, decodeBase58, getVerifiedDomain } from '@/app/lib/canonicalMessage'
+import { verifyLogCryptographically, decodeBase58 } from '@/app/lib/canonicalMessage'
 import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs, PROTOCOL_TIMEZONE } from '@/app/lib/milestones'
 
 const supabase = createClient(
@@ -25,10 +24,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       )
     }
 
-    let publicKeyBytes: Uint8Array | null = null
     try {
-      publicKeyBytes = decodeBase58(wallet)
-    } catch {}
+      const pk = decodeBase58(wallet)
+      if (pk.length !== 32) throw new Error('Invalid key length')
+    } catch {
+      return NextResponse.json(
+        { verified: false, message: 'Invalid Base58 Solana wallet public key' },
+        { status: 400, headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' } }
+      )
+    }
 
     const logs = await fetchAllWalletLogs(supabase, wallet)
 
@@ -84,46 +88,18 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && l.archival_state === 'archived'
     )
 
+    const hostHeader = req.headers.get('host')
     const allProcessedLogs = logs.map((l) => {
       let isCryptoVerified = false
       let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
 
       if (!l.nonce) {
         status = 'legacy_unindexed'
-      } else if (l.signature && publicKeyBytes) {
-        try {
-          const reqHost = getVerifiedDomain(req.headers.get('host'))
-          const candidateDomains = Array.from(new Set([
-            l.domain,
-            reqHost,
-            'provn-sol.vercel.app',
-            'localhost'
-          ].filter(Boolean)))
-
-          const sigBytes = decodeBase58(l.signature)
-
-          for (const domain of candidateDomains) {
-            const canonicalMsg = buildCanonicalSubmitMessage({
-              domain,
-              walletAddress: wallet,
-              content: l.content,
-              timestamp: l.created_at,
-              nonce: l.nonce,
-              githubUrl: l.github_url || undefined,
-              evidenceUrl: l.evidence_url || undefined,
-            })
-            const msgBytes = new TextEncoder().encode(canonicalMsg)
-            if (nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)) {
-              isCryptoVerified = true
-              status = 'verified'
-              break
-            }
-          }
-        } catch {
-          isCryptoVerified = false
-          status = 'unverified'
-        }
+      } else {
+        isCryptoVerified = verifyLogCryptographically(l, hostHeader)
+        status = isCryptoVerified ? 'verified' : 'unverified'
       }
+
       return {
         id: l.id,
         content: l.content,

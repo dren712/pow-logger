@@ -1,5 +1,5 @@
 /**
- * PROVN Protocol — Off-Chain Achievement System ($0 Free-Tier)
+ * PROVN Protocol — Builder Achievements System ($0 Free-Tier)
  *
  * All achievements are evaluated deterministically from verified wallet logs.
  * Zero on-chain fees, zero RPC calls, zero NFT costs required during pre-grant phase.
@@ -21,7 +21,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   {
     id: 'FIRST_PROOF',
     name: 'Genesis Proof',
-    description: 'Cryptographically signed your first work log on Solana',
+    description: 'Cryptographically signed your first work attestation on Solana',
     criteria: 'Submit 1 verified proof',
     icon: '⚡',
     rarity: 'Common',
@@ -35,7 +35,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: '7_DAY_STREAK',
-    name: '7-Day Ironclad',
+    name: '7-Day Builder',
     description: 'Maintained a verified 7-day daily building streak',
     criteria: 'Achieve a 7-day streak',
     icon: '🔥',
@@ -47,8 +47,8 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: '30_DAY_STREAK',
-    name: '30-Day Titan',
-    description: 'Maintained an unbroken 30-day verified building streak',
+    name: '30-Day Builder',
+    description: 'Maintained a verified 30-day daily building streak',
     criteria: 'Achieve a 30-day streak',
     icon: '🛡️',
     rarity: 'Rare',
@@ -59,8 +59,8 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: '100_DAY_LEGEND',
-    name: 'Century Legend',
-    description: 'Maintained a monumental 100-day verified building streak',
+    name: '100-Day Builder',
+    description: 'Maintained a verified 100-day daily building streak',
     criteria: 'Achieve a 100-day streak',
     icon: '👑',
     rarity: 'Epic',
@@ -71,9 +71,9 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'SOLANA_SPECIALIST',
-    name: 'Solana Specialist',
-    description: 'Logged 10+ verified contributions with Solana ecosystem protocols',
-    criteria: 'Log 10+ Solana protocol proofs',
+    name: 'Solana Contributor',
+    description: 'Logged 10+ proofs classified with Solana ecosystem protocols',
+    criteria: '10+ Solana protocol proofs (regex-classified)',
     icon: '🟣',
     rarity: 'Rare',
     evaluate: (logs) => {
@@ -85,31 +85,31 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'OPEN_SOURCE_BUILDER',
-    name: 'Open Source Vanguard',
-    description: 'Attached verified GitHub pull requests or repository commits to 10+ proofs',
-    criteria: '10+ proofs with valid GitHub PR/commit evidence',
+    name: 'Open Source Contributor',
+    description: 'Attached GitHub pull requests or repository commits to 5+ proofs',
+    criteria: '5+ proofs with valid GitHub PR/commit evidence',
     icon: '🐙',
     rarity: 'Rare',
     evaluate: (logs) => {
       const ghLogs = logs.filter((l) => Boolean(l.github_url))
-      return { earned: ghLogs.length >= 10 }
+      return { earned: ghLogs.length >= 5 }
     },
   },
   {
     id: 'ARWEAVE_ARCHIVED',
     name: 'Permanent Provenance',
-    description: 'Permanently immutabilized 25+ work proofs onto Arweave via Irys',
-    criteria: '25+ Arweave-archived proofs',
+    description: 'Permanently immutabilized 10+ work proofs onto Arweave via Irys',
+    criteria: '10+ Arweave-archived proofs',
     icon: '📦',
     rarity: 'Rare',
     evaluate: (logs) => {
       const archivedLogs = logs.filter((l) => l.archival_state === 'archived' || Boolean(l.irys_tx_id))
-      return { earned: archivedLogs.length >= 25 }
+      return { earned: archivedLogs.length >= 10 }
     },
   },
   {
     id: 'GRAND_LEGEND',
-    name: 'Grand Legend',
+    name: 'Protocol Master',
     description: 'Reached the highest tier of PROVN builder reputation (365+ proofs)',
     criteria: 'Log 365+ total verified proofs',
     icon: '💎',

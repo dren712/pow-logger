@@ -1,8 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import nacl from 'tweetnacl'
-import { buildCanonicalSubmitMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { buildCanonicalSubmitMessage, verifyLogCryptographically } from '@/app/lib/canonicalMessage'
 import { WalletLog } from '@/app/lib/types'
 
 const supabase = createClient(
@@ -58,30 +57,20 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
   const proof = log as WalletLog
 
   // Re-verify Ed25519 signature against canonical message
-  let isSignatureValid = false
+  const isSignatureValid = verifyLogCryptographically(proof)
   let reconstructedMessage = ''
 
-  if (proof.signature && proof.nonce && proof.wallet_address) {
-    try {
-      const publicKeyBytes = decodeBase58(proof.wallet_address)
-      const sigBytes = decodeBase58(proof.signature)
-      const domain = proof.domain || 'provn-sol.vercel.app'
-
-      reconstructedMessage = buildCanonicalSubmitMessage({
-        domain,
-        walletAddress: proof.wallet_address,
-        timestamp: proof.created_at,
-        nonce: proof.nonce,
-        content: proof.content,
-        githubUrl: proof.github_url || undefined,
-        evidenceUrl: proof.evidence_url || undefined,
-      })
-
-      const msgBytes = new TextEncoder().encode(reconstructedMessage)
-      isSignatureValid = nacl.sign.detached.verify(msgBytes, sigBytes, publicKeyBytes)
-    } catch (e) {
-      console.error('Signature verification check error:', e)
-    }
+  if (proof.nonce && proof.wallet_address) {
+    const domain = proof.domain || 'provn-sol.vercel.app'
+    reconstructedMessage = buildCanonicalSubmitMessage({
+      domain,
+      walletAddress: proof.wallet_address,
+      timestamp: proof.created_at,
+      nonce: proof.nonce,
+      content: proof.content,
+      githubUrl: proof.github_url || undefined,
+      evidenceUrl: proof.evidence_url || undefined,
+    })
   }
 
   const walletShort = `${proof.wallet_address.slice(0, 4)}...${proof.wallet_address.slice(-4)}`

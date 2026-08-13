@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { WalletLog } from '@/app/lib/types'
+import { verifyLogCryptographically } from '@/app/lib/canonicalMessage'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 export default async function GrantEvidencePage() {
   const { data: rawLogs } = await supabase
     .from('logs')
-    .select('id, wallet_address, created_at, category, skills, protocols, archival_state, irys_tx_id, signature')
+    .select('id, wallet_address, content, created_at, category, skills, protocols, archival_state, irys_tx_id, signature, nonce, domain, github_url, evidence_url')
     .order('created_at', { ascending: false })
 
   const logs = (rawLogs || []) as WalletLog[]
@@ -32,7 +33,7 @@ export default async function GrantEvidencePage() {
     (l) => l.archival_state === 'archived' || (l.irys_tx_id && !l.irys_tx_id.startsWith('powl_'))
   ).length
 
-  const verifiedCount = logs.filter((l) => Boolean(l.signature)).length
+  const verifiedCount = logs.filter((l) => verifyLogCryptographically(l)).length
 
   const skillCount: Record<string, number> = {}
   const protocolCount: Record<string, number> = {}
