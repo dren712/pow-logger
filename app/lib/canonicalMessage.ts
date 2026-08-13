@@ -116,8 +116,7 @@ export function isConfiguredSupabaseUrl(url?: string): boolean {
  * Cryptographically binds content AND normalized evidence URLs.
  */
 export function buildCanonicalSubmitMessage(params: CanonicalSubmitParams): string {
-  const defaultDomain = typeof window !== 'undefined' && window.location?.host ? getVerifiedDomain(window.location.host) : 'provn-sol.vercel.app'
-  const domain = getVerifiedDomain(params.domain || defaultDomain)
+  const domain = params.domain ? params.domain.trim().toLowerCase().split(':')[0] : 'provn-sol.vercel.app'
   const version = params.version || 1
   const cleanContent = params.content.trim()
   const cleanGithubUrl = validateAndNormalizeUrl(params.githubUrl, 'github') || 'none'
@@ -154,14 +153,39 @@ Timestamp: ${params.timestamp}`
  * Reconstructs the canonical SIWS-inspired proof message and executes TweetNaCl Ed25519
  * detached signature verification against the signer's public key.
  *
- * Guaranteed Invariant: Returns true IF AND ONLY IF the signature is cryptographically authentic.
+ * Strict Protocol Invariants:
+ * 1. Exact Domain Sealing: Uses the exact persisted domain without loose fallback guessing.
+ * 2. Strict Metadata Integrity: Non-empty URLs must be valid (GitHub on github.com, Evidence on HTTPS).
+ * 3. Base58 Nonce Validation: Nonce must be valid Base58 without whitespace tampering.
+ * 4. Guaranteed Invariant: Returns true IF AND ONLY IF the exact persisted record is cryptographically authentic.
  */
 export function verifyLogCryptographically(
   log: VerifiableLog,
-  candidateHost?: string | null
+  expectedDomain?: string | null
 ): boolean {
   if (!log.wallet_address || !log.signature || !log.nonce || !log.created_at || !log.content) {
     return false
+  }
+
+  // Strict Nonce Validation: Base58 string, 8-64 chars, no surrounding whitespace
+  if (typeof log.nonce !== 'string' || log.nonce.trim() !== log.nonce || log.nonce.length < 8 || log.nonce.length > 64) {
+    return false
+  }
+  try {
+    const nonceBytes = decodeBase58(log.nonce)
+    if (nonceBytes.length === 0) return false
+  } catch {
+    return false
+  }
+
+  // Strict URL Validation: Non-empty URLs must be valid and normalized (prevent silent collapse to 'none')
+  if (log.github_url && typeof log.github_url === 'string' && log.github_url.trim().length > 0) {
+    const normalizedGh = validateAndNormalizeUrl(log.github_url, 'github')
+    if (!normalizedGh) return false
+  }
+  if (log.evidence_url && typeof log.evidence_url === 'string' && log.evidence_url.trim().length > 0) {
+    const normalizedEv = validateAndNormalizeUrl(log.evidence_url, 'evidence')
+    if (!normalizedEv) return false
   }
 
   try {
@@ -171,28 +195,20 @@ export function verifyLogCryptographically(
     const signatureBytes = decodeBase58(log.signature)
     if (signatureBytes.length !== 64) return false
 
-    const reqHost = candidateHost ? getVerifiedDomain(candidateHost) : undefined
-    const candidateDomains = Array.from(
-      new Set([log.domain, reqHost, 'provn-sol.vercel.app', 'localhost'].filter(Boolean) as string[])
-    )
+    // Exact domain: strictly use the log's persisted domain or specified expected domain
+    const domain = expectedDomain || log.domain || 'provn-sol.vercel.app'
 
-    for (const domain of candidateDomains) {
-      const canonicalMsg = buildCanonicalSubmitMessage({
-        domain,
-        walletAddress: log.wallet_address,
-        content: log.content,
-        timestamp: log.created_at,
-        nonce: log.nonce,
-        githubUrl: log.github_url || undefined,
-        evidenceUrl: log.evidence_url || undefined,
-      })
-      const msgBytes = new TextEncoder().encode(canonicalMsg)
-      if (nacl.sign.detached.verify(msgBytes, signatureBytes, publicKeyBytes)) {
-        return true
-      }
-    }
-
-    return false
+    const canonicalMsg = buildCanonicalSubmitMessage({
+      domain,
+      walletAddress: log.wallet_address,
+      content: log.content,
+      timestamp: log.created_at,
+      nonce: log.nonce,
+      githubUrl: log.github_url || undefined,
+      evidenceUrl: log.evidence_url || undefined,
+    })
+    const msgBytes = new TextEncoder().encode(canonicalMsg)
+    return nacl.sign.detached.verify(msgBytes, signatureBytes, publicKeyBytes)
   } catch {
     return false
   }

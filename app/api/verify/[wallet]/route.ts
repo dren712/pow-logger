@@ -46,48 +46,6 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       )
     }
 
-    const createdAts = logs.map((l) => l.created_at)
-    const tz = req.nextUrl.searchParams.get('tz') || PROTOCOL_TIMEZONE
-    const streak = calculateStreak(createdAts, tz)
-    const longestStreak = calculateLongestStreak(createdAts, tz)
-
-    // Compute badge summary
-    const badgeSummary = computeBadgeSummary(logs.length, streak, longestStreak, logs)
-
-    // Aggregate skills, protocols, categories
-    const skillCount: Record<string, number> = {}
-    const protocolCount: Record<string, number> = {}
-    const categoryCount: Record<string, number> = {}
-
-    logs.forEach((log) => {
-      ;(log.skills || []).forEach(
-        (s: string) => (skillCount[s] = (skillCount[s] || 0) + 1)
-      )
-      ;(log.protocols || []).forEach(
-        (p: string) => (protocolCount[p] = (protocolCount[p] || 0) + 1)
-      )
-      if (log.category)
-        categoryCount[log.category] = (categoryCount[log.category] || 0) + 1
-    })
-
-    const topSkills = Object.entries(skillCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map((e) => e[0])
-
-    const topProtocols = Object.entries(protocolCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map((e) => e[0])
-
-    const walletShort =
-      wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
-
-    // Only count entries with real Irys receipts and confirmed 'archived' state
-    const confirmedArchivedLogs = logs.filter(
-      (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && l.archival_state === 'archived'
-    )
-
     const hostHeader = req.headers.get('host')
     const allProcessedLogs = logs.map((l) => {
       let isCryptoVerified = false
@@ -115,8 +73,52 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       }
     })
 
-    const verifiedLogsCount = allProcessedLogs.filter((l) => l.cryptographically_verified).length
+    // Strict Invariant: Metrics and badges are derived EXCLUSIVELY from cryptographically verified proofs
+    const verifiedLogs = logs.filter((l) => verifyLogCryptographically(l, hostHeader))
+    const verifiedLogsCount = verifiedLogs.length
     const legacyCount = logs.filter((l) => !l.nonce).length
+
+    const createdAts = verifiedLogs.map((l) => l.created_at)
+    const tz = req.nextUrl.searchParams.get('tz') || PROTOCOL_TIMEZONE
+    const streak = calculateStreak(createdAts, tz)
+    const longestStreak = calculateLongestStreak(createdAts, tz)
+
+    // Compute badge summary from verified proofs ONLY
+    const badgeSummary = computeBadgeSummary(verifiedLogs.length, streak, longestStreak, verifiedLogs)
+
+    // Aggregate skills, protocols, categories ONLY from verified proofs
+    const skillCount: Record<string, number> = {}
+    const protocolCount: Record<string, number> = {}
+    const categoryCount: Record<string, number> = {}
+
+    verifiedLogs.forEach((log) => {
+      ;(log.skills || []).forEach(
+        (s: string) => (skillCount[s] = (skillCount[s] || 0) + 1)
+      )
+      ;(log.protocols || []).forEach(
+        (p: string) => (protocolCount[p] = (protocolCount[p] || 0) + 1)
+      )
+      if (log.category)
+        categoryCount[log.category] = (categoryCount[log.category] || 0) + 1
+    })
+
+    const topSkills = Object.entries(skillCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map((e) => e[0])
+
+    const topProtocols = Object.entries(protocolCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map((e) => e[0])
+
+    const walletShort =
+      wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
+
+    // Only count entries with real Irys receipts and confirmed 'archived' state from verified proofs
+    const confirmedArchivedLogs = verifiedLogs.filter(
+      (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && l.archival_state === 'archived'
+    )
 
     return NextResponse.json(
       {

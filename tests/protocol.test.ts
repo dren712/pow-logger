@@ -32,6 +32,7 @@ import { evaluateAchievements } from '../app/lib/achievements'
 import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } from '../app/lib/cnftEligibility'
 import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
+import { WalletLog } from '../app/lib/types'
 
 import fs from 'fs'
 import path from 'path'
@@ -417,38 +418,67 @@ async function runProductionTestSuite() {
   // --- SUITE 7: Deterministic Reputation Engine & Off-Chain Achievement System ---
   console.log('\n► SUITE 7: Deterministic Reputation Engine & Off-Chain Achievement System')
 
+  const suite7Keypair = nacl.sign.keyPair()
+  const suite7Wallet = bs58.encode(suite7Keypair.publicKey)
+
+  const log1Timestamp = '2026-08-01T10:00:00.000Z'
+  const log1Nonce = bs58.encode(nacl.randomBytes(16))
+  const log1Content = 'Wrote Solana Anchor Program with Rust'
+  const log1Prompt = buildCanonicalSubmitMessage({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: suite7Wallet,
+    timestamp: log1Timestamp,
+    nonce: log1Nonce,
+    content: log1Content,
+  })
+  const log1Sig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(log1Prompt), suite7Keypair.secretKey))
+
+  const log2Timestamp = '2026-08-02T10:00:00.000Z'
+  const log2Nonce = bs58.encode(nacl.randomBytes(16))
+  const log2Content = 'Integrated Metaplex Compressed NFTs'
+  const log2Prompt = buildCanonicalSubmitMessage({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: suite7Wallet,
+    timestamp: log2Timestamp,
+    nonce: log2Nonce,
+    content: log2Content,
+  })
+  const log2Sig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(log2Prompt), suite7Keypair.secretKey))
+
   const testLogs = [
     {
       id: 1,
-      wallet_address: walletAddress,
-      created_at: '2026-08-01T10:00:00.000Z',
-      content: 'Wrote Solana Anchor Program with Rust',
+      wallet_address: suite7Wallet,
+      created_at: log1Timestamp,
+      content: log1Content,
       skills: ['Solana', 'Rust', 'Anchor'],
       protocols: ['Solana', 'Anchor'],
       category: 'Development',
-      signature: 'dummy_sig',
-      nonce: 'ABCDEFGH12345678',
+      signature: log1Sig,
+      nonce: log1Nonce,
+      domain: 'provn-sol.vercel.app',
       archival_state: 'archived' as const,
       irys_tx_id: 'irys_tx_genesis_1',
     },
     {
       id: 2,
-      wallet_address: walletAddress,
-      created_at: '2026-08-02T10:00:00.000Z',
-      content: 'Integrated Metaplex Compressed NFTs',
+      wallet_address: suite7Wallet,
+      created_at: log2Timestamp,
+      content: log2Content,
       skills: ['Solana', 'TypeScript', 'Metaplex'],
       protocols: ['Metaplex'],
       category: 'Development',
-      signature: 'dummy_sig_2',
-      nonce: 'ABCDEFGH12345679',
+      signature: log2Sig,
+      nonce: log2Nonce,
+      domain: 'provn-sol.vercel.app',
       archival_state: 'archived' as const,
       irys_tx_id: 'irys_tx_genesis_2',
     },
   ]
 
   // Test 1: calculateReputation determinism
-  const rep1 = calculateReputation(walletAddress, testLogs)
-  const rep2 = calculateReputation(walletAddress, testLogs)
+  const rep1 = calculateReputation(suite7Wallet, testLogs)
+  const rep2 = calculateReputation(suite7Wallet, testLogs)
   assert(rep1.totalProofs === 2, 'calculateReputation calculates correct total proofs count')
   assert(rep1.archivedProofs === 2, 'calculateReputation calculates correct archived proofs count')
   assert(rep1.archivalSuccessRate === 100, 'calculateReputation computes 100% archival success rate')
@@ -573,7 +603,7 @@ async function runProductionTestSuite() {
   const suite9Keypair = nacl.sign.keyPair()
   const suite9Wallet = bs58.encode(suite9Keypair.publicKey)
   const suite9Timestamp = '2026-08-14T01:00:00.000Z'
-  const suite9Nonce = 'nonce_crypto_9999'
+  const suite9Nonce = bs58.encode(nacl.randomBytes(16))
   const suite9Content = 'Verified cryptographic invariant log'
   const suite9Domain = 'provn-sol.vercel.app'
   const suite9Github = 'https://github.com/dren712/pow-logger/pull/99'
@@ -592,6 +622,7 @@ async function runProductionTestSuite() {
   const testSignature = bs58.encode(validSigBytes)
 
   const validLogObj = {
+    id: 101,
     wallet_address: suite9Wallet,
     signature: testSignature,
     nonce: suite9Nonce,
@@ -600,14 +631,55 @@ async function runProductionTestSuite() {
     content: suite9Content,
     github_url: suite9Github,
     evidence_url: suite9Evidence,
+    skills: ['Rust', 'Solana'],
+    protocols: ['Anchor'],
+    category: 'Engineering',
   }
 
   assert(verifyLogCryptographically(validLogObj) === true, 'verifyLogCryptographically returns true for valid authentic Ed25519 signature')
   assert(verifyLogCryptographically({ ...validLogObj, content: 'Tampered work text' }) === false, 'verifyLogCryptographically returns false for tampered content')
   assert(verifyLogCryptographically({ ...validLogObj, github_url: 'https://github.com/dren712/pow-logger/pull/100' }) === false, 'verifyLogCryptographically returns false for tampered GitHub link')
+  assert(verifyLogCryptographically({ ...validLogObj, github_url: 'https://evil.example/pr' }) === false, 'verifyLogCryptographically returns false for invalid non-github URL')
+  assert(verifyLogCryptographically({ ...validLogObj, evidence_url: 'http://insecure-http.com' }) === false, 'verifyLogCryptographically returns false for insecure non-https evidence URL')
+  assert(verifyLogCryptographically({ ...validLogObj, domain: 'evil.example' }) === false, 'verifyLogCryptographically returns false for tampered domain')
+  assert(verifyLogCryptographically({ ...validLogObj, nonce: 'non_base58_nonce_with_invalid_chars!' }) === false, 'verifyLogCryptographically returns false for non-Base58 nonce')
+  assert(verifyLogCryptographically({ ...validLogObj, nonce: ' ' + suite9Nonce }) === false, 'verifyLogCryptographically returns false for whitespace-padded nonce')
   assert(verifyLogCryptographically({ ...validLogObj, nonce: null }) === false, 'verifyLogCryptographically returns false when nonce is missing')
   assert(verifyLogCryptographically({ ...validLogObj, signature: null }) === false, 'verifyLogCryptographically returns false when signature is missing')
   assert(verifyLogCryptographically({ ...validLogObj, signature: 'FakeSig1234567890123456789012345678901234567890123456789012345678901234' }) === false, 'verifyLogCryptographically returns false for invalid forged signature')
+
+  // Test 6: Reputation and Metrics Exclusively Derived from Cryptographically Verified Proofs
+  const forgedLogs = [
+    {
+      id: 102,
+      wallet_address: suite9Wallet,
+      signature: 'ForgedSignature111111111111111111111111111111111111111111111111111111111111',
+      nonce: bs58.encode(nacl.randomBytes(16)),
+      created_at: '2026-08-13T01:00:00.000Z',
+      content: 'Forged log entry #1',
+      skills: ['FakeSkill'],
+      protocols: ['FakeProtocol'],
+    },
+    {
+      id: 103,
+      wallet_address: suite9Wallet,
+      signature: null,
+      nonce: null,
+      created_at: '2026-08-12T01:00:00.000Z',
+      content: 'Unsigned log entry #2',
+      skills: ['FakeSkill'],
+    },
+  ]
+
+  const mixedLogs = [validLogObj, ...forgedLogs] as unknown as WalletLog[]
+  const pureReputation = calculateReputation(suite9Wallet, mixedLogs)
+
+  assert(pureReputation.totalProofs === 1, 'calculateReputation totalProofs strictly counts ONLY verified proofs (1 of 3)')
+  assert(pureReputation.verifiedProofs === 1, 'calculateReputation verifiedProofs strictly matches verified count')
+  assert(pureReputation.currentStreak === 1, 'calculateReputation streak ignores unverified timestamps')
+  assert(pureReputation.skills.length === 2 && pureReputation.skills.some((s) => s.name === 'Rust'), 'Reputation skills include authentic skills')
+  assert(!pureReputation.skills.some((s) => s.name === 'FakeSkill'), 'Reputation skills strictly exclude skills from forged/unverified proofs')
+  assert(!pureReputation.protocols.some((p) => p.name === 'FakeProtocol'), 'Reputation protocols strictly exclude protocols from forged/unverified proofs')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')
