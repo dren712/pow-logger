@@ -30,6 +30,7 @@ import { calculateReputation } from '../app/lib/reputationEngine'
 import { evaluateAchievements } from '../app/lib/achievements'
 import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } from '../app/lib/cnftEligibility'
 import { ProvnClient } from '../sdk/index'
+import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
 
 import fs from 'fs'
 import path from 'path'
@@ -494,6 +495,27 @@ async function runProductionTestSuite() {
     evidenceUrl: 'https://provn-sol.vercel.app',
   })
   assert(isSdkTamperedInvalid === false, 'ProvnClient.verifyProofLocally rejects tampered payload correctly')
+
+  // --- SUITE 8: Metallic Customizable Card System & Material Themes ---
+  console.log('\n► SUITE 8: Metallic Customizable Card System & Material Themes')
+
+  // Test 1: Theme presets availability
+  const themeKeys = Object.keys(CARD_THEMES)
+  assert(themeKeys.length >= 10, 'All 10 core metallic card themes are defined in CARD_THEMES')
+  assert(themeKeys.includes('steel') && themeKeys.includes('titanium') && themeKeys.includes('obsidian'), 'Standard materials (steel, titanium, obsidian) are registered')
+
+  // Test 2: Theme property schema completeness
+  for (const key of themeKeys) {
+    const t = CARD_THEMES[key]
+    assert(Boolean(t.id && t.name && t.material && t.surfaceGradient && t.borderTone && t.accentTone), `Theme "${key}" satisfies complete material schema`)
+  }
+
+  // Test 3: getCardTheme fallback safety
+  const fallbackTheme = getCardTheme('unknown_nonexistent_theme')
+  assert(fallbackTheme.id === 'steel', 'getCardTheme safely falls back to default Raw Steel for unknown theme IDs')
+
+  const validTheme = getCardTheme('titanium')
+  assert(validTheme.id === 'titanium' && validTheme.material === 'titanium', 'getCardTheme resolves exact theme correctly')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')

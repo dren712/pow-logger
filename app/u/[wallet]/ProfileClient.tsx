@@ -1,11 +1,15 @@
 'use client'
 
-import React, { useState, useTransition } from 'react'
+import React, { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import ContributionHeatmap from '@/app/components/ContributionHeatmap'
 import NFTBadgeModal from '@/app/components/NFTBadgeModal'
 import BuilderBadge from '@/app/components/BuilderBadge'
-import { WalletLog } from '@/app/lib/types'
+import PassportCard from '@/app/components/cards/PassportCard'
+import AchievementCard from '@/app/components/cards/AchievementCard'
+import CardCustomizerModal from '@/app/components/cards/CardCustomizerModal'
+import { CARD_THEMES, CardTheme, getCardTheme } from '@/app/lib/cardThemes'
+import { Achievement, WalletLog } from '@/app/lib/types'
 import { computeBadgeSummary } from '@/app/lib/milestones'
 import { calculateReputation } from '@/app/lib/reputationEngine'
 import { generateNFTBadgeSVG } from '@/app/lib/badgeGenerator'
@@ -25,8 +29,22 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [modalTitle, setModalTitle] = useState('PROVN Builder Reputation Badge 🗿')
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [isQROpen, setIsQROpen] = useState(false)
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false)
+  const [inspectedAchievement, setInspectedAchievement] = useState<Achievement | null>(null)
+  const [activeTheme, setActiveTheme] = useState<CardTheme>(CARD_THEMES.steel)
   const [copied, setCopied] = useState(false)
   const [exportCopied, setExportCopied] = useState(false)
+
+  // Initialize theme from URL if present
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const themeParam = params.get('theme')
+      if (themeParam) {
+        setActiveTheme(getCardTheme(themeParam))
+      }
+    }
+  }, [])
 
   // Filter & Search States
   const [searchQuery, setSearchQuery] = useState('')
@@ -137,7 +155,37 @@ Verify cryptographically at: ${verificationUrl}
         >
           ← Back to Terminal
         </Link>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setIsCustomizerOpen(true)}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: `1px solid ${activeTheme.borderTone}`,
+              color: activeTheme.accentTone,
+            }}
+          >
+            🎨 Metal Studio ({activeTheme.name})
+          </button>
+          <button
+            onClick={() => {
+              const svg = generateNFTBadgeSVG(wallet, reputation.currentStreak)
+              setSelectedSvg(svg)
+              setModalTitle('PROVN Builder Reputation Badge 🗿')
+            }}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+              color: '#ab9ff2',
+            }}
+          >
+            🛡️ Badge
+          </button>
           <button
             onClick={() => setIsQROpen(true)}
             className="btn-primary"
@@ -229,67 +277,14 @@ Verify cryptographically at: ${verificationUrl}
         </span>
       </div>
 
-      {/* Builder Profile Header */}
-      <div
-        className="glass-card"
-        style={{
-          padding: '24px',
-          marginBottom: '24px',
-          position: 'relative',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            flexWrap: 'wrap',
-            gap: '16px',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '28px' }}>{reputation.builderLevel.emoji}</span>
-              <div>
-                <h1 style={{ color: '#00ff88', fontSize: '1.4rem', margin: 0, fontWeight: 800 }}>
-                  PROVN Builder Passport
-                </h1>
-                <div
-                  style={{
-                    color: '#888',
-                    fontSize: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginTop: '2px',
-                  }}
-                >
-                  <code style={{ color: '#ffb800' }}>{walletShort}</code>
-                  <span>•</span>
-                  <span style={{ color: '#00e5ff' }}>{reputation.builderLevel.title}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              const svg = generateNFTBadgeSVG(wallet, reputation.currentStreak)
-              setSelectedSvg(svg)
-              setModalTitle('PROVN Builder Reputation Badge 🗿')
-            }}
-            className="btn-primary"
-            style={{
-              padding: '8px 14px',
-              fontSize: '12px',
-              background: '#0d111a',
-              border: '1px solid rgba(0,255,136,0.3)',
-              color: '#00ff88',
-            }}
-          >
-            🛡️ Embed GitHub Badge
-          </button>
-        </div>
+      {/* Metallic Builder Passport Hero Card */}
+      <div style={{ marginBottom: '32px' }}>
+        <PassportCard
+          reputation={reputation}
+          theme={activeTheme}
+          onCustomizeClick={() => setIsCustomizerOpen(true)}
+          showControls={true}
+        />
       </div>
 
       {/* Core Reputation Stats */}
@@ -389,49 +384,18 @@ Verify cryptographically at: ${verificationUrl}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '12px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '16px',
           }}
         >
           {reputation.achievements.map((ach) => (
-            <div
+            <AchievementCard
               key={ach.id}
-              style={{
-                background: ach.earned ? '#0a0e17' : '#07080c',
-                border: ach.earned ? '1px solid rgba(0, 255, 136, 0.3)' : '1px solid #161a24',
-                borderRadius: '8px',
-                padding: '12px',
-                opacity: ach.earned ? 1 : 0.45,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '20px' }}>{ach.icon}</span>
-                <div>
-                  <div
-                    style={{
-                      color: ach.earned ? '#fff' : '#888',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {ach.name}
-                  </div>
-                  <div
-                    style={{
-                      color: ach.earned ? '#00ff88' : '#555',
-                      fontSize: '9px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {ach.rarity.toUpperCase()} • {ach.earned ? 'UNLOCKED' : 'LOCKED'}
-                  </div>
-                </div>
-              </div>
-              <p style={{ color: '#888', fontSize: '11px', margin: 0, lineHeight: '1.4' }}>
-                {ach.description}
-              </p>
-            </div>
+              achievement={ach}
+              reputation={reputation}
+              customTheme={activeTheme}
+              onClick={() => setInspectedAchievement(ach)}
+            />
           ))}
         </div>
       </div>
@@ -839,6 +803,109 @@ Verify cryptographically at: ${verificationUrl}
               Scan to verify builder identity on mobile or in-person hackathons.
             </p>
             <code style={{ color: '#ffb800', fontSize: '10px' }}>{walletShort}</code>
+          </div>
+        </div>
+      )}
+
+      {/* Metallic Card Customizer Studio Modal */}
+      {isCustomizerOpen && (
+        <CardCustomizerModal
+          reputation={reputation}
+          currentTheme={activeTheme}
+          onThemeSelect={(theme) => setActiveTheme(theme)}
+          onClose={() => setIsCustomizerOpen(false)}
+        />
+      )}
+
+      {/* Achievement Detail Inspector Modal */}
+      {inspectedAchievement && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 160,
+            padding: '16px',
+          }}
+          onClick={() => setInspectedAchievement(null)}
+        >
+          <div
+            className="terminal-card"
+            style={{
+              maxWidth: '460px',
+              width: '100%',
+              background: '#090b10',
+              border: '1px solid #1c2438',
+              borderRadius: '16px',
+              padding: '24px',
+              boxSizing: 'border-box',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '24px' }}>{inspectedAchievement.icon}</span>
+                <div>
+                  <h3 style={{ color: '#00ff88', margin: 0, fontSize: '15px', fontFamily: 'var(--font-geist-mono), monospace' }}>
+                    {inspectedAchievement.name}
+                  </h3>
+                  <span style={{ fontSize: '9px', color: '#889' }}>
+                    {inspectedAchievement.rarity.toUpperCase()} PROVN CREDENTIAL
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setInspectedAchievement(null)}
+                style={{ background: 'none', border: 'none', color: '#667', fontSize: '18px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ color: '#ccc', fontSize: '12px', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+              {inspectedAchievement.description}
+            </p>
+
+            <div
+              style={{
+                background: '#06070a',
+                border: '1px solid #141824',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px',
+                fontSize: '11px',
+                fontFamily: 'var(--font-geist-mono), monospace',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: '#666' }}>Status:</span>
+                <span style={{ color: inspectedAchievement.earned ? '#00ff88' : '#ffb800', fontWeight: 700 }}>
+                  {inspectedAchievement.earned ? '✓ UNLOCKED & VERIFIED' : 'CRITERIA NOT MET'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: '#666' }}>Criteria:</span>
+                <span style={{ color: '#aaa' }}>{inspectedAchievement.criteria}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#666' }}>cNFT Mint Status:</span>
+                <span style={{ color: '#00e5ff' }}>
+                  {inspectedAchievement.earned ? 'Eligible (Deferred to Grant Phase)' : 'Ineligible'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setInspectedAchievement(null)}
+              className="btn-primary"
+              style={{ width: '100%', padding: '10px', fontSize: '12px' }}
+            >
+              Close Inspector
+            </button>
           </div>
         </div>
       )}
