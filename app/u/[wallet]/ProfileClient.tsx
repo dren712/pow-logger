@@ -27,7 +27,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [isProofPacketOpen, setIsProofPacketOpen] = useState(false)
   const [isQROpen, setIsQROpen] = useState(false)
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false)
-  const [showVerificationInfo, setShowVerificationInfo] = useState(false)
   const [inspectedAchievement, setInspectedAchievement] = useState<Achievement | null>(null)
   const [activeTheme, setActiveTheme] = useState<CardTheme>(CARD_THEMES.steel)
   const [copied, setCopied] = useState(false)
@@ -107,170 +106,138 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   return (
     <main
       style={{
-        width: 'min(840px, 94vw)',
+        width: 'min(820px, 94vw)',
         margin: '0 auto',
         padding: '32px 16px 100px 16px',
+        fontFamily: 'var(--font-geist-mono), monospace',
         boxSizing: 'border-box',
       }}
     >
-      {/* Top Navigation & Streamlined Action Hierarchy */}
+      {/* Top Header */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '24px',
-          flexWrap: 'wrap',
-          gap: '12px',
+          marginBottom: '20px',
         }}
       >
         <Link
           href="/"
           style={{
-            color: 'var(--text-muted)',
+            color: '#666',
             textDecoration: 'none',
             fontSize: '12px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            fontWeight: 500,
           }}
         >
           ← Back to Terminal
         </Link>
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button
-            onClick={handleCopyLink}
-            className="btn-primary"
-            style={{
-              padding: '7px 14px',
-              fontSize: '12px',
-            }}
-          >
-            {copied ? '✓ Link Copied' : '🔗 Share Passport'}
-          </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setIsProofPacketOpen(true)}
-            className="btn-secondary"
-            style={{ padding: '7px 12px', fontSize: '11px', color: '#00e5ff', borderColor: 'rgba(0, 229, 255, 0.3)' }}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #00ff88',
+              color: '#00ff88',
+              fontWeight: 700,
+            }}
           >
             📦 Proof Packet
           </button>
           <button
-            onClick={() => setIsExportOpen(true)}
-            className="btn-secondary"
-            style={{ padding: '7px 12px', fontSize: '11px' }}
+            onClick={() => setIsCustomizerOpen(true)}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: `1px solid ${activeTheme.borderTone}`,
+              color: activeTheme.accentTone,
+            }}
           >
-            📥 Export
+            🎨 Metal Studio ({activeTheme.name})
           </button>
           <button
             onClick={() => setIsQROpen(true)}
-            className="btn-secondary"
-            style={{ padding: '7px 12px', fontSize: '11px' }}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+              color: '#00ff88',
+            }}
           >
-            📱 QR
+            📱 QR Code
           </button>
           <button
-            onClick={() => setIsCustomizerOpen(true)}
-            className="btn-secondary"
-            style={{ padding: '7px 12px', fontSize: '11px' }}
+            onClick={() => setIsExportOpen(true)}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+              color: '#00e5ff',
+            }}
           >
-            🎨 Metal Studio
+            📥 Export All
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+              color: copied ? '#00ff88' : '#aaa',
+            }}
+          >
+            {copied ? '✓ Copied' : '🔗 Share'}
           </button>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing || isPending}
-            className="btn-secondary"
-            style={{ padding: '7px 12px', fontSize: '11px' }}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+            }}
           >
-            {isRefreshing ? '↻' : '↻ Refresh'}
+            {isRefreshing ? '↻ Syncing...' : '↻ Refresh'}
           </button>
         </div>
       </div>
 
-      {/* Layer 1: Identity Bar */}
-      <div
-        className="terminal-card"
-        style={{
-          padding: '16px 20px',
-          marginBottom: '20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div>
-          <div style={{ fontSize: '10px', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-            Solana Builder Identity
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-            {walletShort}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontSize: '11px',
-              fontWeight: 700,
-              background: 'rgba(0, 255, 136, 0.08)',
-              border: '1px solid rgba(0, 255, 136, 0.3)',
-              color: '#00ff88',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-            }}
-          >
-            ✓ Cryptographically Verified
-          </span>
-          <button
-            type="button"
-            onClick={() => setShowVerificationInfo(true)}
-            style={{
-              background: 'none',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '50%',
-              width: '20px',
-              height: '20px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-muted)',
-              fontSize: '11px',
-              cursor: 'pointer',
-            }}
-            title="What does verified mean?"
-          >
-            ⓘ
-          </button>
-        </div>
-      </div>
-
-      {/* Historical Context Notice (Calm Informational Style) */}
+      {/* Legacy Context Banner (if applicable) */}
       {reputation.legacyRecords > 0 && (
         <div
           style={{
-            background: 'rgba(255, 184, 0, 0.05)',
-            border: '1px solid rgba(255, 184, 0, 0.2)',
+            background: 'rgba(255, 184, 0, 0.06)',
+            border: '1px solid rgba(255, 184, 0, 0.25)',
             padding: '12px 16px',
             borderRadius: '8px',
             marginBottom: '20px',
             fontSize: '11px',
-            color: 'var(--accent-achievement)',
+            color: '#ffb800',
             lineHeight: '1.45',
           }}
         >
-          ℹ️ <strong>Historical Migration:</strong> {reputation.legacyRecords} record{reputation.legacyRecords === 1 ? '' : 's'} predate PROVN&apos;s v1.0 signing protocol. They remain visible for continuity but do not contribute to verified reputation metrics or streaks.
+          <strong>ℹ️ Historical Context:</strong> This wallet contains <strong>{reputation.legacyRecords} legacy record{reputation.legacyRecords === 1 ? '' : 's'}</strong> logged prior to PROVN protocol v1.0 signing standards. To preserve cryptographic integrity, legacy records remain visible in your timeline below but do not contribute to verified reputation metrics or daily streak calculations.
         </div>
       )}
 
-      {/* Hero Metallic Passport Card (Tangible Builder Artifact) */}
-      <div style={{ marginBottom: '24px' }}>
+      {/* Metallic Builder Passport Hero Card */}
+      <div style={{ marginBottom: '32px' }}>
         <PassportCard
           reputation={reputation}
           theme={activeTheme}
@@ -279,305 +246,66 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         />
       </div>
 
-      {/* Layer 2: 3-Signal Primary Reputation Summary */}
+      {/* Evidence-First Reputation Stats Grid */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
           gap: '12px',
-          marginBottom: '20px',
+          marginBottom: '24px',
         }}
       >
-        <div className="terminal-card" style={{ padding: '16px' }}>
-          <div style={{ color: 'var(--text-faint)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-            Verified Proofs
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Verified Proofs</div>
+          <div style={{ color: '#00ff88', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            ⚡ {reputation.verifiedProofs}
           </div>
-          <div style={{ color: '#00ff88', fontSize: '24px', fontWeight: 800, marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
-            {reputation.verifiedProofs}
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>100% Ed25519 Signed</div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>30-Day Activity</div>
+          <div style={{ color: '#00e5ff', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            📊 {reputation.recentVerifiedProofs}
           </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>
-            100% Ed25519 Signed
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>Recent Verified Proofs</div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>GitHub Evidence</div>
+          <div style={{ color: '#ab9ff2', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            🐙 {reputation.proofsWithGithubEvidence}
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>Self-Attested PRs</div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave Archival</div>
+          <div style={{ color: '#27c93f', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            📦 {reputation.archivalSuccessRate}%
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
+            {reputation.archivedVerifiedProofs} Confirmed L1 TXs
           </div>
         </div>
 
-        <div className="terminal-card" style={{ padding: '16px' }}>
-          <div style={{ color: 'var(--text-faint)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-            Recent Activity
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Active Streak</div>
+          <div style={{ color: '#ffb800', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            🔥 {reputation.currentStreak}d
           </div>
-          <div style={{ color: '#00e5ff', fontSize: '24px', fontWeight: 800, marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
-            {reputation.recentVerifiedProofs}
-          </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>
-            In last 30 days
-          </div>
-        </div>
-
-        <div className="terminal-card" style={{ padding: '16px' }}>
-          <div style={{ color: 'var(--text-faint)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-            Evidence Coverage
-          </div>
-          <div style={{ color: '#ab9ff2', fontSize: '24px', fontWeight: 800, marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
-            {reputation.proofsWithGithubEvidence} / {reputation.verifiedProofs}
-          </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>
-            With GitHub PR / Commit links
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
+            Longest: {reputation.longestStreak}d
           </div>
         </div>
       </div>
 
-      {/* Secondary Metrics Strip */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
-          padding: '12px 16px',
-          background: 'var(--bg-subtle)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '8px',
-          marginBottom: '28px',
-          fontSize: '11px',
-          color: 'var(--text-muted)',
-        }}
-      >
-        <div>
-          <span>Arweave Storage: </span>
-          <strong style={{ color: '#ffffff' }}>{reputation.archivedVerifiedProofs} archived ({reputation.archivalSuccessRate}%)</strong>
-        </div>
-        <div>
-          <span>Building Streak: </span>
-          <strong style={{ color: '#ffb800' }}>🔥 {reputation.currentStreak}d (Best: {reputation.longestStreak}d)</strong>
-        </div>
-        <div>
-          <span>Builder Level: </span>
-          <strong style={{ color: reputation.builderLevel.color }}>{reputation.builderLevel.emoji} {reputation.builderLevel.title}</strong>
-        </div>
-      </div>
-
-      {/* Heatmap Activity Section */}
-      <div style={{ marginBottom: '28px' }}>
+      {/* Heatmap Section */}
+      <div style={{ marginBottom: '24px' }}>
         <ContributionHeatmap logs={logs} />
       </div>
 
-      {/* Skills & Protocol Distribution */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '16px',
-          marginBottom: '28px',
-        }}
-      >
-        <div className="terminal-card" style={{ padding: '16px' }}>
-          <h3 style={{ color: '#00ff88', fontSize: '12px', margin: '0 0 12px 0', fontWeight: 700, textTransform: 'uppercase' }}>
-            Verified Skills Frequency
-          </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {reputation.skills.length > 0 ? (
-              reputation.skills.map((s) => (
-                <button
-                  key={s.name}
-                  onClick={() => setSelectedSkill(selectedSkill === s.name ? 'ALL' : s.name)}
-                  style={{
-                    background: selectedSkill === s.name ? 'rgba(0, 255, 136, 0.15)' : 'var(--bg-base)',
-                    border: selectedSkill === s.name ? '1px solid #00ff88' : '1px solid var(--border-subtle)',
-                    color: selectedSkill === s.name ? '#00ff88' : 'var(--text-main)',
-                    fontSize: '11px',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  #{s.name} <strong style={{ color: '#00ff88' }}>({s.count})</strong>
-                </button>
-              ))
-            ) : (
-              <span style={{ color: 'var(--text-faint)', fontSize: '11px' }}>No skills classified yet</span>
-            )}
-          </div>
-        </div>
-
-        <div className="terminal-card" style={{ padding: '16px' }}>
-          <h3 style={{ color: '#00e5ff', fontSize: '12px', margin: '0 0 12px 0', fontWeight: 700, textTransform: 'uppercase' }}>
-            Protocols & Ecosystem Stack
-          </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {reputation.protocols.length > 0 ? (
-              reputation.protocols.map((p) => (
-                <button
-                  key={p.name}
-                  onClick={() => setSelectedProtocol(selectedProtocol === p.name ? 'ALL' : p.name)}
-                  style={{
-                    background: selectedProtocol === p.name ? 'rgba(0, 229, 255, 0.15)' : 'var(--bg-base)',
-                    border: selectedProtocol === p.name ? '1px solid #00e5ff' : '1px solid var(--border-subtle)',
-                    color: selectedProtocol === p.name ? '#00e5ff' : '#00e5ff',
-                    fontSize: '11px',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  ⚡ {p.name} <strong style={{ color: '#ffb800' }}>({p.count})</strong>
-                </button>
-              ))
-            ) : (
-              <span style={{ color: 'var(--text-faint)', fontSize: '11px' }}>No protocols classified yet</span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Filter & Search Bar */}
-      <div
-        className="terminal-card"
-        style={{
-          padding: '16px',
-          marginBottom: '20px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '12px',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '8px', flex: '1 1 240px', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Search proof descriptions or categories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'var(--bg-base)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              color: '#ffffff',
-              fontSize: '12px',
-              outline: 'none',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {(selectedCategory !== 'ALL' || selectedSkill !== 'ALL' || selectedProtocol !== 'ALL') && (
-            <button
-              onClick={() => {
-                setSelectedCategory('ALL')
-                setSelectedSkill('ALL')
-                setSelectedProtocol('ALL')
-              }}
-              style={{
-                background: 'rgba(255, 68, 68, 0.1)',
-                border: '1px solid #ff4444',
-                color: '#ff4444',
-                padding: '6px 10px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                cursor: 'pointer',
-              }}
-            >
-              ✕ Reset Filters
-            </button>
-          )}
-
-          <div style={{ fontSize: '11px', color: 'var(--text-faint)' }}>
-            Showing <strong>{filteredLogs.length}</strong> of {logs.length}
-          </div>
-        </div>
-      </div>
-
-      {/* Layer 3: History & Proof Timeline */}
-      <div style={{ display: 'grid', gap: '12px', marginBottom: '36px' }}>
-        {filteredLogs.length === 0 ? (
-          <div
-            className="terminal-card"
-            style={{
-              padding: '40px 20px',
-              textAlign: 'center',
-              color: 'var(--text-faint)',
-            }}
-          >
-            <p style={{ margin: '0 0 10px 0', fontSize: '14px' }}>No proof logs matched the selected filters.</p>
-            <Link href="/" className="btn-primary" style={{ fontSize: '11px', padding: '6px 14px' }}>
-              + Log New Proof
-            </Link>
-          </div>
-        ) : (
-          filteredLogs.map((log) => (
-            <div
-              key={log.id}
-              className="terminal-card"
-              style={{
-                padding: '18px 20px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '11px' }}>
-                <span style={{ color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                  Proof #{log.id} • {new Date(log.created_at).toLocaleDateString()}
-                </span>
-                <span
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    background: log.nonce ? 'rgba(0, 255, 136, 0.08)' : 'rgba(255, 184, 0, 0.08)',
-                    border: log.nonce ? '1px solid rgba(0, 255, 136, 0.25)' : '1px solid rgba(255, 184, 0, 0.25)',
-                    color: log.nonce ? '#00ff88' : '#ffb800',
-                  }}
-                >
-                  {log.nonce ? '✓ ED25519 VERIFIED' : 'HISTORICAL RECORD'}
-                </span>
-              </div>
-
-              <p style={{ color: '#ffffff', fontSize: '14px', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-                {log.content}
-              </p>
-
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '11px', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
-                <Link href={`/proof/${log.id}`} style={{ color: '#00ff88', textDecoration: 'none', fontWeight: 600 }}>
-                  Inspect Record ↗
-                </Link>
-                {log.github_url && (
-                  <a
-                    href={log.github_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: '#ab9ff2', textDecoration: 'none' }}
-                  >
-                    🐙 GitHub Evidence ↗
-                  </a>
-                )}
-                {log.evidence_url && (
-                  <a
-                    href={log.evidence_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: '#00e5ff', textDecoration: 'none' }}
-                  >
-                    🔗 Live Demo ↗
-                  </a>
-                )}
-                {log.irys_tx_id && !log.irys_tx_id.startsWith('powl_') && (
-                  <a
-                    href={`https://gateway.irys.xyz/${log.irys_tx_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: '#ffb800', textDecoration: 'none' }}
-                  >
-                    📦 Arweave TX ↗
-                  </a>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Layer 4: Milestone Credentials (Objective Activity Demoted Below Evidence) */}
+      {/* Off-Chain Proven Achievements Grid */}
       <div
         className="terminal-card"
         style={{
@@ -596,11 +324,11 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           }}
         >
           <div>
-            <h2 style={{ color: '#ffffff', fontSize: '14px', margin: 0, fontWeight: 700 }}>
-              Builder Milestones & Credentials
+            <h2 style={{ color: '#00ff88', fontSize: '14px', margin: 0, fontWeight: 800 }}>
+              🏆 Proven Builder Achievements
             </h2>
-            <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>
-              Deterministic milestones verified from your Ed25519 work history.
+            <div style={{ color: '#666', fontSize: '10px', marginTop: '2px' }}>
+              Deterministic milestones verified from your Ed25519 work log history.
             </div>
           </div>
 
@@ -609,13 +337,15 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             <button
               onClick={() => setAchievementFilter('all')}
               style={{
-                background: achievementFilter === 'all' ? 'rgba(0, 255, 136, 0.12)' : 'var(--bg-base)',
-                border: achievementFilter === 'all' ? '1px solid #00ff88' : '1px solid var(--border-subtle)',
-                color: achievementFilter === 'all' ? '#00ff88' : 'var(--text-muted)',
+                background: achievementFilter === 'all' ? 'rgba(0, 255, 136, 0.15)' : '#0d111a',
+                border: achievementFilter === 'all' ? '1px solid #00ff88' : '1px solid #1a2030',
+                color: achievementFilter === 'all' ? '#00ff88' : '#889',
                 padding: '4px 10px',
                 borderRadius: '6px',
                 fontSize: '11px',
+                fontFamily: 'inherit',
                 cursor: 'pointer',
+                fontWeight: achievementFilter === 'all' ? 700 : 400,
               }}
             >
               All ({reputation.achievements.length})
@@ -623,13 +353,15 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             <button
               onClick={() => setAchievementFilter('unlocked')}
               style={{
-                background: achievementFilter === 'unlocked' ? 'rgba(0, 255, 136, 0.12)' : 'var(--bg-base)',
-                border: achievementFilter === 'unlocked' ? '1px solid #00ff88' : '1px solid var(--border-subtle)',
-                color: achievementFilter === 'unlocked' ? '#00ff88' : 'var(--text-muted)',
+                background: achievementFilter === 'unlocked' ? 'rgba(0, 255, 136, 0.15)' : '#0d111a',
+                border: achievementFilter === 'unlocked' ? '1px solid #00ff88' : '1px solid #1a2030',
+                color: achievementFilter === 'unlocked' ? '#00ff88' : '#889',
                 padding: '4px 10px',
                 borderRadius: '6px',
                 fontSize: '11px',
+                fontFamily: 'inherit',
                 cursor: 'pointer',
+                fontWeight: achievementFilter === 'unlocked' ? 700 : 400,
               }}
             >
               ✓ Unlocked ({reputation.achievements.filter((a) => a.earned).length})
@@ -637,13 +369,15 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             <button
               onClick={() => setAchievementFilter('locked')}
               style={{
-                background: achievementFilter === 'locked' ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-base)',
-                border: achievementFilter === 'locked' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-subtle)',
-                color: achievementFilter === 'locked' ? '#ffffff' : 'var(--text-muted)',
+                background: achievementFilter === 'locked' ? 'rgba(255, 255, 255, 0.1)' : '#0d111a',
+                border: achievementFilter === 'locked' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #1a2030',
+                color: achievementFilter === 'locked' ? '#f0f4fc' : '#889',
                 padding: '4px 10px',
                 borderRadius: '6px',
                 fontSize: '11px',
+                fontFamily: 'inherit',
                 cursor: 'pointer',
+                fontWeight: achievementFilter === 'locked' ? 700 : 400,
               }}
             >
               🔒 Locked ({reputation.achievements.filter((a) => !a.earned).length})
@@ -655,7 +389,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: '12px',
+            gap: '16px',
           }}
         >
           {reputation.achievements
@@ -676,58 +410,254 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         </div>
       </div>
 
-      {/* Verification Info Modal */}
-      {showVerificationInfo && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 200,
-            padding: '16px',
-          }}
-          onClick={() => setShowVerificationInfo(false)}
-        >
-          <div
-            className="terminal-card"
-            style={{
-              maxWidth: '480px',
-              width: '100%',
-              padding: '24px',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h3 style={{ margin: 0, color: '#00ff88', fontSize: '15px', fontWeight: 800 }}>
-                What PROVN Verifies
-              </h3>
-              <button
-                onClick={() => setShowVerificationInfo(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: '18px', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-            <p style={{ color: 'var(--text-main)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 14px 0' }}>
-              PROVN verifies that the displayed Solana private key authored and signed the exact canonical proof statement with TweetNaCl Ed25519, within an anti-replay time window.
-            </p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.5, margin: '0 0 20px 0' }}>
-              PROVN does not independently evaluate code quality, commercial utility, or external truth of the builder&apos;s statement.
-            </p>
-            <button
-              onClick={() => setShowVerificationInfo(false)}
-              className="btn-primary"
-              style={{ width: '100%', padding: '10px', fontSize: '12px' }}
-            >
-              Understood
-            </button>
+      {/* Skills & Protocol Distribution */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '16px',
+          marginBottom: '24px',
+        }}
+      >
+        <div className="terminal-card" style={{ padding: '16px' }}>
+          <h3 style={{ color: '#00ff88', fontSize: '12px', margin: '0 0 12px 0', fontWeight: 700 }}>
+            ⚡ Verified Skills Frequency
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {reputation.skills.length > 0 ? (
+              reputation.skills.map((s) => (
+                <button
+                  key={s.name}
+                  onClick={() => setSelectedSkill(selectedSkill === s.name ? 'ALL' : s.name)}
+                  style={{
+                    background: selectedSkill === s.name ? 'rgba(0, 255, 136, 0.15)' : '#0d111a',
+                    border: selectedSkill === s.name ? '1px solid #00ff88' : '1px solid #1a2030',
+                    color: selectedSkill === s.name ? '#00ff88' : '#ab9ff2',
+                    fontSize: '11px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  #{s.name} <strong style={{ color: '#00ff88' }}>({s.count})</strong>
+                </button>
+              ))
+            ) : (
+              <span style={{ color: '#555', fontSize: '11px' }}>No skills classified yet</span>
+            )}
           </div>
         </div>
-      )}
+
+        <div className="terminal-card" style={{ padding: '16px' }}>
+          <h3 style={{ color: '#00e5ff', fontSize: '12px', margin: '0 0 12px 0', fontWeight: 700 }}>
+            🌐 Protocols & Ecosystem Stack
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {reputation.protocols.length > 0 ? (
+              reputation.protocols.map((p) => (
+                <button
+                  key={p.name}
+                  onClick={() => setSelectedProtocol(selectedProtocol === p.name ? 'ALL' : p.name)}
+                  style={{
+                    background: selectedProtocol === p.name ? 'rgba(0, 229, 255, 0.15)' : '#0d111a',
+                    border: selectedProtocol === p.name ? '1px solid #00e5ff' : '1px solid #1a2030',
+                    color: selectedProtocol === p.name ? '#00e5ff' : '#00e5ff',
+                    fontSize: '11px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  ⚡ {p.name} <strong style={{ color: '#ffb800' }}>({p.count})</strong>
+                </button>
+              ))
+            ) : (
+              <span style={{ color: '#555', fontSize: '11px' }}>No protocols classified yet</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div
+        className="glass-card"
+        style={{
+          padding: '16px',
+          marginBottom: '20px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search proof logs..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            background: '#060709',
+            border: '1px solid #1c2230',
+            borderRadius: '6px',
+            color: '#00ff88',
+            padding: '8px 12px',
+            fontSize: '12px',
+            fontFamily: 'inherit',
+            flex: '1',
+            minWidth: '200px',
+          }}
+        />
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{
+              background: '#060709',
+              border: '1px solid #1c2230',
+              borderRadius: '6px',
+              color: '#aaa',
+              padding: '8px 10px',
+              fontSize: '11px',
+              fontFamily: 'inherit',
+            }}
+          >
+            <option value="ALL">All Categories</option>
+            {reputation.categories.map((c) => (
+              <option key={c.name} value={c.name}>
+                {c.name} ({c.count})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Proof Timeline */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ color: '#aaa', fontSize: '13px', margin: 0, fontWeight: 700 }}>
+            Verifiable Proof Timeline ({filteredLogs.length})
+          </h2>
+          <span style={{ color: '#555', fontSize: '11px' }}>Sorted chronologically (newest first)</span>
+        </div>
+
+        {filteredLogs.length === 0 ? (
+          <div
+            className="glass-card"
+            style={{
+              padding: '32px',
+              textAlign: 'center',
+              color: '#666',
+              fontSize: '12px',
+            }}
+          >
+            No proofs match your active filters.
+          </div>
+        ) : (
+          filteredLogs.map((log) => (
+            <div
+              key={log.id}
+              className="terminal-card"
+              style={{
+                padding: '16px',
+                borderLeft: '3px solid #00ff88',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: '8px',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link
+                    href={`/proof/${log.id}`}
+                    style={{
+                      color: '#00ff88',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Proof #{log.id} ↗
+                  </Link>
+                  {log.category && (
+                    <span
+                      style={{
+                        background: '#0d111a',
+                        border: '1px solid #1a2030',
+                        color: '#889',
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {log.category}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ color: '#555', fontSize: '11px' }}>
+                  {new Date(log.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+                </div>
+              </div>
+
+              <p
+                style={{
+                  color: '#ddd',
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                  margin: '0 0 12px 0',
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {log.content}
+              </p>
+
+              {/* Evidence & Links */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '11px' }}>
+                {log.github_url && (
+                  <a
+                    href={log.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#ab9ff2', textDecoration: 'none' }}
+                  >
+                    🐙 GitHub Evidence ↗
+                  </a>
+                )}
+                {log.evidence_url && (
+                  <a
+                    href={log.evidence_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#00e5ff', textDecoration: 'none' }}
+                  >
+                    🔗 Live Demo / Evidence ↗
+                  </a>
+                )}
+                {log.irys_tx_id && (
+                  <a
+                    href={`https://gateway.irys.xyz/${log.irys_tx_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#ffb800', textDecoration: 'none' }}
+                  >
+                    📦 Arweave TX ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       {/* Export Modal */}
       {isExportOpen && (
@@ -754,8 +684,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.8)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -770,15 +699,16 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
               maxWidth: '360px',
               width: '100%',
               padding: '24px',
+              background: '#0a0d14',
               textAlign: 'center',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ color: '#00ff88', margin: 0, fontSize: '14px', fontWeight: 700 }}>Mobile Verification QR</h3>
+              <h3 style={{ color: '#00ff88', margin: 0, fontSize: '14px' }}>📱 Mobile Verification QR</h3>
               <button
                 onClick={() => setIsQROpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
               >
                 ✕
               </button>
@@ -787,7 +717,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             <div
               style={{
                 background: '#060709',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid #1c2230',
                 padding: '16px',
                 borderRadius: '12px',
                 display: 'inline-block',
@@ -804,10 +734,10 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
               />
             </div>
 
-            <p style={{ color: 'var(--text-muted)', fontSize: '11px', margin: '0 0 12px 0' }}>
+            <p style={{ color: '#888', fontSize: '11px', margin: '0 0 12px 0' }}>
               Scan to verify builder identity on mobile or in-person hackathons.
             </p>
-            <code style={{ color: '#ffb800', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>{walletShort}</code>
+            <code style={{ color: '#ffb800', fontSize: '10px' }}>{walletShort}</code>
           </div>
         </div>
       )}
@@ -843,6 +773,9 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             style={{
               maxWidth: '460px',
               width: '100%',
+              background: '#090b10',
+              border: '1px solid #1c2438',
+              borderRadius: '16px',
               padding: '24px',
               boxSizing: 'border-box',
             }}
@@ -852,45 +785,52 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '24px' }}>{inspectedAchievement.icon}</span>
                 <div>
-                  <h3 style={{ color: '#00ff88', margin: 0, fontSize: '15px', fontWeight: 700 }}>
+                  <h3 style={{ color: '#00ff88', margin: 0, fontSize: '15px', fontFamily: 'var(--font-geist-mono), monospace' }}>
                     {inspectedAchievement.name}
                   </h3>
-                  <span style={{ fontSize: '10px', color: 'var(--text-faint)', textTransform: 'uppercase' }}>
-                    {inspectedAchievement.rarity} Milestone
+                  <span style={{ fontSize: '9px', color: '#889' }}>
+                    {inspectedAchievement.rarity.toUpperCase()} PROVN CREDENTIAL
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => setInspectedAchievement(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: '18px', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: '#667', fontSize: '18px', cursor: 'pointer' }}
               >
                 ✕
               </button>
             </div>
 
-            <p style={{ color: 'var(--text-main)', fontSize: '12px', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+            <p style={{ color: '#ccc', fontSize: '12px', lineHeight: '1.5', margin: '0 0 16px 0' }}>
               {inspectedAchievement.description}
             </p>
 
             <div
               style={{
-                background: 'var(--bg-base)',
-                border: '1px solid var(--border-subtle)',
+                background: '#06070a',
+                border: '1px solid #141824',
                 borderRadius: '8px',
                 padding: '12px',
                 marginBottom: '16px',
                 fontSize: '11px',
+                fontFamily: 'var(--font-geist-mono), monospace',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-faint)' }}>Status:</span>
+                <span style={{ color: '#666' }}>Status:</span>
                 <span style={{ color: inspectedAchievement.earned ? '#00ff88' : '#ffb800', fontWeight: 700 }}>
                   {inspectedAchievement.earned ? '✓ UNLOCKED & VERIFIED' : 'CRITERIA NOT MET'}
                 </span>
               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: '#666' }}>Criteria:</span>
+                <span style={{ color: '#aaa' }}>{inspectedAchievement.criteria}</span>
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-faint)' }}>Criteria:</span>
-                <span style={{ color: 'var(--text-main)' }}>{inspectedAchievement.criteria}</span>
+                <span style={{ color: '#666' }}>cNFT Mint Status:</span>
+                <span style={{ color: '#00e5ff' }}>
+                  {inspectedAchievement.earned ? 'Eligible (Deferred to Grant Phase)' : 'Ineligible'}
+                </span>
               </div>
             </div>
 

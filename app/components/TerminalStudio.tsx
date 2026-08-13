@@ -8,7 +8,6 @@ export interface ProofTemplate {
   id: string
   label: string
   icon: string
-  desc: string
   placeholder: string
   defaultPrefix: string
 }
@@ -18,7 +17,6 @@ export const PROOF_TEMPLATES: ProofTemplate[] = [
     id: 'shipped',
     label: 'Shipped Code',
     icon: '🚀',
-    desc: 'Feature implementation or subsystem',
     placeholder: 'Shipped WebSocket real-time subscription feed for Solana DEX terminal...',
     defaultPrefix: 'Shipped ',
   },
@@ -26,7 +24,6 @@ export const PROOF_TEMPLATES: ProofTemplate[] = [
     id: 'bugfix',
     label: 'Bug Fix',
     icon: '🐛',
-    desc: 'Issue patch or vulnerability resolution',
     placeholder: 'Fixed signature replay edge case in Base58 nonce decoding pipeline...',
     defaultPrefix: 'Fixed ',
   },
@@ -34,7 +31,6 @@ export const PROOF_TEMPLATES: ProofTemplate[] = [
     id: 'rfc',
     label: 'Research / RFC',
     icon: '🔬',
-    desc: 'Technical specification or design doc',
     placeholder: 'Authored technical specification for Concurrent Merkle Tree off-chain indexing...',
     defaultPrefix: 'Research RFC: ',
   },
@@ -42,7 +38,6 @@ export const PROOF_TEMPLATES: ProofTemplate[] = [
     id: 'opensource',
     label: 'Open Source',
     icon: '🐙',
-    desc: 'Upstream pull request or library',
     placeholder: 'Contributed upstream pull request to @solana/web3.js improving Base58 parsing...',
     defaultPrefix: 'Open Source PR: ',
   },
@@ -50,15 +45,13 @@ export const PROOF_TEMPLATES: ProofTemplate[] = [
     id: 'release',
     label: 'Product Release',
     icon: '📦',
-    desc: 'Version delivery or production tag',
     placeholder: 'Released v1.2.0 production build with zero-latency export studio...',
     defaultPrefix: 'Released v',
   },
   {
     id: 'docs',
-    label: 'Documentation',
+    label: 'Docs / Community',
     icon: '🤝',
-    desc: 'Developer guide or API docs',
     placeholder: 'Published technical developer guide for PROVN SDK policy verification...',
     defaultPrefix: 'Docs: ',
   },
@@ -66,16 +59,14 @@ export const PROOF_TEMPLATES: ProofTemplate[] = [
     id: 'hackathon',
     label: 'Hackathon Work',
     icon: '🏆',
-    desc: 'Project submission or hackathon demo',
-    placeholder: 'Built decentralized evidence packet generator for Solana hackathon...',
+    placeholder: 'Built decentralized evidence packet generator for Solana ecosystem hackathon...',
     defaultPrefix: 'Hackathon: ',
   },
   {
     id: 'custom',
-    label: 'Custom Claim',
+    label: 'Custom',
     icon: '⚡',
-    desc: 'Freeform engineering attestation',
-    placeholder: 'Describe what you built or fixed in 1–2 clear sentences...',
+    placeholder: 'Describe your technical engineering contribution on Solana...',
     defaultPrefix: '',
   },
 ]
@@ -115,8 +106,6 @@ export default function TerminalStudio({
 }: TerminalStudioProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('custom')
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  const [showRawPayload, setShowRawPayload] = useState(false)
-  const [showEvidenceHelper, setShowEvidenceHelper] = useState(false)
 
   const liveClassification = log.trim() ? classifyLog(log.trim()) : null
   const charPercent = Math.min(100, Math.round((log.length / maxChars) * 100))
@@ -150,21 +139,17 @@ export default function TerminalStudio({
     onSubmitLog()
   }
 
-  const walletShort = walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : ''
-
   return (
     <section
-      id="create-proof"
+      id="log-terminal"
       className="terminal-card"
       style={{
-        padding: '24px 22px',
+        padding: '22px',
         marginBottom: '36px',
       }}
     >
       <div className="corner-accent corner-top-left" />
       <div className="corner-accent corner-top-right" />
-      <div className="corner-accent corner-bottom-left" />
-      <div className="corner-accent corner-bottom-right" />
 
       {/* Terminal Title Bar */}
       <div
@@ -172,43 +157,32 @@ export default function TerminalStudio({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '20px',
-          paddingBottom: '14px',
-          borderBottom: '1px solid var(--border-subtle)',
+          marginBottom: '16px',
+          paddingBottom: '12px',
+          borderBottom: '1px solid #161a24',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff5f56' }} />
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ffbd2e' }} />
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#27c93f' }} />
-          </div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
-              PROVN / EVIDENCE TERMINAL
-            </h2>
-            <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-              Create cryptographic proof record
-            </div>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }} />
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }} />
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }} />
+          <span style={{ color: '#888', fontSize: '11px', marginLeft: '8px' }}>PROVN_EVIDENCE_STUDIO_v1.0</span>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: connected ? '#00ff88' : 'var(--text-faint)', fontWeight: 600 }}>
-          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: connected ? '#00ff88' : '#555' }} />
-          <span>{connected ? '[READY TO ATTEST]' : '[WALLET REQUIRED]'}</span>
-        </div>
+        <div style={{ color: '#00ff88', fontSize: '11px' }}>[READY TO ATTEST]</div>
       </div>
 
-      {/* Contribution Category Cards Selector */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          What did you build?
+      {/* Proof Templates Selector */}
+      <div style={{ marginBottom: '14px' }}>
+        <div style={{ fontSize: '10px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Select Contribution Type:
         </div>
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-            gap: '8px',
+            display: 'flex',
+            gap: '6px',
+            overflowX: 'auto',
+            paddingBottom: '4px',
+            scrollbarWidth: 'none',
           }}
         >
           {PROOF_TEMPLATES.map((tmpl) => {
@@ -219,42 +193,35 @@ export default function TerminalStudio({
                 type="button"
                 onClick={() => handleSelectTemplate(tmpl)}
                 style={{
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  background: isActive ? 'rgba(0, 255, 136, 0.08)' : 'var(--bg-base)',
-                  border: isActive ? '1px solid #00ff88' : '1px solid var(--border-subtle)',
-                  color: isActive ? '#ffffff' : 'var(--text-muted)',
-                  textAlign: 'left',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  background: isActive ? 'rgba(0, 255, 136, 0.12)' : '#0a0d14',
+                  border: isActive ? '1px solid rgba(0, 255, 136, 0.5)' : '1px solid #1c2230',
+                  color: isActive ? '#00ff88' : '#888',
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '3px',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s ease',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '13px' }}>{tmpl.icon}</span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: isActive ? '#00ff88' : 'var(--text-main)' }}>
-                    {tmpl.label}
-                  </span>
-                </div>
-                <div style={{ fontSize: '10px', color: 'var(--text-faint)', lineHeight: 1.3 }}>
-                  {tmpl.desc}
-                </div>
+                <span>{tmpl.icon}</span>
+                <span>{tmpl.label}</span>
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Main Claim Text Input */}
-      <div style={{ marginBottom: '18px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
-          <label style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-            Describe the contribution
-          </label>
-          <span style={{ fontSize: '11px', color: log.length > maxChars ? 'var(--accent-danger)' : charPercent > 80 ? 'var(--accent-achievement)' : 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-            {log.length} / {maxChars}
+      {/* Log Input Area */}
+      <div style={{ marginBottom: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px', color: '#888' }}>
+          <span>Describe your work output...</span>
+          <span style={{ color: log.length > maxChars ? '#ff4444' : charPercent > 80 ? '#ffb800' : '#888' }}>
+            {log.length}/{maxChars}
           </span>
         </div>
         <textarea
@@ -262,39 +229,38 @@ export default function TerminalStudio({
           onChange={(e) => setLog(e.target.value)}
           placeholder={
             PROOF_TEMPLATES.find((t) => t.id === selectedTemplate)?.placeholder ||
-            'Describe what you built or fixed in 1–2 clear sentences...'
+            'e.g. Built TweetNaCl SIWS verification logic, deployed RLS security migration, tested Arweave archival...'
           }
           rows={3}
           style={{
             width: '100%',
-            background: 'var(--bg-base)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '8px',
-            color: '#ffffff',
-            padding: '12px 14px',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '14px',
+            background: '#060709',
+            border: '1px solid #1c2230',
+            borderRadius: '6px',
+            color: '#00ff88',
+            padding: '12px',
+            fontFamily: 'monospace',
+            fontSize: '13px',
             lineHeight: '1.5',
             resize: 'none',
             outline: 'none',
             boxSizing: 'border-box',
-            transition: 'border-color 0.15s ease',
           }}
         />
 
-        {/* Live Detected Heuristic Tags */}
+        {/* Live Auto-Classifier Tag Badge */}
         {liveClassification && (
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-faint)' }}>Detected from description:</span>
+            <span style={{ fontSize: '10px', color: '#555' }}>CLASSIFIED:</span>
             <span
               style={{
-                fontSize: '11px',
+                fontSize: '10px',
                 padding: '2px 8px',
                 borderRadius: '4px',
-                background: 'rgba(0,255,136,0.08)',
-                border: '1px solid rgba(0,255,136,0.25)',
+                background: 'rgba(0,255,136,0.1)',
+                border: '1px solid rgba(0,255,136,0.3)',
                 color: '#00ff88',
-                fontWeight: 600,
+                fontWeight: 700,
               }}
             >
               {liveClassification.category}
@@ -303,11 +269,11 @@ export default function TerminalStudio({
               <span
                 key={s}
                 style={{
-                  fontSize: '11px',
+                  fontSize: '10px',
                   padding: '2px 6px',
                   borderRadius: '4px',
-                  background: 'var(--bg-base)',
-                  border: '1px solid var(--border-subtle)',
+                  background: '#0d1117',
+                  border: '1px solid #1c2230',
                   color: '#00e5ff',
                 }}
               >
@@ -318,93 +284,69 @@ export default function TerminalStudio({
               <span
                 key={p}
                 style={{
-                  fontSize: '11px',
+                  fontSize: '10px',
                   padding: '2px 6px',
                   borderRadius: '4px',
-                  background: 'rgba(171, 159, 242, 0.08)',
-                  border: '1px solid rgba(171, 159, 242, 0.25)',
+                  background: 'rgba(171, 159, 242, 0.1)',
+                  border: '1px solid rgba(171, 159, 242, 0.3)',
                   color: '#ab9ff2',
                 }}
               >
                 ⚡ {p}
               </span>
             ))}
-            <span style={{ fontSize: '10px', color: 'var(--text-faint)', fontStyle: 'italic', marginLeft: 'auto' }}>
-              Heuristic tags · not independently verified
-            </span>
           </div>
         )}
       </div>
 
-      {/* Supporting Evidence Inputs */}
-      <div style={{ marginBottom: '18px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Supporting Evidence (Optional)
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowEvidenceHelper(!showEvidenceHelper)}
-            style={{ background: 'none', border: 'none', color: '#00e5ff', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}
-          >
-            {showEvidenceHelper ? 'Hide explanation' : 'Why add evidence?'}
-          </button>
+      {/* Optional Proof URLs Inputs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+        <div>
+          <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>
+            GitHub PR / Commit URL (Self-attested evidence)
+          </label>
+          <input
+            type="url"
+            value={githubUrl}
+            onChange={(e) => setGithubUrl(e.target.value)}
+            placeholder="https://github.com/org/repo/pull/1"
+            style={{
+              width: '100%',
+              background: '#060709',
+              border: '1px solid #1c2230',
+              borderRadius: '6px',
+              color: '#ab9ff2',
+              padding: '8px 12px',
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
         </div>
 
-        {showEvidenceHelper && (
-          <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', padding: '10px 12px', borderRadius: '6px', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.45 }}>
-            💡 <strong>Evidence Coverage:</strong> Attaching public GitHub PRs, commits, or demo URLs binds them into your canonical signed envelope. DAOs and grant committees filter for evidence-backed records.
-          </div>
-        )}
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
-          <div>
-            <label style={{ display: 'block', color: 'var(--text-faint)', fontSize: '11px', marginBottom: '4px' }}>
-              GitHub PR / Commit URL
-            </label>
-            <input
-              type="url"
-              value={githubUrl}
-              onChange={(e) => setGithubUrl(e.target.value)}
-              placeholder="https://github.com/org/repo/pull/1"
-              style={{
-                width: '100%',
-                background: 'var(--bg-base)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '6px',
-                color: '#ab9ff2',
-                padding: '8px 12px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', color: 'var(--text-faint)', fontSize: '11px', marginBottom: '4px' }}>
-              Live Demo / Evidence Link
-            </label>
-            <input
-              type="url"
-              value={evidenceUrl}
-              onChange={(e) => setEvidenceUrl(e.target.value)}
-              placeholder="https://my-app.vercel.app"
-              style={{
-                width: '100%',
-                background: 'var(--bg-base)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '6px',
-                color: '#00e5ff',
-                padding: '8px 12px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
+        <div>
+          <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>
+            Evidence / Demo URL (Optional HTTPS Link)
+          </label>
+          <input
+            type="url"
+            value={evidenceUrl}
+            onChange={(e) => setEvidenceUrl(e.target.value)}
+            placeholder="https://my-app.vercel.app"
+            style={{
+              width: '100%',
+              background: '#060709',
+              border: '1px solid #1c2230',
+              borderRadius: '6px',
+              color: '#00e5ff',
+              padding: '8px 12px',
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
         </div>
       </div>
 
@@ -418,10 +360,10 @@ export default function TerminalStudio({
             fontSize: '12px',
             background:
               statusStep === 'error'
-                ? 'rgba(255, 68, 68, 0.08)'
+                ? 'rgba(255, 68, 68, 0.1)'
                 : statusStep === 'success'
-                ? 'rgba(0, 255, 136, 0.08)'
-                : 'rgba(0, 229, 255, 0.08)',
+                ? 'rgba(0, 255, 136, 0.1)'
+                : 'rgba(0, 229, 255, 0.1)',
             border:
               statusStep === 'error'
                 ? '1px solid rgba(255, 68, 68, 0.3)'
@@ -430,7 +372,7 @@ export default function TerminalStudio({
                 : '1px solid rgba(0, 229, 255, 0.3)',
             color:
               statusStep === 'error'
-                ? 'var(--accent-danger)'
+                ? '#ff4444'
                 : statusStep === 'success'
                 ? '#00ff88'
                 : '#00e5ff',
@@ -440,42 +382,37 @@ export default function TerminalStudio({
         </div>
       )}
 
-      {/* Quota & Attestation Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', paddingTop: '8px' }}>
-        <div style={{ fontSize: '11px', color: isDailyLimitReached ? 'var(--accent-danger)' : 'var(--text-faint)' }}>
-          {isDailyLimitReached ? '🔒 Daily quota reached (3/3 today)' : '3 proofs per day quota · Free tier'}
-        </div>
+      {/* Review & Preview Button */}
+      <button
+        onClick={handleReviewAndSign}
+        disabled={loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars}
+        className="btn-primary"
+        style={{
+          width: '100%',
+          padding: '12px',
+          fontSize: '13px',
+          fontWeight: 800,
+          opacity: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 0.5 : 1,
+          cursor: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {loading
+          ? '⚡ Processing SIWS Cryptographic Signature...'
+          : isDailyLimitReached
+          ? '🔒 Daily Limit Reached (3/3 logs today)'
+          : !connected
+          ? '🔌 Connect Solana Wallet to Log Proof'
+          : '🔍 Review & Preview Signature →'}
+      </button>
 
-        <button
-          onClick={handleReviewAndSign}
-          disabled={loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars}
-          className="btn-primary"
-          style={{
-            padding: '10px 22px',
-            fontSize: '13px',
-            fontWeight: 700,
-            opacity: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 0.5 : 1,
-            cursor: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {loading
-            ? '⚡ Awaiting Wallet Signature...'
-            : isDailyLimitReached
-            ? 'Daily Quota Reached'
-            : !connected
-            ? 'Connect Wallet to Sign'
-            : 'Review & Sign Proof →'}
-        </button>
-      </div>
-
-      {/* Two-Layer Review → Sign Experience Modal */}
+      {/* Draft → Review → Sign Modal */}
       {isPreviewOpen && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 9999,
-            background: 'rgba(0,0,0,0.88)',
+            background: 'rgba(0,0,0,0.85)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -484,134 +421,105 @@ export default function TerminalStudio({
           }}
         >
           <div
-            className="terminal-card"
             style={{
-              maxWidth: '600px',
+              background: '#0c0e14',
+              border: '1px solid #1f293d',
+              borderRadius: '12px',
+              maxWidth: '640px',
               width: '100%',
               padding: '24px',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.9)',
-              color: 'var(--text-main)',
-              fontFamily: 'var(--font-sans)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.9)',
+              color: '#eee',
+              fontFamily: 'monospace',
             }}
           >
-            {/* Step Ceremony Indicator */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-faint)' }}>01 CLAIM</span>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#00ff88' }}>02 SIGN</span>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-faint)' }}>03 VERIFY</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #1c2230', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>🛡️</span>
+                <span style={{ fontWeight: 700, fontSize: '15px', color: '#00ff88' }}>Review Canonical Proof Statement</span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '18px' }}
+                style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '18px' }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>
-                Review Proof Statement
-              </h3>
-              <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
-                You are about to sign this statement using your connected Solana wallet.
-              </p>
-            </div>
-
-            {/* Layer 1: Human-Readable Summary */}
-            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '14px', marginBottom: '14px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: '4px', fontWeight: 600 }}>
-                Claim Statement
-              </div>
-              <div style={{ fontSize: '13px', color: '#ffffff', lineHeight: 1.5, marginBottom: '12px', fontWeight: 500 }}>
-                &ldquo;{log.trim()}&rdquo;
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', fontSize: '11px' }}>
-                <div>
-                  <span style={{ color: 'var(--text-faint)' }}>Signer: </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: '#00ff88' }}>{walletShort || 'Connected Wallet'}</span>
+            {/* Quality Breakdown */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                <div style={{ color: '#666' }}>SIGNER</div>
+                <div style={{ color: '#00ff88', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Connected Wallet'}
                 </div>
-                <div>
-                  <span style={{ color: 'var(--text-faint)' }}>Domain: </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: '#00e5ff' }}>{previewDomain}</span>
-                </div>
-                {githubUrl.trim() && (
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <span style={{ color: 'var(--text-faint)' }}>GitHub: </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: '#ab9ff2', wordBreak: 'break-all' }}>{githubUrl.trim()}</span>
-                  </div>
-                )}
+              </div>
+              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                <div style={{ color: '#666' }}>ALGORITHM</div>
+                <div style={{ color: '#00e5ff', fontWeight: 600 }}>Ed25519 Detached</div>
+              </div>
+              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                <div style={{ color: '#666' }}>STORAGE</div>
+                <div style={{ color: '#ab9ff2', fontWeight: 600 }}>Arweave via Irys</div>
               </div>
             </div>
 
-            {/* Layer 2: Expandable Raw Canonical Message */}
-            <div style={{ marginBottom: '16px' }}>
-              <button
-                type="button"
-                onClick={() => setShowRawPayload(!showRawPayload)}
+            {/* Canonical SIWS Message Box */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>
+                Exact Message Payload for Wallet Signature:
+              </div>
+              <pre
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#00e5ff',
+                  background: '#040507',
+                  border: '1px solid #161b26',
+                  borderRadius: '6px',
+                  padding: '12px',
                   fontSize: '11px',
-                  fontFamily: 'var(--font-mono)',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
+                  color: '#00ff88',
+                  lineHeight: '1.45',
+                  maxHeight: '160px',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
                 }}
               >
-                <span>{showRawPayload ? '▾ Hide' : '▸ View'} canonical protocol payload (SIWS)</span>
-              </button>
-
-              {showRawPayload && (
-                <pre
-                  style={{
-                    marginTop: '8px',
-                    background: 'var(--bg-base)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '6px',
-                    padding: '10px 12px',
-                    fontSize: '10px',
-                    color: '#00ff88',
-                    fontFamily: 'var(--font-mono)',
-                    lineHeight: '1.45',
-                    maxHeight: '120px',
-                    overflowY: 'auto',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-all',
-                  }}
-                >
-                  {previewMessage}
-                </pre>
-              )}
+                {previewMessage}
+              </pre>
             </div>
 
-            {/* Clear Attestation Disclaimer */}
+            {/* Clear Disclaimer */}
             <div
               style={{
-                background: 'rgba(255, 184, 0, 0.06)',
-                border: '1px solid rgba(255, 184, 0, 0.2)',
+                background: 'rgba(255, 184, 0, 0.08)',
+                border: '1px solid rgba(255, 184, 0, 0.3)',
                 padding: '10px 12px',
                 borderRadius: '6px',
                 fontSize: '11px',
-                color: 'var(--accent-achievement)',
+                color: '#ffb800',
                 marginBottom: '20px',
-                lineHeight: 1.4,
+                lineHeight: '1.4',
               }}
             >
-              ℹ️ <strong>Protocol Guarantee:</strong> Your Solana wallet is signing this tamper-evident proof statement. Your wallet is <em>not</em> signing your source code.
+              ℹ️ <strong>Attestation Guarantee:</strong> Your Solana wallet is signing this tamper-evident proof statement. Your wallet is <em>not</em> signing your source code.
             </div>
 
-            {/* Actions */}
+            {/* Modal Actions */}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(false)}
-                className="btn-secondary"
+                style={{
+                  background: '#161b26',
+                  border: '1px solid #283144',
+                  color: '#ccc',
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontFamily: 'monospace',
+                }}
               >
                 ← Edit Draft
               </button>
@@ -619,8 +527,14 @@ export default function TerminalStudio({
                 type="button"
                 onClick={handleConfirmSign}
                 className="btn-primary"
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
               >
-                Sign with Solana Wallet →
+                🗿 Sign With Wallet & Publish
               </button>
             </div>
           </div>
