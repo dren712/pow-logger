@@ -53,7 +53,20 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
             PROVN — Proof-of-Work Logger • Decentralized Builder Reputation Foundry
           </p>
         </div>
-        <WalletMultiButton />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <nav style={{ display: 'flex', gap: '12px', fontSize: '11px', fontFamily: 'var(--font-geist-mono), monospace' }}>
+            <a href="/docs/api" style={{ color: '#889', textDecoration: 'none', transition: 'color 0.15s' }}>
+              📖 API Docs
+            </a>
+            <a href="/demo/bounty" style={{ color: '#889', textDecoration: 'none', transition: 'color 0.15s' }}>
+              🎯 Bounty Demo
+            </a>
+            <a href="/admin/evidence" style={{ color: '#889', textDecoration: 'none', transition: 'color 0.15s' }}>
+              📊 Evidence
+            </a>
+          </nav>
+          <WalletMultiButton />
+        </div>
       </header>
 
       {/* Hero Presentation Card */}

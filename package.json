@@ -10,8 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsc --skipLibCheck tests/protocol.test.ts --module commonjs --target es2020 --moduleResolution node --esModuleInterop && node tests/protocol.test.js",
-    "posttest": "find app tests sdk -name '*.js' -delete 2>/dev/null || true"
+    "test": "npx tsc --skipLibCheck tests/protocol.test.ts --outDir .dist-test --module commonjs --target es2020 --moduleResolution node --esModuleInterop && node .dist-test/tests/protocol.test.js",
+    "posttest": "rm -rf .dist-test"
   },
   "dependencies": {
     "@irys/upload": "^0.0.15",

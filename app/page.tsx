@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
 import TelemetryBar from './components/TelemetryBar'
@@ -329,7 +330,13 @@ export default function LoggerApp() {
                       fontSize: '11px',
                     }}
                   >
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <Link
+                        href={`/proof/${l.id}`}
+                        style={{ color: '#00e5ff', textDecoration: 'none', fontWeight: 600, fontSize: '11px' }}
+                      >
+                        🔍 Proof #{l.id} ↗
+                      </Link>
                       {l.irys_tx_id ? (
                         <a
                           href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
@@ -337,7 +344,7 @@ export default function LoggerApp() {
                           rel="noreferrer"
                           style={{ color: '#00ff88', textDecoration: 'none', fontWeight: 600 }}
                         >
-                          🔗 Arweave Proof ↗
+                          🔗 Arweave ↗
                         </a>
                       ) : (
                         <button

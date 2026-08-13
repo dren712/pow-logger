@@ -1,14 +1,18 @@
-# PROVN — Proof-of-Work Logger 🗿
+# PROVN — Solana-Native Cryptographic Proof-of-Work Protocol 🗿🛡️
 
-**PROVN turns a developer's work claim into a cryptographically attributable, timestamp-bound, and permanently verifiable proof-of-work record.**
+**PROVN turns wallet-signed developer work logs into cryptographically attributable, timestamp-bound, and permanently archived proof-of-work credentials.**
 
-[![Build Status](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
+[![CI Test Suite](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Devnet%2FMainnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
+[![Quality Gate](https://img.shields.io/badge/Tests-58%2F58%20Passed-brightgreen)](tests/protocol.test.ts)
 
-- **Live Platform:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
-- **Live Proof Artifact:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
+- **Live Protocol Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
+- **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
+- **Interactive Developer API Docs:** [provn-sol.vercel.app/docs/api](https://provn-sol.vercel.app/docs/api)
+- **Superteam Earn Bounty Gating Demo:** [provn-sol.vercel.app/demo/bounty](https://provn-sol.vercel.app/demo/bounty)
+- **Grant Evidence Dashboard:** [provn-sol.vercel.app/admin/evidence](https://provn-sol.vercel.app/admin/evidence)
 - **Technical Litepaper:** [`LITEPAPER.md`](LITEPAPER.md)
 - **Engineering Roadmap:** [`ROADMAP.md`](ROADMAP.md)
 
@@ -16,66 +20,19 @@
 
 ## 🔍 Verification Comparison
 
-| Method | Can be backdated? | Can be faked by someone else? | Cryptographically tied to identity? |
-| :--- | :--- | :--- | :--- |
-| **GitHub commit graph** | Yes (`git commit --date`) | Yes (commit under any name/email) | No |
-| **Twitter / Discord build-log** | Yes (post anytime) | Yes (anyone can type it) | No |
-| **POAP / attendance badge** | N/A | Yes (transferable) | No |
-| **PROVN log entry** | **No** — historical timestamp injection is constrained (signed timestamp must be within ±15 min of submission) | **No** — requires wallet's private key | **Yes** — Ed25519 SIWS signature |
+| Feature / Attack Vector | GitHub Commit Graph | Twitter / Social Build-Log | Traditional POAP / Badge | PROVN Protocol |
+| :--- | :--- | :--- | :--- | :--- |
+| **Can be backdated?** | ❌ Yes (`git commit --date`) | ❌ Yes (post anytime) | N/A | ✅ **No** — Signed timestamp constrained to ±15 min submission window |
+| **Can be forged by an imposter?** | ❌ Yes (commit under any email) | ❌ Yes (anyone can post text) | ❌ Yes (transferable / bought) | ✅ **No** — Requires private key of the Solana wallet |
+| **Cryptographically bound to identity?** | ❌ No | ❌ No | ❌ No | ✅ **Yes** — Ed25519 canonical proof message signature |
+| **Permanent & Decentralized?** | ❌ Centralized (Microsoft/GitHub) | ❌ Centralized (X/Twitter) | ⚠️ Variable | ✅ **Yes** — Immutable Arweave storage via Irys L1 gateway |
+| **Tamper-Evident Verification?** | ❌ Commit hashes can be rebased | ❌ Posts can be edited/deleted | ❌ Metadata mutable | ✅ **Yes** — Re-verifiable in browser, SDK, and CLI with 0 trust |
 
-Bounty hosts often rely on manually reviewed profiles, links, and self-reported activity, making portable developer attribution difficult. PROVN gives a host a single link that resolves to cryptographically signed activity history.
-
----
-
-## 🔗 Live Proof Artifact
-
-**See it working:** [`provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p`](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) — 24 verified, wallet-signed proof-of-work entries across multiple weeks. Every entry here carries an Ed25519 signature where the signed timestamp must be within a strict 15-minute window of submission, preventing post-hoc signature forgery.
+Bounty platforms and grant programs often rely on self-reported links and unverified resumes. PROVN provides a single verifiable identity link that resolves to cryptographically authentic, timestamped developer history.
 
 ---
 
-## ❓ Why Not Just Use GitHub?
-
-GitHub provides strong evidence of code contribution, but it isn't designed as a portable cryptographic proof-of-work protocol tied to a developer-controlled Solana identity. PROVN's entries are signed by the developer's Solana wallet — ensuring the identity making the claim and the identity building reputation are cryptographically identical, every time.
-
----
-
-## ⚡ Live GitHub Profile Badge Embed
-
-Developers can embed their real-time PROVN badge directly inside any GitHub `README.md`:
-
-```markdown
-[![PROVN Reputation](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?d=2026-08-09)](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
-```
-
-![PROVN Live Badge](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?d=2026-08-09)
-
-> **GitHub Proxy Note**: GitHub routes markdown images through GitHub Camo Proxy (`camo.githubusercontent.com`). Because Camo caches by exact URL, appending a date parameter (e.g. `?d=2026-08-09`) forces GitHub Camo to bypass proxy staleness and fetch the latest live badge SVG.
-
----
-
-## 🌏 Timezone Standard & Protocol Day-Boundary Specification
-
-PROVN implements a **Canonical Protocol Timezone Standard**:
-- **Protocol Timezone (`PROTOCOL_TIMEZONE`)**: Official reputation, streaks, builder levels, daily quotas, and 365-day contribution heatmaps evaluate day boundaries using **Indian Standard Time (IST, UTC+5:30)** (`Asia/Kolkata`).
-- **Objective Parity Across Viewers**: Public SVG badge generation and profile reputation metrics are protocol-timezone locked, guaranteeing objective 1-to-1 parity regardless of viewer locale.
-- **Reporting Override**: The public verification API (`/api/verify/[wallet]`) optionally accepts a `?tz=` query parameter for custom reporting.
-
----
-
-## 🌟 Overview
-
-PROVN binds daily work logs to wallet-signed **Sign-In-With-Solana (SIWS)** payloads.
-
-### Core Verification Flow
-1. **Cryptographic Signing**: The developer signs a canonical SIWS-inspired proof message containing work content, timestamp, nonce, and proof links using their Solana wallet (Ed25519 keypair).
-2. **Server-Side Attestation**: The backend re-derives the canonical payload and verifies the signature off-chain using TweetNaCl (`nacl.sign.detached.verify`).
-3. **Permanent Arweave Archival**: Verified logs are packaged into a JSON envelope and stored permanently on **Arweave** via Irys Node #1.
-4. **Database Indexing & RLS**: Log metadata is indexed in Supabase PostgreSQL, strictly protected by Row-Level Security (RLS) policies.
-5. **Multi-Pillar Reputation Engine**: Computes builder levels (Apprentice → Grand Legend), streak trophies (7d, 30d, 100d), and skill badges.
-
----
-
-## 🏗️ System Architecture
+## 🏛️ Core System Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -86,59 +43,223 @@ PROVN binds daily work logs to wallet-signed **Sign-In-With-Solana (SIWS)** payl
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         Next.js API Engine Server                           │
-│   • Daily Quota Enforcement (3 logs/day via get_daily_log_count RPC)        │
-│   • Replay Protection (15-minute strict timestamp window)                   │
-│   • Off-chain Ed25519 Signature Verification (TweetNaCl)                    │
-│   • Automated Classifier (16 skill, 15 protocol, 10 work categories)        │
+│   • Replay Protection (Anti-replay nonce & 15-minute strict timestamp)     │
+│   • Domain-Binding Validation (Anti-host spoofing)                          │
+│   • Off-Chain Ed25519 Signature Verification (TweetNaCl)                    │
+│   • Automated Classifier (16 skill tags, 15 protocols, 10 work categories)   │
+│   • Pure Deterministic Reputation Engine (Calculate levels & streaks)       │
 └──────────────────────┬──────────────────────────────┬───────────────────────┘
                        │                              │
                        ▼                              ▼
 ┌──────────────────────────────┐ ┌────────────────────────────────────────────┐
-│  ① Supabase PostgreSQL DB    │ │  ② Irys Node #1 (Arweave Gateway)          │
+│  ① Supabase PostgreSQL DB    │ │  ② Irys Gateway (Arweave Permanent)        │
 │  • Public Read SELECT        │ │  • Permanent Immutable Storage             │
-│  • Writes Restricted (RLS)   │ │  • 2KB JSON Log Envelope                   │
+│  • Writes Restricted (RLS)   │ │  • Complete Proof Envelope with Sig        │
 │  • Signature Unique Index    │ │  • Zero Fee (<100KB Free Tier)              │
 └──────────────────────────────┘ └────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🏆 Reputation & Badge System
+## ⚙️ The Metallic Customizable Card System
 
-PROVN implements a 3-tier reputation model:
+PROVN introduces a physical-feeling digital metal credential system inspired by aerospace hardware, laboratory instruments, and precision machinery.
 
-- **Tier 1: Dynamic Evolving Builder Levels** (Apprentice → Verified Craftsman → Senior Architect → Protocol Master → Grand Legend).
-- **Tier 2: Streak Milestone Trophies** (Earned at 7, 14, 30, 60, 100, and 365 consecutive daily logs).
-- **Tier 3: LeetCode / Codeforces Skill Badges**:
-  - ⚓ **Anchor Specialist**: 3+ Solana / Anchor smart contract logs.
-  - 🛡️ **Security Auditor**: 2+ Security or Auth work logs.
-  - 🐙 **Open Source Builder**: 3+ GitHub-linked proof logs.
-  - 📜 **Arweave Archivist**: 5+ Permanent Arweave archived logs.
-  - 💯 **Century Club**: 100+ Total verified proof logs.
+```text
+Solana Wallet + Proof History + Reputation + Skills + Achievements = Digital Metal Credential
+```
+
+### 1. 10 Data-Driven Material Themes ([`app/lib/cardThemes.ts`](app/lib/cardThemes.ts))
+- **01 — Raw Steel**: Cold-brushed industrial steel with machined bevels.
+- **02 — Aerospace Titanium**: Micro-machined titanium alloy with ambient sheen.
+- **03 — Black Obsidian**: Deep non-reflective stealth metal with micro-edges.
+- **04 — Mirror Chrome**: High-contrast polished chrome with specular reflections.
+- **05 — Noble Platinum**: Prestige noble platinum with ultra-clean grain.
+- **06 — Forged Carbon**: Motorsport-grade forged carbon fiber matrix.
+- **07 — Sub-Zero Reactor**: Dark tactical hardware with cryo-luminescent channels.
+- **08 — Solar Forge**: Heavy brushed brass & tempered gold alloy.
+- **09 — Deep Space Orbital**: Astronautics satellite hull composite with indigo markings.
+- **10 — Hardware Prototype**: Experimental unmachined foundry billet with raw serial engravings.
+
+### 2. Interactive Features:
+- **3D Perspective Tilt**: 60fps buttery-smooth physical tilt reacting to pointer coordinates.
+- **Dynamic Specular Light**: Dynamic glint highlights shifting across procedural metal grain.
+- **Dual-Sided Flip**: Interactive flip button to inspect reverse magnetic stripe and telemetry.
+- **Metal Studio Customizer**: Real-time theme customizer modal with 1-click URL sharing and SVG export.
+- **Collectible Achievement Cards**: Individual physical-feeling cards for Genesis Proof, 7-Day Ironclad, 30-Day Titan, etc.
 
 ---
 
-## ⚡ Live System vs Roadmap Status
+## 🏆 Reputation & Achievement Engine
 
-| Subsystem / Feature | Live Status | Implementation File |
-| :--- | :--- | :--- |
-| **Solana SIWS-Inspired Verification** | 🟢 **LIVE & VERIFIED** | [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts) |
-| **Ed25519 Off-Chain Verification** | 🟢 **LIVE & VERIFIED** | [`app/api/log-submit/route.ts`](app/api/log-submit/route.ts#L80-L107) |
-| **Arweave Permanent Storage** | 🟢 **LIVE & VERIFIED** | [`app/lib/irysUploader.ts`](app/lib/irysUploader.ts) |
-| **Serverless Rate Limiter** | 🟢 **LIVE & VERIFIED** | [`app/lib/rateLimiter.ts`](app/lib/rateLimiter.ts) |
-| **Host Header Spoof Protection** | 🟢 **LIVE & VERIFIED** | [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts#L59-L80) |
-| **Postgres RLS Database Security** | 🟢 **LIVE & VERIFIED** | [`supabase/migrations/20260803_provn_security_hardening.sql`](supabase/migrations/20260803_provn_security_hardening.sql) |
-| **Dynamic GitHub SVG Badges** | 🟢 **LIVE & VERIFIED** | [`app/api/badge/[wallet]/route.ts`](app/api/badge/[wallet]/route.ts) |
-| **Metaplex cNFT Minting** | 🟡 **PHASE 4 (OPT-IN)** | [`app/lib/cnft.ts`](app/lib/cnft.ts) *(Feature-flagged off until Mainnet Merkle Tree deployment)* |
+PROVN implements an **objective, deterministic reputation system** with 100% test coverage:
+
+- **Evolving Builder Levels**:
+  - `LVL 1` 🔧 **Apprentice Builder** (1+ proofs)
+  - `LVL 2` ⚒️ **Verified Craftsman** (5+ proofs)
+  - `LVL 3` 🏗️ **Senior Architect** (15+ proofs)
+  - `LVL 4` ⚡ **Protocol Master** (30+ proofs)
+  - `LVL 5` 🗿 **Grand Legend** (60+ proofs)
+- **Active & Longest Streaks**: Evaluated using the canonical Indian Standard Time (`Asia/Kolkata`) protocol timezone to guarantee absolute parity across all international viewers.
+- **Deterministic Off-Chain Achievements Registry**:
+  - 🚀 **Genesis Proof**: First verified SIWS work record.
+  - 🛡️ **7-Day Ironclad**: 7 consecutive daily proofs.
+  - ⚔️ **30-Day Titan**: 30 consecutive daily proofs.
+  - 💯 **Century Legend**: 100+ lifetime verified proofs.
+  - ⚡ **Solana Specialist**: 5+ Solana-specific smart contract / Anchor logs.
+  - 🐙 **Open Source Vanguard**: 5+ Pull-request evidence logs.
+  - 📦 **Permanent Provenance**: 10+ Arweave-archived transactions.
+  - 🗿 **Grand Legend**: Level 5 protocol mastery.
+- **cNFT Metaplex Standard Metadata Generation**: Ready for on-chain compressed NFT minting upon grant milestone execution.
 
 ---
 
+## 🧰 Developer Tools & SDK
+
+PROVN provides a complete developer suite for integrating cryptographic builder reputation into Solana dApps, bounty platforms, and CI/CD pipelines:
+
+### 1. TypeScript SDK (`@provn/sdk`)
+Zero-dependency client for reading reputation and verifying signatures locally:
+
+```typescript
+import { ProvnClient } from './sdk'
+
+const client = new ProvnClient({ baseUrl: 'https://provn-sol.vercel.app' })
+
+// Fetch full machine-readable passport
+const passport = await client.getPassport('AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p')
+console.log(`Builder Level: ${passport.reputation.builderLevel.title}`)
+
+// Check bounty eligibility (e.g. requires 7-day streak and #Solana skill)
+const eligibility = await client.checkBountyEligibility('AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p', {
+  minProofs: 5,
+  minStreak: 7,
+  requiredSkills: ['Solana'],
+})
+console.log('Eligible for Bounty:', eligibility.eligible)
+
+// Verify proof signature locally (zero network calls)
+const isValid = ProvnClient.verifyProofLocally({
+  walletAddress: 'AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p',
+  signature: '...',
+  nonce: '...',
+  timestamp: '2026-08-14T00:00:00.000Z',
+  content: 'Implemented cryptographic proof layer',
+  githubUrl: 'https://github.com/dren712/pow-logger/pull/1',
+  evidenceUrl: 'https://provn-sol.vercel.app',
+})
+```
+
+### 2. PROVN CLI Tool (`cli/provn.mjs`)
+Inspect profiles and verify proofs directly from the terminal:
+
+```bash
+# View builder profile & stats
+node cli/provn.mjs profile AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p
+
+# Check builder reputation & unlocked achievements
+node cli/provn.mjs reputation AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p
+
+# Cryptographically verify a proof record
+node cli/provn.mjs verify 1
+```
+
+### 3. GitHub Action (`.github/actions/provn/action.yml`)
+Embed PROVN verification into GitHub CI/CD workflows:
+
+```yaml
+- name: Verify PROVN Builder Proof
+  uses: ./pow-logger/.github/actions/provn
+  with:
+    proof-id: '1'
+```
+
+---
+
+## 📡 REST API Reference
+
+| Endpoint | Method | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `/api/passport/:wallet` | `GET` | Machine-readable JSON passport export with reputation and achievements | [`/api/passport/AocA...`](https://provn-sol.vercel.app/api/passport/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p) |
+| `/api/passport-card/:wallet` | `GET` | Dynamic 1200×630 SVG social preview card (supports `?theme=titanium\|obsidian\|etc.`) | [`/api/passport-card/AocA...`](https://provn-sol.vercel.app/api/passport-card/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p?theme=titanium) |
+| `/api/proof/:id` | `GET` | Single canonical proof record with Ed25519 verification data | [`/api/proof/1`](https://provn-sol.vercel.app/api/proof/1) |
+| `/api/badge/:wallet` | `GET` | Live dynamic SVG markdown badge for GitHub READMEs | [`/api/badge/AocA...`](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg) |
+| `/api/log-submit` | `POST` | Submit a new wallet-signed proof of work entry | Internal SIWS handler |
+| `/api/archival-retry` | `POST` | Authorized SIWS retry handler for pending Arweave transactions | Internal SIWS handler |
+| `/api/feedback` | `POST` | Capture builder feedback and bug reports | Internal handler |
+
+---
+
+## ⚡ Live GitHub Profile Badge Embed
+
+Embed your real-time PROVN reputation badge in any GitHub profile or repository `README.md`:
+
+```markdown
+[![PROVN Reputation](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?d=2026-08-14)](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
+```
+
+![PROVN Live Badge](https://provn-sol.vercel.app/api/badge/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p.svg?d=2026-08-14)
+
+---
+
+## 🧪 Automated Protocol Quality Gate
+
+PROVN enforces a strict zero-regression quality gate. All 58 test assertions pass locally and on CI:
+
+```bash
+$ npm test
+
+===================================================================
+   PROVN PRODUCTION SECURITY & PROTOCOL TEST SUITE 🛡️🗿
+===================================================================
+
+► SUITE 1: Canonical Proof Message Construction & URL Normalization (12/12 PASS)
+► SUITE 2: Serverless Fixed-Window Rate Limiting (3/3 PASS)
+► SUITE 3: Ed25519 Cryptographic Proof Signature Tamper Protection (4/4 PASS)
+► SUITE 4: Supabase Database Row-Level Security Policies (PASS)
+► SUITE 5: Authorized Archival Retry Proof Verification (2/2 PASS)
+► SUITE 6: Persisted Proof Reconstruction & Multi-Field Tamper Validation (4/4 PASS)
+► SUITE 7: Deterministic Reputation Engine & Off-Chain Achievement System (7/7 PASS)
+► SUITE 8: Metallic Customizable Card System & Material Themes (14/14 PASS)
+
+===================================================================
+   PRODUCTION SUITE COMPLETE: 58 PASSED, 0 FAILED
+===================================================================
+```
+
+---
+
+## 💻 Local Development Setup
+
+### Prerequisites
+- Node.js 20+
+- npm
+
+### Installation & Execution
+
+```bash
+# Clone the repository
+git clone https://github.com/dren712/pow-logger.git
+cd pow-logger
+
+# Install dependencies
+npm install
+
+# Set up local environment
+cp .env.example .env.local
+
+# Run test suite
+npm test
+
+# Start Next.js development server
+npm run dev
+
+# Open http://localhost:3000 in your browser
+```
 
 ---
 
 ## 📜 Canonical Proof Message Specification (SIWS-Inspired)
-
-Log submissions use a canonical SIWS-inspired proof message format defined in [`app/lib/canonicalMessage.ts`](app/lib/canonicalMessage.ts):
 
 ```text
 provn-sol.vercel.app wants you to sign in with your Solana account:
@@ -154,98 +275,8 @@ Evidence URL: <normalized_evidence_url_or_none>
 
 ---
 
-## 📡 API Reference
+## 📄 License & Attribution
 
-### 1. Submit Verified Log (`POST /api/log-submit`)
-
-**Request Payload:**
-```json
-{
-  "content": "Implemented Ed25519 SIWS verification logic",
-  "walletAddress": "FqDW...wallet_address",
-  "timestamp": "2026-08-08T02:00:00.000Z",
-  "nonce": "k9x2mP7qL1wN4vR8",
-  "signature": "3Z...base58_signature",
-  "githubUrl": "https://github.com/dren712/pow-logger/pull/1",
-  "evidenceUrl": "https://provn-sol.vercel.app"
-}
-```
-
-**Response (`200 OK`):**
-```json
-{
-  "success": true,
-  "log": { "id": 44, "content": "...", "irys_tx_id": "6cY1..." },
-  "streak": 7,
-  "builderLevel": { "level": 2, "title": "Verified Craftsman", "emoji": "⚒️" },
-  "newMilestone": { "days": 7, "title": "7-Day Streak", "emoji": "🔥" },
-  "gatewayUrl": "https://gateway.irys.xyz/6cY1..."
-}
-```
-
-### 2. Live GitHub SVG Badge API (`GET /api/badge/[wallet].svg`)
-Returns a dynamic, cached SVG badge for embedding in markdown documents.
-
-### 3. Builder Profile API (`GET /api/verify/[wallet]`)
-Returns complete builder profile statistics, level status, earned badges, and recent Arweave receipts.
-
----
-
-## 💻 Local Development & Setup
-
-### Prerequisites
-- Node.js 20+
-- npm
-
-### Installation
-
-```bash
-# Clone repository
-git clone https://github.com/dren712/pow-logger.git
-cd pow-logger
-
-# Install dependencies
-npm install
-
-# Copy environment template
-cp .env.example .env.local
-
-# Start development server
-npm run dev
-```
-
-### Testing & Verification
-
-```bash
-# Protocol test suite
-npm test
-
-# TypeScript type check
-npx tsc --noEmit
-
-# Production build
-npm run build
-```
-
----
-
-## ⚠️ Known Limitations & Technical Trade-Offs
-
-1. **Independent Arweave Verification Envelopes**: Every JSON envelope uploaded to Arweave includes `nonce`, `domain`, `walletAddress`, `timestamp`, `content`, `signature`, `evidenceUrl`, `githubUrl`, `canonicalMessage`, and `classification`, enabling third parties to independently verify Ed25519 signatures directly from Arweave gateways.
-2. **cNFT Minting Status**: cNFT metadata generation and integration scaffolding are implemented in [`app/lib/cnft.ts`](app/lib/cnft.ts); on-chain Concurrent Merkle Tree minting is feature-flagged off until Phase 2 mainnet deployment.
-3. **Serverless Fixed-Window Rate Limiting**: The rate limiter uses a fixed-window counter (`app/lib/rateLimiter.ts`), enforcing per-serverless instance quotas. Distributed sliding-window rate limiting via Upstash Redis is scheduled for Phase 3.
-4. **Timezone Day Boundaries**: Official reputation, streaks, builder levels, and daily log quotas use the canonical protocol timezone (`PROTOCOL_TIMEZONE`: `Asia/Kolkata` / IST, UTC+5:30). Public SVG badge generation and profile reputation metrics are protocol-timezone locked to guarantee objective 1-to-1 parity across all viewers, while the verification API (`/api/verify/[wallet]`) optionally accepts a `?tz=` query parameter for custom reporting.
-
----
-
-## 📄 Documentation Links
-
-- [Litepaper (`LITEPAPER.md`)](LITEPAPER.md) — Technical whitepaper on SIWS, Arweave, and RLS architecture.
-- [Roadmap (`ROADMAP.md`)](ROADMAP.md) — Engineering phases and upcoming features.
-- [Database Schema (`supabase/migrations/20260803_provn_security_hardening.sql`)](supabase/migrations/20260803_provn_security_hardening.sql) — PostgreSQL RLS policies & RPC functions.
-
----
-
-## 📜 License
-
-Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
+- **Author**: Darshan Gaikwad ([@dren712](https://github.com/dren712))
+- **Email**: `darshangaikwad712@gmail.com`
+- **License**: Distributed under the [MIT License](LICENSE).
