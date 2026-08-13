@@ -282,6 +282,7 @@ export default function LoggerApp() {
         setGithubUrl={setGithubUrl}
         loading={loading}
         connected={connected}
+        walletAddress={publicKey?.toBase58()}
         isDailyLimitReached={isDailyLimitReached}
         statusStep={statusStep}
         statusMsg={statusMsg}

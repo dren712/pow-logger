@@ -6,7 +6,15 @@
  */
 
 import { verifyLogCryptographically } from '../app/lib/canonicalMessage'
-import { BuilderReputation, PassportExport, ProofDetail } from '../app/lib/types'
+import { evaluateEligibility } from '../app/lib/policyEngine'
+import {
+  BuilderReputation,
+  PassportExport,
+  ProofDetail,
+  ProofPacket,
+  EvidencePolicy,
+  EligibilityEvaluation,
+} from '../app/lib/types'
 
 export interface ProvnClientOptions {
   baseUrl?: string
@@ -50,52 +58,68 @@ export class ProvnClient {
   }
 
   /**
-   * Evaluates programmatic eligibility for an ecosystem bounty or grant requirement.
+   * Evaluates evidence policy eligibility via serverless API.
    */
-  async checkBountyEligibility(
-    wallet: string,
-    requirements: {
-      minStreak?: number
-      minProofs?: number
-      requiredSkills?: string[]
-      requiredProtocols?: string[]
+  async checkEligibility(wallet: string, policy: EvidencePolicy): Promise<EligibilityEvaluation> {
+    const res = await fetch(`${this.baseUrl}/api/eligibility`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet, policy }),
+    })
+    if (!res.ok) {
+      throw new Error(`Failed to evaluate eligibility for ${wallet}: ${res.statusText}`)
     }
-  ): Promise<{ eligible: boolean; reasons: string[] }> {
-    const rep = await this.getReputation(wallet)
-    const reasons: string[] = []
-    let eligible = true
+    return res.json()
+  }
 
-    if (requirements.minStreak && rep.currentStreak < requirements.minStreak) {
-      eligible = false
-      reasons.push(`Streak requirement not met: ${rep.currentStreak}/${requirements.minStreak} days`)
+  /**
+   * Generates a portable Proof Packet from a builder's Passport.
+   */
+  async getProofPacket(wallet: string): Promise<ProofPacket> {
+    const passport = await this.getPassport(wallet)
+    return ProvnClient.generateProofPacket(passport)
+  }
+
+  /**
+   * Pure deterministic helper to construct a portable ProofPacket from a PassportExport.
+   */
+  static generateProofPacket(passport: PassportExport): ProofPacket {
+    const { wallet, reputation, proofs } = passport
+    const walletShort = `${wallet.slice(0, 4)}...${wallet.slice(-4)}`
+    
+    // Select verified proofs with highest evidence quality
+    const verifiedProofs = proofs.filter((p) => p.isCryptographicallyVerified)
+    const sorted = [...verifiedProofs].sort((a, b) => {
+      const aScore = (a.githubUrl ? 2 : 0) + (a.archivalState === 'archived' ? 2 : 0)
+      const bScore = (b.githubUrl ? 2 : 0) + (b.archivalState === 'archived' ? 2 : 0)
+      return bScore - aScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+
+    return {
+      protocol: 'PROVN',
+      version: '1.0',
+      generatedAt: new Date().toISOString(),
+      wallet,
+      walletShort,
+      reputationSummary: {
+        verifiedProofs: reputation.verifiedProofs,
+        recentVerifiedProofs: reputation.recentVerifiedProofs,
+        currentStreak: reputation.currentStreak,
+        builderLevel: `Level ${reputation.builderLevel.level} (${reputation.builderLevel.title})`,
+        topSkills: reputation.skills.slice(0, 5).map((s) => s.name),
+        topProtocols: reputation.protocols.slice(0, 5).map((p) => p.name),
+      },
+      proofs: sorted.slice(0, 10),
+      verificationUrl: `https://provn-sol.vercel.app/u/${wallet}`,
+      verificationInstructions: 'Verify each proof signature independently using TweetNaCl Ed25519 or via https://provn-sol.vercel.app/proof/<id>.',
     }
+  }
 
-    if (requirements.minProofs && rep.totalProofs < requirements.minProofs) {
-      eligible = false
-      reasons.push(`Proof count requirement not met: ${rep.totalProofs}/${requirements.minProofs} proofs`)
-    }
-
-    if (requirements.requiredSkills && requirements.requiredSkills.length > 0) {
-      const builderSkills = new Set(rep.skills.map((s) => s.name.toLowerCase()))
-      for (const reqSkill of requirements.requiredSkills) {
-        if (!builderSkills.has(reqSkill.toLowerCase())) {
-          eligible = false
-          reasons.push(`Missing required skill: #${reqSkill}`)
-        }
-      }
-    }
-
-    if (requirements.requiredProtocols && requirements.requiredProtocols.length > 0) {
-      const builderProtos = new Set(rep.protocols.map((p) => p.name.toLowerCase()))
-      for (const reqProto of requirements.requiredProtocols) {
-        if (!builderProtos.has(reqProto.toLowerCase())) {
-          eligible = false
-          reasons.push(`Missing required protocol experience: ${reqProto}`)
-        }
-      }
-    }
-
-    return { eligible, reasons }
+  /**
+   * Local deterministic policy evaluator without network call.
+   */
+  static evaluatePolicyLocally(reputation: BuilderReputation, policy: EvidencePolicy): EligibilityEvaluation {
+    return evaluateEligibility(reputation, policy)
   }
 
   /**

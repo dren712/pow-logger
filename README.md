@@ -1,15 +1,16 @@
-# PROVN — Solana-Native Cryptographic Builder Provenance Protocol 🗿🛡️
+# PROVN — Solana-Native Cryptographic Builder Evidence Protocol 🗿🛡️
 
-PROVN is a lightweight, cryptographically verifiable proof-of-work protocol for Solana developers. It turns wallet-signed work logs into timestamp-bound, tamper-evident attestations permanently archived on Arweave.
+PROVN is a portable, cryptographically verifiable builder evidence protocol for Solana developers. It turns wallet-signed work logs into timestamp-bound, tamper-evident attestations permanently archived on Arweave, with programmatic policy evaluation for DAOs, bounties, and grants ($0/month free-tier architecture).
 
 [![CI Test Suite](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Tests-90%2F90%20Passed-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Tests-102%2F102%20Passed-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
+- **Policy Engine Demo:** [provn-sol.vercel.app/demo/bounty](https://provn-sol.vercel.app/demo/bounty)
 - **Developer API:** [provn-sol.vercel.app/docs/api](https://provn-sol.vercel.app/docs/api)
 - **Grant Evidence Dashboard:** [provn-sol.vercel.app/admin/evidence](https://provn-sol.vercel.app/admin/evidence)
 - **Technical Litepaper:** [`LITEPAPER.md`](LITEPAPER.md)
@@ -77,18 +78,21 @@ PROVN gives developers a single, permanent record of their daily contributions:
 
 | Component | Status | Description |
 |---|---|---|
-| **Wallet Proof Signing** | ✅ **Shipped** | Browser-native Ed25519 signing of canonical proof payloads. |
-| **Server Verification** | ✅ **Shipped** | TweetNaCl verification with domain and nonce validation (`/api/log-submit`). |
+| **Wallet Proof Signing** | ✅ **Shipped** | Browser-native Ed25519 signing of canonical proof payloads with Draft-Review-Sign preview modal. |
+| **Proof Templates** | ✅ **Shipped** | 8 preconfigured contribution templates (Shipped Code, Bug Fix, RFC, OSS, Release, Hackathon, etc.). |
+| **Server Verification** | ✅ **Shipped** | TweetNaCl verification with exact domain and Base58 nonce validation (`/api/log-submit`). |
 | **Public Proof Verifier** | ✅ **Shipped** | Standalone cryptographic verification inspector (`/proof/[id]`, `/api/verify/[wallet]`). |
 | **Arweave Archival** | ✅ **Shipped** | Permanent decentralized storage via Irys gateway. |
-| **Builder Passport** | ✅ **Shipped** | Verifiable builder profile with proof history (`/u/[wallet]`, `/api/passport/[wallet]`). |
+| **Builder Passport** | ✅ **Shipped** | Evidence-first verifiable builder profile (`/u/[wallet]`, `/api/passport/[wallet]`). |
+| **Proof Packet Studio** | ✅ **Shipped** | Curated portable evidence bundle export in JSON & Markdown (`/components/ProofPacketModal`). |
+| **Policy Evaluation Engine** | ✅ **Shipped** | Programmatic reputation and evidence gating API for DAOs and bounties (`/api/eligibility`). |
 | **Streak Engine** | ✅ **Shipped** | Parity-guaranteed daily streak calculation in canonical `Asia/Kolkata` timezone. |
 | **Export Studio** | 🧪 **Labs** | Multi-format export: Markdown (`.md`), Verifiable JSON, CSV, and Printable A4 certificate. |
 | **Card Material Customizer** | 🧪 **Labs** | Data-driven metallic UI customizer and SVG card generator (`/api/passport-card/[wallet]`). |
 | **GitHub Readme Badge** | 🧪 **Labs** | Dynamic SVG builder summary badge for GitHub profile READMEs (`/api/badge/[wallet].svg`). |
-| **TypeScript SDK (`@provn/sdk`)** | 🧪 **Labs** | Client library and local offline signature verifier in [`sdk/index.ts`](sdk/index.ts). |
-| **CLI Prototype** | 🧪 **Labs** | Terminal utility for checking wallet reputation in [`cli/provn.mjs`](cli/provn.mjs). |
-| **Bounty Gating Demo** | 🧪 **Labs** | Interactive demo illustrating programmatic reputation verification (`/demo/bounty`). |
+| **TypeScript SDK (`@provn/sdk`)** | 🧪 **Labs** | Client library, local offline verifier, and policy checker in [`sdk/index.ts`](sdk/index.ts). |
+| **CLI Utility** | 🧪 **Labs** | Terminal utility for passports, proofs, packets, and policy evaluation in [`cli/provn.mjs`](cli/provn.mjs). |
+| **Bounty Policy Demo** | 🧪 **Labs** | Interactive reference demo illustrating programmatic policy gating (`/demo/bounty`). |
 | **On-Chain Compressed NFTs** | 🔮 **Roadmap** | Metaplex Bubblegum Merkle tree minting for earned achievements (Phase 3). |
 | **GitHub OAuth / Commit Oracle**| 🔮 **Roadmap** | Automated repository ownership verification and commit attestation (Phase 2). |
 
