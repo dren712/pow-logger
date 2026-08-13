@@ -342,3 +342,111 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 255, 136, 0.6);
 }
+
+/* ==========================================================================
+   PRINT / PDF STYLESHEET (@media print)
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Hide screen chrome, headers, modals, and buttons */
+  header,
+  footer,
+  nav,
+  button,
+  .btn-primary,
+  .no-print,
+  .telemetry-bar,
+  .glass-card:not(.printable),
+  .terminal-card:not(.printable) {
+    display: none !important;
+  }
+
+  /* Hide modal overlays during print except the printable container */
+  div[style*="position: fixed"] {
+    position: static !important;
+    background: none !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    inset: auto !important;
+    display: block !important;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Show dedicated print dossier */
+  .provn-print-dossier {
+    display: block !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .provn-print-dossier * {
+    color: #111111 !important;
+    border-color: #dddddd !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .provn-print-dossier h1,
+  .provn-print-dossier h2,
+  .provn-print-dossier h3 {
+    color: #000000 !important;
+    font-weight: 800 !important;
+  }
+
+  .provn-print-dossier table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 12px !important;
+    font-size: 9pt !important;
+  }
+
+  .provn-print-dossier th {
+    background: #f4f4f4 !important;
+    border-bottom: 2px solid #000000 !important;
+    padding: 6px 8px !important;
+    text-align: left !important;
+  }
+
+  .provn-print-dossier td {
+    border-bottom: 1px solid #e0e0e0 !important;
+    padding: 6px 8px !important;
+    vertical-align: top !important;
+  }
+
+  .provn-print-dossier tr {
+    page-break-inside: avoid !important;
+  }
+
+  .provn-print-dossier a {
+    text-decoration: none !important;
+    color: #0044cc !important;
+  }
+}
+
+/* Hide print dossier on screens */
+@media screen {
+  .provn-print-dossier {
+    display: none !important;
+  }
+}

@@ -656,6 +656,225 @@ ${logs
           </button>
         </div>
       </div>
+
+      {/* =========================================================================
+          PRINT-ONLY OFFICIAL PROVN BUILDER DOSSIER & CERTIFICATE
+          ========================================================================= */}
+      <div className="provn-print-dossier">
+        {/* Certificate Header */}
+        <div
+          style={{
+            borderBottom: '2px solid #000',
+            paddingBottom: '12px',
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <div>
+            <h1 style={{ fontSize: '18pt', margin: 0, letterSpacing: '-0.5px' }}>
+              PROVN BUILDER PASSPORT
+            </h1>
+            <div style={{ fontSize: '9pt', color: '#555', marginTop: '2px' }}>
+              Cryptographically Verified Proof-of-Work Dossier • Solana & Arweave
+            </div>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={badgeUrl} alt="PROVN Badge" style={{ height: '36px' }} />
+        </div>
+
+        {/* Builder Identity & Verification Coordinates */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr',
+            gap: '16px',
+            marginBottom: '16px',
+            background: '#f8f9fa',
+            padding: '12px',
+            borderRadius: '6px',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '8pt', textTransform: 'uppercase', color: '#666' }}>
+              Signer Wallet Address
+            </div>
+            <div
+              style={{
+                fontFamily: 'monospace',
+                fontSize: '10pt',
+                fontWeight: 'bold',
+                wordBreak: 'break-all',
+              }}
+            >
+              {wallet}
+            </div>
+
+            <div style={{ marginTop: '8px', fontSize: '8pt', textTransform: 'uppercase', color: '#666' }}>
+              Public Verification Link
+            </div>
+            <div style={{ fontSize: '9pt', wordBreak: 'break-all', color: '#0044cc' }}>
+              {verificationUrl}
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '8pt', textTransform: 'uppercase', color: '#666' }}>
+              Builder Level / Rank
+            </div>
+            <div style={{ fontSize: '11pt', fontWeight: 'bold' }}>
+              {reputation.builderLevel.emoji} Level {reputation.builderLevel.level} —{' '}
+              {reputation.builderLevel.title}
+            </div>
+            <div style={{ fontSize: '8pt', color: '#666', marginTop: '4px' }}>
+              Exported: {new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
+            </div>
+          </div>
+        </div>
+
+        {/* Reputation Overview Metrics */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '10px',
+            marginBottom: '16px',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '4px' }}>
+            <div style={{ fontSize: '8pt', color: '#666' }}>TOTAL PROOFS</div>
+            <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>{reputation.totalProofs}</div>
+          </div>
+          <div style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '4px' }}>
+            <div style={{ fontSize: '8pt', color: '#666' }}>ACTIVE STREAK</div>
+            <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>🔥 {reputation.currentStreak} Days</div>
+          </div>
+          <div style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '4px' }}>
+            <div style={{ fontSize: '8pt', color: '#666' }}>LONGEST STREAK</div>
+            <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>{reputation.longestStreak} Days</div>
+          </div>
+          <div style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '4px' }}>
+            <div style={{ fontSize: '8pt', color: '#666' }}>ARWEAVE ARCHIVAL</div>
+            <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>{reputation.archivalSuccessRate}%</div>
+          </div>
+        </div>
+
+        {/* Top Skills & Ecosystem Stack */}
+        <div style={{ marginBottom: '16px' }}>
+          <h2
+            style={{
+              fontSize: '10pt',
+              textTransform: 'uppercase',
+              borderBottom: '1px solid #ccc',
+              paddingBottom: '4px',
+              margin: '0 0 6px 0',
+            }}
+          >
+            Verified Skills & Protocols
+          </h2>
+          <div style={{ fontSize: '9pt', lineHeight: '1.5' }}>
+            <strong>Skills:</strong>{' '}
+            {reputation.skills.map((s) => `#${s.name} (${s.count})`).join(', ') || 'N/A'}
+            <br />
+            <strong>Protocols:</strong>{' '}
+            {reputation.protocols.map((p) => `${p.name} (${p.count})`).join(', ') || 'N/A'}
+          </div>
+        </div>
+
+        {/* Earned Achievements */}
+        <div style={{ marginBottom: '16px' }}>
+          <h2
+            style={{
+              fontSize: '10pt',
+              textTransform: 'uppercase',
+              borderBottom: '1px solid #ccc',
+              paddingBottom: '4px',
+              margin: '0 0 6px 0',
+            }}
+          >
+            Earned Achievements ({reputation.achievements.filter((a) => a.earned).length} /{' '}
+            {reputation.achievements.length})
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '8.5pt' }}>
+            {reputation.achievements
+              .filter((a) => a.earned)
+              .map((a) => (
+                <div key={a.id} style={{ border: '1px solid #eee', padding: '5px 8px', borderRadius: '4px' }}>
+                  <strong>
+                    {a.icon} {a.name}
+                  </strong>{' '}
+                  [{a.rarity.toUpperCase()}]: {a.description}
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Proof of Work History Table */}
+        <div>
+          <h2
+            style={{
+              fontSize: '10pt',
+              textTransform: 'uppercase',
+              borderBottom: '1px solid #ccc',
+              paddingBottom: '4px',
+              margin: '0 0 6px 0',
+            }}
+          >
+            Cryptographic Proof History ({logs.length} Total Records)
+          </h2>
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: '15%' }}>Date (IST)</th>
+                <th style={{ width: '50%' }}>Work Output Description</th>
+                <th style={{ width: '15%' }}>Stack</th>
+                <th style={{ width: '20%' }}>Verification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((l) => (
+                <tr key={l.id}>
+                  <td>
+                    {new Date(l.created_at).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      timeZone: 'Asia/Kolkata',
+                    })}
+                  </td>
+                  <td>{l.content}</td>
+                  <td>{(l.skills || []).map((s) => `#${s}`).join(' ') || '-'}</td>
+                  <td>
+                    {l.irys_tx_id
+                      ? `Arweave: ${l.irys_tx_id.slice(0, 8)}...`
+                      : l.github_url
+                      ? 'GitHub PR'
+                      : 'SIWS Verified'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Attestation Guarantee Footer */}
+        <div
+          style={{
+            marginTop: '20px',
+            paddingTop: '10px',
+            borderTop: '1px solid #000',
+            fontSize: '8pt',
+            color: '#666',
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span>PROVN Protocol • Cryptographic Proof-of-Work on Solana</span>
+          <span>Verified against Ed25519 signatures</span>
+        </div>
+      </div>
     </div>
   )
 }
