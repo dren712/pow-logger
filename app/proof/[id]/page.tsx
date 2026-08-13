@@ -159,10 +159,36 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         </div>
       </div>
 
+      {/* Verification Layer Breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+        <div className="terminal-card" style={{ padding: '12px 14px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>1. Claim</div>
+          <div style={{ color: '#fff', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>Builder Statement</div>
+        </div>
+        <div className="terminal-card" style={{ padding: '12px 14px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>2. Provenance</div>
+          <div style={{ color: isSignatureValid ? '#00ff88' : '#ff4444', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
+            {isSignatureValid ? 'Ed25519 Verified ✓' : 'Unsigned / Legacy'}
+          </div>
+        </div>
+        <div className="terminal-card" style={{ padding: '12px 14px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>3. Evidence</div>
+          <div style={{ color: proof.github_url || proof.evidence_url ? '#ab9ff2' : '#666', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
+            {proof.github_url ? 'GitHub Link Attached' : proof.evidence_url ? 'Demo Link Attached' : 'None Attached'}
+          </div>
+        </div>
+        <div className="terminal-card" style={{ padding: '12px 14px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>4. Storage</div>
+          <div style={{ color: proof.archival_state === 'archived' ? '#27c93f' : '#ffb800', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
+            {proof.archival_state === 'archived' ? 'Arweave Confirmed' : 'Database Stored'}
+          </div>
+        </div>
+      </div>
+
       {/* Proof Content Card */}
       <div className="terminal-card" style={{ padding: '24px', marginBottom: '20px' }}>
         <h2 style={{ color: '#aaa', fontSize: '12px', textTransform: 'uppercase', margin: '0 0 12px 0' }}>
-          Signed Work Description
+          Signed Work Claim
         </h2>
         <p
           style={{
@@ -179,7 +205,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
           {proof.github_url && (
             <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>GitHub Evidence</div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>GitHub Evidence (Self-Attested)</div>
               <a
                 href={proof.github_url}
                 target="_blank"
@@ -193,7 +219,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
 
           {proof.evidence_url && (
             <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Live Demo Evidence</div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Live Demo / Evidence URL</div>
               <a
                 href={proof.evidence_url}
                 target="_blank"
@@ -205,14 +231,14 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
             </div>
           )}
 
-          {proof.irys_tx_id && (
+          {proof.irys_tx_id && !proof.irys_tx_id.startsWith('powl_') && (
             <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave Permanent TX</div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave L1 Permanent Storage</div>
               <a
                 href={`https://gateway.irys.xyz/${proof.irys_tx_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: '#ffb800', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
+                style={{ color: '#27c93f', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
               >
                 {proof.irys_tx_id} ↗
               </a>
@@ -221,7 +247,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         </div>
       </div>
 
-      {/* Cryptographic Inspector */}
+      {/* Cryptographic Provenance Inspector */}
       <div className="terminal-card" style={{ padding: '20px', marginBottom: '20px' }}>
         <h3 style={{ color: '#00ff88', fontSize: '12px', margin: '0 0 12px 0', textTransform: 'uppercase' }}>
           🔍 Cryptographic Provenance Inspector
@@ -270,6 +296,30 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
             </pre>
           </div>
         )}
+      </div>
+
+      {/* Independent Verification Instructions */}
+      <div className="terminal-card" style={{ padding: '20px' }}>
+        <h3 style={{ color: '#00e5ff', fontSize: '12px', margin: '0 0 8px 0', textTransform: 'uppercase' }}>
+          💻 Independent Verification CLI
+        </h3>
+        <p style={{ color: '#888', fontSize: '11px', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+          You do not need to trust the PROVN web server. You can independently verify this proof using our open-source CLI:
+        </p>
+        <pre
+          style={{
+            background: '#060709',
+            border: '1px solid #161c28',
+            padding: '10px 14px',
+            borderRadius: '6px',
+            color: '#00ff88',
+            fontSize: '11px',
+            overflowX: 'auto',
+            margin: 0,
+          }}
+        >
+          {`npx provn verify ${proof.id}`}
+        </pre>
       </div>
     </main>
   )

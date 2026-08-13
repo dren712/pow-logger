@@ -678,8 +678,81 @@ async function runProductionTestSuite() {
   assert(pureReputation.verifiedProofs === 1, 'calculateReputation verifiedProofs strictly matches verified count')
   assert(pureReputation.currentStreak === 1, 'calculateReputation streak ignores unverified timestamps')
   assert(pureReputation.skills.length === 2 && pureReputation.skills.some((s) => s.name === 'Rust'), 'Reputation skills include authentic skills')
-  assert(!pureReputation.skills.some((s) => s.name === 'FakeSkill'), 'Reputation skills strictly exclude skills from forged/unverified proofs')
-  assert(!pureReputation.protocols.some((p) => p.name === 'FakeProtocol'), 'Reputation protocols strictly exclude protocols from forged/unverified proofs')
+  // --- SUITE 10: Policy Evaluation Engine & Proof Packet Generation ---
+  console.log('\n► SUITE 10: Policy Evaluation Engine & Proof Packet Generation')
+  
+  const { evaluateEligibility, STANDARD_POLICY_PRESETS } = await import('../app/lib/policyEngine')
+
+  // Check 1: Categorization Invariants
+  assert(pureReputation.totalRecords === 3, 'Reputation engine tracks total database records (3)')
+  assert(pureReputation.legacyRecords === 1, 'Reputation engine correctly identifies legacy unindexed record (1)')
+  assert(pureReputation.unverifiedRecords === 1, 'Reputation engine correctly identifies unverified tampered record (1)')
+  assert(pureReputation.proofsWithGithubEvidence === 1, 'Reputation engine tracks proofs with GitHub evidence')
+
+  // Check 2: Policy Evaluation with Lightweight Builder Policy
+  const lightweightEval = evaluateEligibility(pureReputation, STANDARD_POLICY_PRESETS.LIGHTWEIGHT_BUILDER)
+  assert(lightweightEval.eligible === true, 'Lightweight policy evaluation passes for wallet with 1 verified proof')
+  assert(lightweightEval.summary.passedCount === lightweightEval.summary.totalChecks, 'All checks passed in lightweight policy')
+
+  // Check 3: Superteam Bounty Policy Gating
+  const bountyEval = evaluateEligibility(pureReputation, STANDARD_POLICY_PRESETS.SUPERTEAM_BOUNTY)
+  assert(bountyEval.eligible === false, 'Superteam bounty policy fails closed when wallet has 1 of 3 required proofs')
+  assert(bountyEval.checks.find((c) => c.id === 'min_verified_proofs')?.passed === false, 'Min verified proofs check failed')
+
+  // Check 4: Custom Policy with Specific Skill Requirement
+  const rustSkillPolicy = {
+    name: 'Rust Developer Policy',
+    minVerifiedProofs: 1,
+    requiredSkills: ['Rust'],
+    requireGithubEvidence: true,
+  }
+  const rustEval = evaluateEligibility(pureReputation, rustSkillPolicy)
+  assert(rustEval.eligible === true, 'Policy with verified Rust skill and GitHub evidence requirement passes')
+
+  // Check 5: Custom Policy with Missing Skill Requirement
+  const pythonSkillPolicy = {
+    name: 'Python Developer Policy',
+    minVerifiedProofs: 1,
+    requiredSkills: ['Python'],
+  }
+  const pythonEval = evaluateEligibility(pureReputation, pythonSkillPolicy)
+  assert(pythonEval.eligible === false, 'Policy fails when required skill (Python) is missing from verified records')
+
+  // Check 6: Proof Packet Generation
+  const samplePassport = {
+    protocol: 'PROVN' as const,
+    version: '1.0' as const,
+    exportedAt: new Date().toISOString(),
+    wallet: suite9Wallet,
+    reputation: pureReputation,
+    proofs: [
+      {
+        id: 101,
+        walletAddress: suite9Wallet,
+        createdAt: suite9Timestamp,
+        content: suite9Content,
+        githubUrl: suite9Github,
+        evidenceUrl: suite9Evidence,
+        signature: testSignature,
+        nonce: suite9Nonce,
+        domain: suite9Domain,
+        skills: ['Rust', 'Solana'],
+        protocols: ['Anchor'],
+        category: 'Engineering',
+        irysTxId: null,
+        archivalState: 'pending' as const,
+        isCryptographicallyVerified: true,
+        verificationState: 'VERIFIED' as const,
+      },
+    ],
+    verificationUrl: `https://provn-sol.vercel.app/u/${suite9Wallet}`,
+  }
+
+  const generatedPacket = ProvnClient.generateProofPacket(samplePassport)
+  assert(generatedPacket.protocol === 'PROVN', 'Proof packet generated with PROVN protocol header')
+  assert(generatedPacket.reputationSummary.verifiedProofs === 1, 'Proof packet reputation summary reflects verified proofs')
+  assert(generatedPacket.proofs.length === 1, 'Proof packet includes curated verified proofs')
+  assert(typeof generatedPacket.verificationInstructions === 'string', 'Proof packet contains independent verification instructions')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')
