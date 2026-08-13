@@ -239,19 +239,19 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         </h3>
 
         <div style={{ display: 'grid', gap: '8px', fontSize: '11px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #141824', paddingBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ color: '#666' }}>Signer Wallet:</span>
-            <code style={{ color: '#ffb800' }}>{proof.wallet_address}</code>
+            <code style={{ color: '#ffb800', wordBreak: 'break-all', fontSize: '10px' }}>{proof.wallet_address}</code>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #141824', paddingBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ color: '#666' }}>Domain Bound:</span>
-            <span style={{ color: '#00e5ff' }}>{proof.domain || 'provn-sol.vercel.app'}</span>
+            <span style={{ color: '#00e5ff', wordBreak: 'break-all' }}>{proof.domain || 'provn-sol.vercel.app'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #141824', paddingBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ color: '#666' }}>Anti-Replay Nonce:</span>
-            <span style={{ color: '#aaa' }}>{proof.nonce || 'N/A'}</span>
+            <span style={{ color: '#aaa', wordBreak: 'break-all' }}>{proof.nonce || 'N/A'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #141824', paddingBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ color: '#666' }}>Archival State:</span>
             <span style={{ color: proof.archival_state === 'archived' ? '#00ff88' : '#ffb800' }}>
               {proof.archival_state?.toUpperCase() || 'PENDING'}

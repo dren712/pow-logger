@@ -33,12 +33,12 @@ export default function PassportCard({
       {/* Top Bar: Brand & Chip / Status */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '18px' }}>🗿</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: 'clamp(15px, 3.8vw, 18px)' }}>🗿</span>
             <span
               style={{
                 fontFamily: 'var(--font-geist-mono), monospace',
-                fontSize: '16px',
+                fontSize: 'clamp(13px, 3.5vw, 16px)',
                 fontWeight: 900,
                 letterSpacing: '1.5px',
                 color: theme.textColorPrimary,
@@ -50,7 +50,7 @@ export default function PassportCard({
           </div>
           <div
             style={{
-              fontSize: '9px',
+              fontSize: 'clamp(7.5px, 1.8vw, 9px)',
               fontFamily: 'var(--font-geist-mono), monospace',
               color: theme.technicalTextColor,
               letterSpacing: '1px',
@@ -65,8 +65,8 @@ export default function PassportCard({
         {/* Smart Card Chip Hologram Accent */}
         <div
           style={{
-            width: '36px',
-            height: '28px',
+            width: 'clamp(28px, 6.5vw, 36px)',
+            height: 'clamp(22px, 5vw, 28px)',
             borderRadius: '4px',
             background: 'linear-gradient(135deg, #d4af37 0%, #aa8c2c 40%, #f5e184 70%, #997b25 100%)',
             border: '1px solid rgba(0,0,0,0.5)',
@@ -86,11 +86,11 @@ export default function PassportCard({
 
       {/* Middle Bar: Identity & Core Stats */}
       <div style={{ margin: 'auto 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '6px' }}>
           <div>
             <div
               style={{
-                fontSize: '9px',
+                fontSize: 'clamp(7.5px, 1.8vw, 9px)',
                 fontFamily: 'var(--font-geist-mono), monospace',
                 color: theme.technicalTextColor,
                 letterSpacing: '1px',
@@ -101,7 +101,7 @@ export default function PassportCard({
             </div>
             <div
               style={{
-                fontSize: '20px',
+                fontSize: 'clamp(15px, 4.2vw, 20px)',
                 fontFamily: 'var(--font-geist-mono), monospace',
                 fontWeight: 800,
                 color: theme.textColorPrimary,
@@ -118,11 +118,12 @@ export default function PassportCard({
               background: theme.badgeBg,
               border: `1px solid ${theme.borderTone}`,
               color: theme.badgeText,
-              padding: '3px 8px',
+              padding: '2px 6px',
               borderRadius: '4px',
-              fontSize: '10px',
+              fontSize: 'clamp(8.5px, 2.2vw, 10px)',
               fontFamily: 'var(--font-geist-mono), monospace',
               fontWeight: 700,
+              whiteSpace: 'nowrap',
             }}
           >
             {reputation.builderLevel.emoji} LVL {reputation.builderLevel.level}
@@ -134,34 +135,34 @@ export default function PassportCard({
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
-            gap: '8px',
+            gap: 'clamp(4px, 1.5vw, 8px)',
             background: 'rgba(0, 0, 0, 0.35)',
             border: `1px solid ${theme.innerBorderTone}`,
             borderRadius: '8px',
-            padding: '8px 12px',
+            padding: 'clamp(6px, 1.8vw, 8px) clamp(8px, 2.5vw, 12px)',
           }}
         >
           <div>
-            <div style={{ fontSize: '8px', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ fontSize: 'clamp(7px, 1.8vw, 8px)', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               PROOFS
             </div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: theme.accentTone }}>
+            <div style={{ fontSize: 'clamp(13px, 3.4vw, 16px)', fontWeight: 900, color: theme.accentTone }}>
               {reputation.totalProofs}
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '8px', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ fontSize: 'clamp(7px, 1.8vw, 8px)', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               STREAK
             </div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#ffb800' }}>
+            <div style={{ fontSize: 'clamp(13px, 3.4vw, 16px)', fontWeight: 900, color: '#ffb800' }}>
               🔥 {reputation.currentStreak}d
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '8px', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ fontSize: 'clamp(7px, 1.8vw, 8px)', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               ARWEAVE
             </div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#00e5ff' }}>
+            <div style={{ fontSize: 'clamp(13px, 3.4vw, 16px)', fontWeight: 900, color: '#00e5ff' }}>
               {reputation.archivalSuccessRate}%
             </div>
           </div>
@@ -169,27 +170,28 @@ export default function PassportCard({
       </div>
 
       {/* Bottom Bar: Skills & Scannable QR */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '10px' }}>
-        <div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '280px', marginBottom: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '8px' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', maxWidth: '280px', marginBottom: '3px' }}>
             {reputation.skills.slice(0, 3).map((s) => (
               <span
                 key={s.name}
                 style={{
-                  fontSize: '9px',
+                  fontSize: 'clamp(7.5px, 1.8vw, 9px)',
                   fontFamily: 'var(--font-geist-mono), monospace',
                   color: theme.textColorSecondary,
                   background: 'rgba(255, 255, 255, 0.05)',
                   border: `0.5px solid ${theme.innerBorderTone}`,
-                  padding: '2px 5px',
+                  padding: '1px 4px',
                   borderRadius: '3px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 #{s.name}
               </span>
             ))}
           </div>
-          <div style={{ fontSize: '8px', fontFamily: 'var(--font-geist-mono), monospace', color: theme.technicalTextColor, letterSpacing: '0.5px' }}>
+          <div style={{ fontSize: 'clamp(6.5px, 1.6vw, 8px)', fontFamily: 'var(--font-geist-mono), monospace', color: theme.technicalTextColor, letterSpacing: '0.5px' }}>
             VERIFIED PROOF-OF-WORK // ED25519
           </div>
         </div>
@@ -197,8 +199,8 @@ export default function PassportCard({
         {/* Embedded QR Code Cutout */}
         <div
           style={{
-            width: '46px',
-            height: '46px',
+            width: 'clamp(36px, 8.5vw, 46px)',
+            height: 'clamp(36px, 8.5vw, 46px)',
             background: '#06070a',
             border: `1px solid ${theme.borderTone}`,
             borderRadius: '6px',
@@ -215,9 +217,9 @@ export default function PassportCard({
           <img
             src={qrUrl}
             alt="Passport QR"
-            width={40}
-            height={40}
-            style={{ display: 'block', borderRadius: '3px' }}
+            width={38}
+            height={38}
+            style={{ display: 'block', borderRadius: '3px', width: '100%', height: '100%', objectFit: 'contain' }}
           />
         </div>
       </div>
@@ -285,7 +287,7 @@ export default function PassportCard({
       />
 
       {showControls && (
-        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
             onClick={() => setIsFlipped(!isFlipped)}
             className="btn-primary"

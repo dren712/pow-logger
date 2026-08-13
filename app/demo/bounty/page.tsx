@@ -56,17 +56,17 @@ export default function BountyDemoPage() {
         </div>
 
         {/* Bounty Card */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-6 space-y-4">
-          <div className="flex justify-between items-start">
+        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
             <div>
               <span className="text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded">
                 SIMULATED BOUNTY
               </span>
-              <h2 className="text-lg font-bold font-mono text-white mt-2">
+              <h2 className="text-base sm:text-lg font-bold font-mono text-white mt-2">
                 Solana Developer Tooling & Security Infrastructure
               </h2>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <div className="text-emerald-400 font-mono font-bold text-lg">$2,500 USDC</div>
               <div className="text-[10px] text-gray-500 font-mono">Bounty Reward</div>
             </div>
@@ -83,9 +83,9 @@ export default function BountyDemoPage() {
         </div>
 
         {/* Verification Form */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-6 space-y-4">
+        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
           <h3 className="text-sm font-bold font-mono text-white">Check Your Eligibility</h3>
-          <form onSubmit={handleCheckEligibility} className="flex gap-2">
+          <form onSubmit={handleCheckEligibility} className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder="Enter Solana Wallet Address..."
@@ -96,7 +96,7 @@ export default function BountyDemoPage() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs px-4 py-2 rounded-lg transition disabled:opacity-50"
+              className="bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs px-4 py-2.5 rounded-lg transition disabled:opacity-50"
             >
               {loading ? 'Checking...' : 'Verify Eligibility'}
             </button>

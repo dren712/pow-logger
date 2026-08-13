@@ -384,8 +384,8 @@ Verify cryptographically at: ${verificationUrl}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '16px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '14px',
           }}
         >
           {reputation.achievements.map((ach) => (

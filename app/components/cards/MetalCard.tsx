@@ -57,6 +57,38 @@ export default function MetalCard({
     [interactive]
   )
 
+  // Mobile Touch Support for 3D Tilt & Specular Glint
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      if (!interactive || !cardRef.current || e.touches.length === 0) return
+      const touch = e.touches[0]
+      const rect = cardRef.current.getBoundingClientRect()
+      const x = touch.clientX - rect.left
+      const y = touch.clientY - rect.top
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+
+      const rX = Math.max(-8, Math.min(8, ((y - centerY) / centerY) * -8))
+      const rY = Math.max(-8, Math.min(8, ((x - centerX) / centerX) * 8))
+
+      const glintX = Math.max(0, Math.min(100, (x / rect.width) * 100))
+      const glintY = Math.max(0, Math.min(100, (y / rect.height) * 100))
+
+      setRotateX(rX)
+      setRotateY(rY)
+      setGlintPos({ x: glintX, y: glintY, opacity: 0.85 })
+      setIsHovered(true)
+    },
+    [interactive]
+  )
+
+  const handleTouchEnd = () => {
+    setIsHovered(false)
+    setRotateX(0)
+    setRotateY(0)
+    setGlintPos((prev) => ({ ...prev, opacity: 0 }))
+  }
+
   const handleMouseEnter = () => {
     if (!interactive) return
     setIsHovered(true)
@@ -85,11 +117,14 @@ export default function MetalCard({
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onTouchMove={handleTouchMove}
+        onTouchStart={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           position: 'relative',
           width: '100%',
           aspectRatio: aspectRatio,
-          borderRadius: '16px',
+          borderRadius: 'clamp(12px, 3vw, 16px)',
           transformStyle: 'preserve-3d',
           transform: isFlipped
             ? `rotateY(${180 + rotateY}deg) rotateX(${rotateX}deg)`
@@ -102,6 +137,7 @@ export default function MetalCard({
             : '0 16px 32px -10px rgba(0, 0, 0, 0.65)',
           cursor: onFlipToggle ? 'pointer' : 'default',
           userSelect: 'none',
+          touchAction: 'manipulation',
         }}
       >
         {/* ================= FRONT FACE ================= */}
@@ -113,10 +149,10 @@ export default function MetalCard({
             height: '100%',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
-            borderRadius: '16px',
+            borderRadius: 'clamp(12px, 3vw, 16px)',
             background: theme.surfaceGradient,
             border: `1px solid ${theme.borderTone}`,
-            padding: '24px',
+            padding: 'clamp(12px, 3.8vw, 24px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -139,9 +175,9 @@ export default function MetalCard({
           <div
             style={{
               position: 'absolute',
-              inset: '6px',
+              inset: 'clamp(4px, 1.2vw, 6px)',
               border: `1px solid ${theme.innerBorderTone}`,
-              borderRadius: '11px',
+              borderRadius: 'clamp(8px, 2.5vw, 11px)',
               pointerEvents: 'none',
             }}
           />
@@ -152,7 +188,7 @@ export default function MetalCard({
           <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '4px', height: '4px', borderRadius: '50%', background: theme.borderTone, boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.9)' }} />
           <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '4px', height: '4px', borderRadius: '50%', background: theme.borderTone, boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.9)' }} />
 
-          {/* Dynamic Specular Lighting Glint on Mouse Movement */}
+          {/* Dynamic Specular Lighting Glint on Mouse/Touch Movement */}
           <div
             style={{
               position: 'absolute',
@@ -182,10 +218,10 @@ export default function MetalCard({
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
-              borderRadius: '16px',
+              borderRadius: 'clamp(12px, 3vw, 16px)',
               background: theme.surfaceGradient,
               border: `1px solid ${theme.borderTone}`,
-              padding: '24px',
+              padding: 'clamp(12px, 3.8vw, 24px)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -208,9 +244,9 @@ export default function MetalCard({
             <div
               style={{
                 position: 'absolute',
-                inset: '6px',
+                inset: 'clamp(4px, 1.2vw, 6px)',
                 border: `1px solid ${theme.innerBorderTone}`,
-                borderRadius: '11px',
+                borderRadius: 'clamp(8px, 2.5vw, 11px)',
                 pointerEvents: 'none',
               }}
             />
@@ -219,10 +255,10 @@ export default function MetalCard({
             <div
               style={{
                 position: 'absolute',
-                top: '24px',
+                top: 'clamp(16px, 4vw, 24px)',
                 left: 0,
                 right: 0,
-                height: '36px',
+                height: 'clamp(26px, 5.5vw, 36px)',
                 background: 'linear-gradient(180deg, #050608 0%, #151820 50%, #050608 100%)',
                 borderTop: '1px solid rgba(255,255,255,0.08)',
                 borderBottom: '1px solid rgba(0,0,0,0.8)',
@@ -243,7 +279,7 @@ export default function MetalCard({
             />
 
             {/* Card Back Content */}
-            <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingTop: '42px' }}>
+            <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingTop: 'clamp(28px, 6.5vw, 42px)' }}>
               {backContent}
             </div>
           </div>

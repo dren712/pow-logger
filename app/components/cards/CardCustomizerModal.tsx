@@ -63,12 +63,12 @@ export default function CardCustomizerModal({
         style={{
           maxWidth: '860px',
           width: '100%',
-          maxHeight: '90vh',
+          maxHeight: '92vh',
           overflowY: 'auto',
           background: '#090b10',
           border: '1px solid #1c2438',
           borderRadius: '16px',
-          padding: '24px',
+          padding: 'clamp(14px, 3.5vw, 24px)',
           boxSizing: 'border-box',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -80,8 +80,8 @@ export default function CardCustomizerModal({
             justifyContent: 'space-between',
             alignItems: 'center',
             borderBottom: '1px solid #161c2c',
-            paddingBottom: '16px',
-            marginBottom: '20px',
+            paddingBottom: '14px',
+            marginBottom: '18px',
           }}
         >
           <div>
@@ -89,7 +89,7 @@ export default function CardCustomizerModal({
               style={{
                 color: '#00ff88',
                 fontFamily: 'var(--font-geist-mono), monospace',
-                fontSize: '18px',
+                fontSize: 'clamp(15px, 3.8vw, 18px)',
                 margin: 0,
                 fontWeight: 800,
                 display: 'flex',
@@ -99,8 +99,8 @@ export default function CardCustomizerModal({
             >
               <span>⚙️</span> PROVN Metallic Card Studio
             </h2>
-            <p style={{ color: '#889', fontSize: '11px', margin: '4px 0 0 0' }}>
-              Custom digital metal finishes for your verifiable Builder Passport. Cryptographic proof remains frozen.
+            <p style={{ color: '#889', fontSize: 'clamp(10px, 2.2vw, 11px)', margin: '4px 0 0 0' }}>
+              Custom digital metal finishes for your verifiable Builder Passport.
             </p>
           </div>
 
@@ -110,9 +110,9 @@ export default function CardCustomizerModal({
               background: 'none',
               border: 'none',
               color: '#667',
-              fontSize: '18px',
+              fontSize: '20px',
               cursor: 'pointer',
-              padding: '4px',
+              padding: '6px',
             }}
           >
             ✕
@@ -120,7 +120,7 @@ export default function CardCustomizerModal({
         </div>
 
         {/* Studio Body: Preview & Controls */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
           {/* Card Live Preview */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: '100%', maxWidth: '420px' }}>
@@ -128,19 +128,19 @@ export default function CardCustomizerModal({
             </div>
             <div
               style={{
-                marginTop: '12px',
+                marginTop: '10px',
                 fontSize: '10px',
                 fontFamily: 'var(--font-geist-mono), monospace',
                 color: '#667',
                 textAlign: 'center',
               }}
             >
-              Hover to tilt • Click flip button to inspect reverse side
+              Touch/Drag to tilt • Click flip to inspect reverse side
             </div>
           </div>
 
           {/* Theme & Material Selectors */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
               <div
                 style={{
@@ -157,7 +157,7 @@ export default function CardCustomizerModal({
               </div>
 
               {/* Grid of Materials */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px' }}>
                 {Object.values(CARD_THEMES).map((th) => {
                   const isSelected = selectedTheme.id === th.id
                   return (
@@ -168,7 +168,7 @@ export default function CardCustomizerModal({
                         background: isSelected ? 'rgba(0, 255, 136, 0.1)' : '#0d111a',
                         border: isSelected ? `1.5px solid ${th.accentTone}` : '1px solid #1a2234',
                         borderRadius: '8px',
-                        padding: '10px',
+                        padding: '8px 10px',
                         textAlign: 'left',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
@@ -177,7 +177,7 @@ export default function CardCustomizerModal({
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                         <span
                           style={{
-                            fontSize: '12px',
+                            fontSize: '11px',
                             fontWeight: 700,
                             color: isSelected ? th.accentTone : '#eee',
                             fontFamily: 'var(--font-geist-mono), monospace',
@@ -195,8 +195,8 @@ export default function CardCustomizerModal({
                           }}
                         />
                       </div>
-                      <div style={{ fontSize: '9px', color: '#778', lineHeight: '1.3' }}>
-                        {th.material.toUpperCase()} {'//'} {th.lighting.toUpperCase()}
+                      <div style={{ fontSize: '8.5px', color: '#778', lineHeight: '1.3' }}>
+                        {th.material.toUpperCase()}
                       </div>
                     </button>
                   )
@@ -210,18 +210,18 @@ export default function CardCustomizerModal({
                 background: '#07080c',
                 border: '1px solid #161c2c',
                 borderRadius: '8px',
-                padding: '12px',
+                padding: '10px 12px',
                 fontSize: '11px',
                 fontFamily: 'var(--font-geist-mono), monospace',
               }}
             >
-              <div style={{ color: selectedTheme.accentTone, fontWeight: 700, marginBottom: '4px' }}>
+              <div style={{ color: selectedTheme.accentTone, fontWeight: 700, marginBottom: '2px', fontSize: '11px' }}>
                 {selectedTheme.name}
               </div>
-              <p style={{ color: '#889', fontSize: '10px', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+              <p style={{ color: '#889', fontSize: '10px', margin: '0 0 6px 0', lineHeight: '1.4' }}>
                 {selectedTheme.description}
               </p>
-              <div style={{ display: 'flex', gap: '12px', fontSize: '9px', color: '#556' }}>
+              <div style={{ display: 'flex', gap: '10px', fontSize: '8.5px', color: '#556', flexWrap: 'wrap' }}>
                 <span>TEXTURE: {selectedTheme.pattern.toUpperCase()}</span>
                 <span>LIGHT: {selectedTheme.lighting.toUpperCase()}</span>
               </div>
@@ -233,27 +233,27 @@ export default function CardCustomizerModal({
         <div
           style={{
             borderTop: '1px solid #161c2c',
-            paddingTop: '16px',
+            paddingTop: '14px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '10px',
+            gap: '8px',
           }}
         >
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <button
               onClick={handleCopyLink}
               className="btn-primary"
               style={{
-                padding: '8px 14px',
+                padding: '7px 12px',
                 fontSize: '11px',
                 background: '#0d111a',
                 border: '1px solid #1c2438',
                 color: copiedLink ? '#00ff88' : '#00e5ff',
               }}
             >
-              {copiedLink ? '✓ Link Copied' : '🔗 Copy Share URL with Theme'}
+              {copiedLink ? '✓ Link Copied' : '🔗 Copy Share URL'}
             </button>
 
             <a
@@ -261,7 +261,7 @@ export default function CardCustomizerModal({
               download={`provn-card-${selectedTheme.id}-${reputation.wallet.slice(0, 8)}.svg`}
               className="btn-primary"
               style={{
-                padding: '8px 14px',
+                padding: '7px 12px',
                 fontSize: '11px',
                 background: '#0d111a',
                 border: '1px solid #1c2438',
@@ -269,21 +269,21 @@ export default function CardCustomizerModal({
                 textDecoration: 'none',
               }}
             >
-              🖼️ Download SVG Card
+              🖼️ Download SVG
             </a>
 
             <button
               onClick={handleCopyConfig}
               className="btn-primary"
               style={{
-                padding: '8px 14px',
+                padding: '7px 12px',
                 fontSize: '11px',
                 background: '#0d111a',
                 border: '1px solid #1c2438',
                 color: copiedConfig ? '#00ff88' : '#aaa',
               }}
             >
-              {copiedConfig ? '✓ Config Copied' : '📋 Copy JSON Spec'}
+              {copiedConfig ? '✓ Config Copied' : '📋 Copy JSON'}
             </button>
           </div>
 
@@ -291,8 +291,8 @@ export default function CardCustomizerModal({
             onClick={onClose}
             className="btn-primary"
             style={{
-              padding: '8px 20px',
-              fontSize: '12px',
+              padding: '7px 18px',
+              fontSize: '11px',
               fontWeight: 800,
             }}
           >
