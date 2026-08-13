@@ -3,6 +3,7 @@
 import React, { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import ContributionHeatmap from '@/app/components/ContributionHeatmap'
+import ExportPassportModal from '@/app/components/ExportPassportModal'
 import PassportCard from '@/app/components/cards/PassportCard'
 import AchievementCard from '@/app/components/cards/AchievementCard'
 import CardCustomizerModal from '@/app/components/cards/CardCustomizerModal'
@@ -27,7 +28,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [inspectedAchievement, setInspectedAchievement] = useState<Achievement | null>(null)
   const [activeTheme, setActiveTheme] = useState<CardTheme>(CARD_THEMES.steel)
   const [copied, setCopied] = useState(false)
-  const [exportCopied, setExportCopied] = useState(false)
 
   // Initialize theme from URL if present
   useEffect(() => {
@@ -96,25 +96,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
     verificationUrl
   )}&bgcolor=060709&color=00ff88`
-
-  // Markdown Export representation
-  const markdownExport = `# PROVN Builder Passport: ${wallet}
-- **Status**: Verified Solana Builder
-- **Builder Level**: ${reputation.builderLevel.emoji} Level ${reputation.builderLevel.level} — ${reputation.builderLevel.title}
-- **Total Proofs**: ${reputation.totalProofs}
-- **Active Streak**: ${reputation.currentStreak} Days (Longest: ${reputation.longestStreak} Days)
-- **Archival Rate**: ${reputation.archivalSuccessRate}% on Arweave
-- **Top Skills**: ${reputation.skills.map((s) => s.name).join(', ') || 'N/A'}
-- **Protocols**: ${reputation.protocols.map((p) => p.name).join(', ') || 'N/A'}
-
-## Earned Achievements
-${reputation.achievements
-  .filter((a) => a.earned)
-  .map((a) => `- ${a.icon} **${a.name}**: ${a.description}`)
-  .join('\n')}
-
-Verify cryptographically at: ${verificationUrl}
-`
 
   return (
     <main
@@ -586,96 +567,12 @@ Verify cryptographically at: ${verificationUrl}
 
       {/* Export Modal */}
       {isExportOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '16px',
-          }}
-          onClick={() => setIsExportOpen(false)}
-        >
-          <div
-            className="terminal-card"
-            style={{
-              maxWidth: '600px',
-              width: '100%',
-              padding: '24px',
-              background: '#0a0d14',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ color: '#00ff88', margin: 0, fontSize: '15px' }}>
-                📥 Export PROVN Builder Passport
-              </h3>
-              <button
-                onClick={() => setIsExportOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <p style={{ color: '#888', fontSize: '11px', lineHeight: '1.5', marginBottom: '16px' }}>
-              Download or copy your portable cryptographic proof-of-work record in machine-readable JSON
-              or Markdown.
-            </p>
-
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <a
-                href={`/api/passport/${wallet}`}
-                download={`provn-passport-${wallet.slice(0, 8)}.json`}
-                className="btn-primary"
-                style={{
-                  padding: '8px 14px',
-                  fontSize: '12px',
-                  textDecoration: 'none',
-                  textAlign: 'center',
-                  flex: 1,
-                }}
-              >
-                💾 Download JSON
-              </a>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(markdownExport)
-                  setExportCopied(true)
-                  setTimeout(() => setExportCopied(false), 2000)
-                }}
-                className="btn-primary"
-                style={{
-                  padding: '8px 14px',
-                  fontSize: '12px',
-                  background: '#0d111a',
-                  border: '1px solid #1a2030',
-                  color: exportCopied ? '#00ff88' : '#00e5ff',
-                  flex: 1,
-                }}
-              >
-                {exportCopied ? '✓ Markdown Copied' : '📋 Copy Markdown'}
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="btn-primary"
-                style={{
-                  padding: '8px 14px',
-                  fontSize: '12px',
-                  background: '#0d111a',
-                  border: '1px solid #1a2030',
-                  color: '#ffb800',
-                  flex: 1,
-                }}
-              >
-                🖨️ Print / PDF
-              </button>
-            </div>
-          </div>
-        </div>
+        <ExportPassportModal
+          wallet={wallet}
+          reputation={reputation}
+          logs={logs}
+          onClose={() => setIsExportOpen(false)}
+        />
       )}
 
       {/* QR Code Modal */}
