@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     }
 
     const { data: log, error } = await supabase
-      .from('wallet_logs')
+      .from('logs')
       .select('*')
       .eq('id', proofId)
       .single()

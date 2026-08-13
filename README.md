@@ -92,25 +92,27 @@ Solana Wallet + Proof History + Reputation + Skills + Achievements = Digital Met
 
 ## 🏆 Reputation & Achievement Engine
 
-PROVN implements an **objective, deterministic reputation system** with 100% test coverage:
+PROVN implements an **objective, deterministic reputation engine** with 100% test coverage:
 
-- **Evolving Builder Levels**:
-  - `LVL 1` 🔧 **Apprentice Builder** (1+ proofs)
-  - `LVL 2` ⚒️ **Verified Craftsman** (5+ proofs)
-  - `LVL 3` 🏗️ **Senior Architect** (15+ proofs)
-  - `LVL 4` ⚡ **Protocol Master** (30+ proofs)
-  - `LVL 5` 🗿 **Grand Legend** (60+ proofs)
+- **Evolving Builder Levels** ([`app/lib/milestones.ts`](app/lib/milestones.ts)):
+  - `LVL 1` 🔧 **Apprentice Builder** (0+ logs)
+  - `LVL 2` ⚒️ **Verified Craftsman** (7+ logs)
+  - `LVL 3` 🏗️ **Senior Architect** (30+ logs)
+  - `LVL 4` 💎 **Protocol Master** (100+ logs)
+  - `LVL 5` 👑 **Grand Legend** (365+ logs)
 - **Active & Longest Streaks**: Evaluated using the canonical Indian Standard Time (`Asia/Kolkata`) protocol timezone to guarantee absolute parity across all international viewers.
-- **Deterministic Off-Chain Achievements Registry**:
-  - 🚀 **Genesis Proof**: First verified SIWS work record.
-  - 🛡️ **7-Day Ironclad**: 7 consecutive daily proofs.
-  - ⚔️ **30-Day Titan**: 30 consecutive daily proofs.
-  - 💯 **Century Legend**: 100+ lifetime verified proofs.
-  - ⚡ **Solana Specialist**: 5+ Solana-specific smart contract / Anchor logs.
-  - 🐙 **Open Source Vanguard**: 5+ Pull-request evidence logs.
-  - 📦 **Permanent Provenance**: 10+ Arweave-archived transactions.
-  - 🗿 **Grand Legend**: Level 5 protocol mastery.
-- **cNFT Metaplex Standard Metadata Generation**: Ready for on-chain compressed NFT minting upon grant milestone execution.
+- **Deterministic Off-Chain Achievements Registry** ([`app/lib/achievements.ts`](app/lib/achievements.ts)):
+  - ⚡ **Genesis Proof**: Submit 1 verified proof log.
+  - 🔥 **7-Day Ironclad**: Maintain an active or historical 7-day streak.
+  - 🛡️ **30-Day Titan**: Maintain an active or historical 30-day streak.
+  - 👑 **Century Legend**: Maintain an active or historical 100-day streak.
+  - 🟣 **Solana Specialist**: Log 10+ Solana ecosystem protocol proofs.
+  - 🐙 **Open Source Vanguard**: Submit 5+ verified Pull Request / Commit links.
+  - 📦 **Permanent Provenance**: 10+ logs permanently archived on Arweave.
+  - 🗿 **Grand Legend**: Achieve Level 5 protocol mastery.
+- **cNFT Metaplex Standard Metadata Generation**: Off-chain deterministic metadata generation ready for on-chain compressed NFT minting upon grant milestone execution.
+
+> **Note on Verification Scope**: Ed25519 signatures cryptographically prove that the Solana private key owner authored, timestamped, and committed the attestation at submission time. Automated regex tag classification is a deterministic heuristic on signed log text. External GitHub OAuth/Oracle ownership verification is scheduled for Milestone 2 on the roadmap.
 
 ---
 

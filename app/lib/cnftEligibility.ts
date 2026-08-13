@@ -145,11 +145,8 @@ export class LocalTestMinter implements AchievementMinter {
  * Production Metaplex Bubblegum Minter (Disabled until grant funding activates NEXT_PUBLIC_CNFT_ENABLED=true)
  */
 export class MetaplexMinter implements AchievementMinter {
-  async mintAchievement(
-    _wallet: string,
-    _achievement: Achievement,
-    _reputation: BuilderReputation
-  ): Promise<MintResult> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async mintAchievement(_wallet: string, _achievement: Achievement, _reputation: BuilderReputation): Promise<MintResult> {
     const isEnabled = process.env.NEXT_PUBLIC_CNFT_ENABLED === 'true'
     if (!isEnabled) {
       return {

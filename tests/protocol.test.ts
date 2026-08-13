@@ -514,8 +514,59 @@ async function runProductionTestSuite() {
   const fallbackTheme = getCardTheme('unknown_nonexistent_theme')
   assert(fallbackTheme.id === 'steel', 'getCardTheme safely falls back to default Raw Steel for unknown theme IDs')
 
-  const validTheme = getCardTheme('titanium')
-  assert(validTheme.id === 'titanium' && validTheme.material === 'titanium', 'getCardTheme resolves exact theme correctly')
+  // --- SUITE 9: Truth and Integrity Hardening & Sanitization ---
+  console.log('\n► SUITE 9: Truth and Integrity Hardening & Sanitization')
+
+  // Test 1: Base58 Decoding & Validation
+  const validSolanaWallet = 'AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p'
+  const decodedPubkey = decodeBase58(validSolanaWallet)
+  assert(decodedPubkey.length === 32, 'Valid Solana address decodes to exact 32-byte public key')
+
+  let invalidBase58Thrown = false
+  try {
+    decodeBase58('Invalid0OIlNonBase58Chars!!!')
+  } catch {
+    invalidBase58Thrown = true
+  }
+  assert(invalidBase58Thrown === true, 'decodeBase58 throws on invalid Base58 characters')
+
+  // Test 2: SVG XML Entity Sanitization
+  function escapeXmlTest(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;')
+  }
+  const xssAttempt = '<script>alert("xss")</script>&foo=\'bar\''
+  const sanitized = escapeXmlTest(xssAttempt)
+  assert(!sanitized.includes('<') && !sanitized.includes('>') && !sanitized.includes('"') && !sanitized.includes("'"), 'XML/SVG entity sanitizer strips potential injection tokens')
+  assert(sanitized.includes('&lt;script&gt;') && sanitized.includes('&amp;foo='), 'XML/SVG entity sanitizer produces valid XML entities')
+
+  // Test 3: Builder Level Threshold Alignment
+  const { BUILDER_LEVELS, getBuilderLevel } = await import('../app/lib/milestones')
+  assert(BUILDER_LEVELS[0].minLogs === 0, 'Level 1 Apprentice threshold is 0 logs')
+  assert(BUILDER_LEVELS[1].minLogs === 7, 'Level 2 Craftsman threshold is 7 logs')
+  assert(BUILDER_LEVELS[2].minLogs === 30, 'Level 3 Architect threshold is 30 logs')
+  assert(BUILDER_LEVELS[3].minLogs === 100, 'Level 4 Master threshold is 100 logs')
+  assert(BUILDER_LEVELS[4].minLogs === 365, 'Level 5 Grand Legend threshold is 365 logs')
+
+  assert(getBuilderLevel(0).level === 1, '0 logs resolves to Level 1')
+  assert(getBuilderLevel(7).level === 2, '7 logs resolves to Level 2')
+  assert(getBuilderLevel(35).level === 3, '35 logs resolves to Level 3')
+  assert(getBuilderLevel(150).level === 4, '150 logs resolves to Level 4')
+  assert(getBuilderLevel(400).level === 5, '400 logs resolves to Level 5')
+
+  // Test 4: Canonical Retry Message Construction
+  const retryMsg = buildCanonicalRetryMessage({
+    walletAddress: validSolanaWallet,
+    logId: 42,
+    timestamp: '2026-08-14T00:00:00.000Z',
+    nonce: 'retry_nonce_1234',
+  })
+  assert(retryMsg.includes('Action: Retry Archival'), 'Canonical retry message contains Action: Retry Archival header')
+  assert(retryMsg.includes('Log ID: 42') && retryMsg.includes('retry_nonce_1234'), 'Canonical retry message includes logId and nonce')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')

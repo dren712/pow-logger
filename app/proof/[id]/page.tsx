@@ -40,7 +40,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
   }
 
   const { data: log } = await supabase
-    .from('wallet_logs')
+    .from('logs')
     .select('*')
     .eq('id', proofId)
     .single()

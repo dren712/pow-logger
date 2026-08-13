@@ -117,6 +117,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: walletLimit.error }, { status: 429 })
     }
 
+    // Double check fresh status right before upload to prevent concurrent duplicate uploads
+    const { data: freshCheck } = await supabase
+      .from('logs')
+      .select('irys_tx_id, archival_state')
+      .eq('id', logId)
+      .maybeSingle()
+
+    if (freshCheck?.irys_tx_id && !freshCheck.irys_tx_id.startsWith('powl_')) {
+      return NextResponse.json({
+        success: true,
+        message: 'Log entry is already archived on Irys',
+        irysTxId: freshCheck.irys_tx_id,
+        archivalState: 'archived',
+        gatewayUrl: `https://gateway.irys.xyz/${freshCheck.irys_tx_id}`,
+      })
+    }
+
     // 5. Execute Retry Upload to Irys Node #1
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
