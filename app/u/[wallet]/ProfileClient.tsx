@@ -7,7 +7,6 @@ import ExportPassportModal from '@/app/components/ExportPassportModal'
 import PassportCard from '@/app/components/cards/PassportCard'
 import AchievementCard from '@/app/components/cards/AchievementCard'
 import CardCustomizerModal from '@/app/components/cards/CardCustomizerModal'
-import ProofPacketModal from '@/app/components/ProofPacketModal'
 import { CARD_THEMES, CardTheme, getCardTheme } from '@/app/lib/cardThemes'
 import { Achievement, WalletLog } from '@/app/lib/types'
 import { calculateReputation } from '@/app/lib/reputationEngine'
@@ -24,7 +23,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isExportOpen, setIsExportOpen] = useState(false)
-  const [isProofPacketOpen, setIsProofPacketOpen] = useState(false)
   const [isQROpen, setIsQROpen] = useState(false)
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false)
   const [inspectedAchievement, setInspectedAchievement] = useState<Achievement | null>(null)
@@ -32,16 +30,13 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [copied, setCopied] = useState(false)
   const [achievementFilter, setAchievementFilter] = useState<'all' | 'unlocked' | 'locked'>('all')
 
-  // Initialize theme or packet from URL if present
+  // Initialize theme from URL if present
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const themeParam = params.get('theme')
       if (themeParam) {
         setActiveTheme(getCardTheme(themeParam))
-      }
-      if (params.get('packet') === 'true') {
-        setIsProofPacketOpen(true)
       }
     }
   }, [])
@@ -137,20 +132,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         </Link>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
-            onClick={() => setIsProofPacketOpen(true)}
-            className="btn-primary"
-            style={{
-              padding: '6px 12px',
-              fontSize: '11px',
-              background: '#0d111a',
-              border: '1px solid #00ff88',
-              color: '#00ff88',
-              fontWeight: 700,
-            }}
-          >
-            📦 Proof Packet
-          </button>
-          <button
             onClick={() => setIsCustomizerOpen(true)}
             className="btn-primary"
             style={{
@@ -187,7 +168,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
               color: '#00e5ff',
             }}
           >
-            📥 Export All
+            📥 Export Passport
           </button>
           <button
             onClick={handleCopyLink}
@@ -218,24 +199,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         </div>
       </div>
 
-      {/* Legacy Context Banner (if applicable) */}
-      {reputation.legacyRecords > 0 && (
-        <div
-          style={{
-            background: 'rgba(255, 184, 0, 0.06)',
-            border: '1px solid rgba(255, 184, 0, 0.25)',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            fontSize: '11px',
-            color: '#ffb800',
-            lineHeight: '1.45',
-          }}
-        >
-          <strong>ℹ️ Historical Context:</strong> This wallet contains <strong>{reputation.legacyRecords} legacy record{reputation.legacyRecords === 1 ? '' : 's'}</strong> logged prior to PROVN protocol v1.0 signing standards. To preserve cryptographic integrity, legacy records remain visible in your timeline below but do not contribute to verified reputation metrics or daily streak calculations.
-        </div>
-      )}
-
       {/* Metallic Builder Passport Hero Card */}
       <div style={{ marginBottom: '32px' }}>
         <PassportCard
@@ -246,56 +209,48 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         />
       </div>
 
-      {/* Evidence-First Reputation Stats Grid */}
+      {/* Core Reputation Stats */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
           gap: '12px',
           marginBottom: '24px',
         }}
       >
         <div className="terminal-card" style={{ padding: '14px 16px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Verified Proofs</div>
-          <div style={{ color: '#00ff88', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
-            ⚡ {reputation.verifiedProofs}
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Builder Level</div>
+          <div style={{ color: reputation.builderLevel.color, fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>
+            {reputation.builderLevel.emoji} LVL {reputation.builderLevel.level}
           </div>
-          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>100% Ed25519 Signed</div>
-        </div>
-
-        <div className="terminal-card" style={{ padding: '14px 16px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>30-Day Activity</div>
-          <div style={{ color: '#00e5ff', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
-            📊 {reputation.recentVerifiedProofs}
-          </div>
-          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>Recent Verified Proofs</div>
-        </div>
-
-        <div className="terminal-card" style={{ padding: '14px 16px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>GitHub Evidence</div>
-          <div style={{ color: '#ab9ff2', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
-            🐙 {reputation.proofsWithGithubEvidence}
-          </div>
-          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>Self-Attested PRs</div>
-        </div>
-
-        <div className="terminal-card" style={{ padding: '14px 16px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave Archival</div>
-          <div style={{ color: '#27c93f', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
-            📦 {reputation.archivalSuccessRate}%
-          </div>
-          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
-            {reputation.archivedVerifiedProofs} Confirmed L1 TXs
-          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>{reputation.builderLevel.title}</div>
         </div>
 
         <div className="terminal-card" style={{ padding: '14px 16px' }}>
           <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Active Streak</div>
           <div style={{ color: '#ffb800', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
-            🔥 {reputation.currentStreak}d
+            🔥 {reputation.currentStreak} Days
           </div>
           <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
             Longest: {reputation.longestStreak}d
+          </div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Verified Proofs</div>
+          <div style={{ color: '#00ff88', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            ⚡ {reputation.totalProofs}
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>100% Wallet Signed</div>
+        </div>
+
+        <div className="terminal-card" style={{ padding: '14px 16px' }}>
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave Archival</div>
+          <div style={{ color: '#00e5ff', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
+            📦 {reputation.archivalSuccessRate}%
+          </div>
+          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
+            {reputation.archivedProofs} Archived TXs
           </div>
         </div>
       </div>
@@ -668,15 +623,6 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           onClose={() => setIsExportOpen(false)}
         />
       )}
-
-      {/* Proof Packet Modal */}
-      <ProofPacketModal
-        isOpen={isProofPacketOpen}
-        onClose={() => setIsProofPacketOpen(false)}
-        wallet={wallet}
-        reputation={reputation}
-        logs={logs}
-      />
 
       {/* QR Code Modal */}
       {isQROpen && (

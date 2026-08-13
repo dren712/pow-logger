@@ -36,8 +36,6 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     const canonicalMessageReconstructed = Boolean(rawLog.nonce && rawLog.wallet_address)
     const domainVerified = signatureValid
 
-    const verificationState = signatureValid ? 'VERIFIED' : (!rawLog.nonce ? 'LEGACY' : 'UNVERIFIED')
-
     const proofDetail: ProofDetail = {
       id: rawLog.id,
       walletAddress: rawLog.wallet_address,
@@ -54,7 +52,6 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       irysTxId: rawLog.irys_tx_id || null,
       archivalState: rawLog.archival_state || 'pending',
       isCryptographicallyVerified: signatureValid,
-      verificationState,
       verificationDetails: {
         canonicalMessageReconstructed,
         signatureValid,

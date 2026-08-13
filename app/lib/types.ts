@@ -4,8 +4,6 @@
 
 export type ArchivalState = 'pending' | 'archived' | 'failed' | 'legacy_unverified'
 
-export type LogVerificationState = 'VERIFIED' | 'LEGACY' | 'UNVERIFIED'
-
 export interface WalletLog {
   id: number
   wallet_address: string
@@ -48,16 +46,9 @@ export interface AchievementEligibility {
 
 export interface BuilderReputation {
   wallet: string
-  totalRecords: number
-  totalProofs: number // Invariant: Equals verifiedProofs
+  totalProofs: number
   verifiedProofs: number
-  legacyRecords: number
-  unverifiedRecords: number
-  archivedProofs: number // Invariant: Equals archivedVerifiedProofs
-  archivedVerifiedProofs: number
-  recentVerifiedProofs: number // Proofs created in the last 30 days
-  proofsWithGithubEvidence: number
-  proofsWithOtherEvidence: number
+  archivedProofs: number
   currentStreak: number
   longestStreak: number
   builderLevel: {
@@ -93,7 +84,6 @@ export interface ProofDetail {
   irysTxId?: string | null
   archivalState: ArchivalState
   isCryptographicallyVerified: boolean
-  verificationState: LogVerificationState
   verificationDetails?: {
     canonicalMessageReconstructed: boolean
     signatureValid: boolean
@@ -110,56 +100,4 @@ export interface PassportExport {
   reputation: BuilderReputation
   proofs: ProofDetail[]
   verificationUrl: string
-}
-
-export interface ProofPacket {
-  protocol: 'PROVN'
-  version: '1.0'
-  generatedAt: string
-  wallet: string
-  walletShort: string
-  reputationSummary: {
-    verifiedProofs: number
-    recentVerifiedProofs: number
-    currentStreak: number
-    builderLevel: string
-    topSkills: string[]
-    topProtocols: string[]
-  }
-  proofs: ProofDetail[]
-  verificationUrl: string
-  verificationInstructions: string
-}
-
-export interface EvidencePolicy {
-  name?: string
-  minVerifiedProofs?: number
-  minRecentProofs?: number
-  minStreak?: number
-  requiredProtocols?: string[]
-  requiredSkills?: string[]
-  requireGithubEvidence?: boolean
-  requireArchivedProof?: boolean
-}
-
-export interface PolicyCheckResult {
-  id: string
-  label: string
-  required: number | string | boolean | string[]
-  actual: number | string | boolean | string[]
-  passed: boolean
-  description?: string
-}
-
-export interface EligibilityEvaluation {
-  eligible: boolean
-  wallet: string
-  policyName: string
-  evaluatedAt: string
-  checks: PolicyCheckResult[]
-  summary: {
-    passedCount: number
-    totalChecks: number
-  }
-  protocolVersion: string
 }

@@ -38,28 +38,23 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const reputation = calculateReputation(wallet, logs)
 
     const hostHeader = req.headers.get('host')
-    const proofDetails: ProofDetail[] = logs.map((l) => {
-      const isValid = verifyLogCryptographically(l, hostHeader)
-      const verificationState = isValid ? 'VERIFIED' : (!l.nonce ? 'LEGACY' : 'UNVERIFIED')
-      return {
-        id: l.id,
-        walletAddress: l.wallet_address,
-        createdAt: l.created_at,
-        content: l.content,
-        githubUrl: l.github_url || null,
-        evidenceUrl: l.evidence_url || null,
-        signature: l.signature,
-        nonce: l.nonce,
-        domain: l.domain,
-        skills: l.skills,
-        protocols: l.protocols,
-        category: l.category,
-        irysTxId: l.irys_tx_id || null,
-        archivalState: l.archival_state || 'pending',
-        isCryptographicallyVerified: isValid,
-        verificationState,
-      }
-    })
+    const proofDetails: ProofDetail[] = logs.map((l) => ({
+      id: l.id,
+      walletAddress: l.wallet_address,
+      createdAt: l.created_at,
+      content: l.content,
+      githubUrl: l.github_url || null,
+      evidenceUrl: l.evidence_url || null,
+      signature: l.signature,
+      nonce: l.nonce,
+      domain: l.domain,
+      skills: l.skills,
+      protocols: l.protocols,
+      category: l.category,
+      irysTxId: l.irys_tx_id || null,
+      archivalState: l.archival_state || 'pending',
+      isCryptographicallyVerified: verifyLogCryptographically(l, hostHeader),
+    }))
 
     const passportData: PassportExport = {
       protocol: 'PROVN',

@@ -23,34 +23,11 @@ import { verifyLogCryptographically } from './canonicalMessage'
 export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderReputation {
   const safeLogs = logs || []
   
-  // Total raw records in database
-  const totalRecords = safeLogs.length
-
   // Strict Protocol Invariant: PROVN Reputation is derived EXCLUSIVELY from cryptographically verified proofs
   const verifiedLogs = safeLogs.filter((l) => verifyLogCryptographically(l))
+  const totalProofs = verifiedLogs.length
   const verifiedProofs = verifiedLogs.length
-  const totalProofs = verifiedProofs // Invariant alias
-  
-  // Explicit categorization of historical & unverified records
-  const legacyRecords = safeLogs.filter((l) => !l.nonce).length
-  const unverifiedRecords = safeLogs.filter((l) => l.nonce && !verifyLogCryptographically(l)).length
-  
-  // Archived verified proofs (Irys / Arweave confirmed)
-  const archivedVerifiedProofs = verifiedLogs.filter(
-    (l) => l.archival_state === 'archived' || (Boolean(l.irys_tx_id) && !l.irys_tx_id?.startsWith('powl_'))
-  ).length
-  const archivedProofs = archivedVerifiedProofs
-
-  // Recent verified proofs (created within the last 30 days)
-  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
-  const recentVerifiedProofs = verifiedLogs.filter((l) => {
-    const time = new Date(l.created_at).getTime()
-    return !isNaN(time) && time >= thirtyDaysAgo
-  }).length
-
-  // Evidence density
-  const proofsWithGithubEvidence = verifiedLogs.filter((l) => Boolean(l.github_url && l.github_url.trim())).length
-  const proofsWithOtherEvidence = verifiedLogs.filter((l) => Boolean(l.evidence_url && l.evidence_url.trim())).length
+  const archivedProofs = verifiedLogs.filter((l) => l.archival_state === 'archived' || Boolean(l.irys_tx_id)).length
 
   // Extract timestamps ONLY from cryptographically verified proofs
   const createdAts = verifiedLogs.map((l) => l.created_at).filter(Boolean)
@@ -115,7 +92,7 @@ export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderR
   const achievements = evaluateAchievements(verifiedLogs, currentStreak, longestStreak)
 
   // Archival Success Rate computed on verified proofs
-  const archivalSuccessRate = totalProofs > 0 ? Math.round((archivedVerifiedProofs / totalProofs) * 100) : 0
+  const archivalSuccessRate = totalProofs > 0 ? Math.round((archivedProofs / totalProofs) * 100) : 0
 
   // Date Extents & Active Days computed ONLY from verified proofs
   const sortedDates = [...createdAts].sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
@@ -131,16 +108,9 @@ export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderR
 
   return {
     wallet,
-    totalRecords,
     totalProofs,
     verifiedProofs,
-    legacyRecords,
-    unverifiedRecords,
     archivedProofs,
-    archivedVerifiedProofs,
-    recentVerifiedProofs,
-    proofsWithGithubEvidence,
-    proofsWithOtherEvidence,
     currentStreak,
     longestStreak,
     builderLevel,
