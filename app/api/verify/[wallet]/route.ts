@@ -50,7 +50,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       let isCryptoVerified = false
       let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
 
-      if (!l.nonce && (l as any).protocol_version !== 2) {
+      if (!l.nonce && (l as { protocol_version?: number }).protocol_version !== 2) {
         status = 'legacy_unindexed'
       } else {
         isCryptoVerified = verifyLogCryptographically(l)
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     // Strict Invariant: Metrics and badges are derived EXCLUSIVELY from cryptographically verified proofs
     const verifiedLogs = logs.filter((l) => verifyLogCryptographically(l))
     const verifiedLogsCount = verifiedLogs.length
-    const legacyCount = logs.filter((l) => !l.nonce && (l as any).protocol_version !== 2).length
+    const legacyCount = logs.filter((l) => !l.nonce && (l as { protocol_version?: number }).protocol_version !== 2).length
 
     const createdAts = verifiedLogs.map((l) => l.created_at)
     const tz = req.nextUrl.searchParams.get('tz') || PROTOCOL_TIMEZONE

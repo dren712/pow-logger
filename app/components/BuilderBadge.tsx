@@ -1,6 +1,6 @@
 'use client'
 
-import { StreakMilestone, BadgeSummary } from '@/app/lib/milestones'
+import { BadgeSummary } from '@/app/lib/milestones'
 
 interface BuilderBadgeProps {
   badge: BadgeSummary
@@ -13,11 +13,6 @@ export default function BuilderBadge({ badge, compact = false }: BuilderBadgePro
 
   const {
     level,
-    nextLevel = null,
-    levelProgress = 0,
-    currentStreak = 0,
-    earnedMilestones = [],
-    nextMilestone = null,
   } = badge
 
   if (compact) {

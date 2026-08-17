@@ -179,13 +179,13 @@ export async function verifyGithubSource(url: string): Promise<VerificationResul
       snapshot,
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       status: 'unavailable',
       provenanceLevel: 'source_linked',
       evidenceType,
       snapshot: null,
-      error: `Verification failed: ${error.message}`,
+      error: `Verification failed: ${error instanceof Error ? error.message : String(error)}`,
     }
   }
 }

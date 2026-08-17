@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
     let evidenceType = 'self_attested'
     let provenanceLevel = 'self_attested'
     let sourceProvider: string | null = null
-    let sourceMetadata: any = null
+    let sourceMetadata: Record<string, unknown> | null = null
     let sourceVerificationStatus = 'not_verified'
     let sourceVerifiedAt: string | null = null
 

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
 
     const proofDetails: ProofDetail[] = logs.map((l) => {
       const isValid = verifyLogCryptographically(l)
-      const verificationState = isValid ? 'VERIFIED' : ((!l.nonce && (l as any).protocol_version !== 2) ? 'LEGACY' : 'UNVERIFIED')
+      const verificationState = isValid ? 'VERIFIED' : ((!l.nonce && (l as { protocol_version?: number }).protocol_version !== 2) ? 'LEGACY' : 'UNVERIFIED')
       return {
         id: l.id,
         walletAddress: l.wallet_address,

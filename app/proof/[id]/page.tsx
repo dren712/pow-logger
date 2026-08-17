@@ -202,12 +202,12 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
             </div>
             <div>
               <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Author Handle</div>
-              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>{(proof.source_metadata as any).author || 'Unknown'}</div>
+              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>{(proof.source_metadata as { author?: string })?.author || 'Unknown'}</div>
             </div>
             <div>
               <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Merge State</div>
-              <div style={{ color: (proof.source_metadata as any).state === 'closed' ? ((proof.source_metadata as any).merged_at ? '#ab9ff2' : '#ff4444') : '#27c93f', fontSize: '12px', marginTop: '4px' }}>
-                {(proof.source_metadata as any).state === 'closed' ? ((proof.source_metadata as any).merged_at ? 'Merged' : 'Closed') : ((proof.source_metadata as any).state === 'open' ? 'Open' : (proof.source_metadata as any).state || 'Committed')}
+              <div style={{ color: (proof.source_metadata as { state?: string, merged_at?: string })?.state === 'closed' ? ((proof.source_metadata as { merged_at?: string })?.merged_at ? '#ab9ff2' : '#ff4444') : '#27c93f', fontSize: '12px', marginTop: '4px' }}>
+                {(proof.source_metadata as { state?: string, merged_at?: string })?.state === 'closed' ? ((proof.source_metadata as { merged_at?: string })?.merged_at ? 'Merged' : 'Closed') : ((proof.source_metadata as { state?: string })?.state === 'open' ? 'Open' : (proof.source_metadata as { state?: string })?.state || 'Committed')}
               </div>
             </div>
             <div>
