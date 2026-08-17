@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import { buildCanonicalSubmitMessage, buildCanonicalSubmitMessageV2, validateAndNormalizeUrl, decodeBase58 } from '@/app/lib/canonicalMessage'
+import {
+  buildCanonicalSubmitMessage,
+  buildCanonicalSubmitMessageV2,
+  validateAndNormalizeUrl,
+  decodeBase58,
+  getVerifiedDomain
+} from '@/app/lib/canonicalMessage'
 
 export const maxDuration = 15 // Allow up to 15s execution for Irys Arweave upload
 
@@ -103,7 +109,7 @@ export async function POST(req: NextRequest) {
     const cleanEvidenceUrl = validateAndNormalizeUrl(evidenceUrl as string | null, 'evidence')
 
     // Extract & strictly validate domain against injection attacks
-    const reqHost = process.env.NEXT_PUBLIC_APP_DOMAIN?.trim().toLowerCase().split(':')[0] || 'provn-sol.vercel.app'
+    const reqHost = getVerifiedDomain(req.headers.get('host'))
 
     let consumedChallengeId: string | null = null
 

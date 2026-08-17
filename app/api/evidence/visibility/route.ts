@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import { buildCanonicalVisibilityMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { buildCanonicalVisibilityMessage, decodeBase58, getVerifiedDomain } from '@/app/lib/canonicalMessage'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired challenge' }, { status: 401 })
     }
 
-    const domain = process.env.NEXT_PUBLIC_APP_DOMAIN?.trim().toLowerCase().split(':')[0] || 'provn-sol.vercel.app'
+    const domain = getVerifiedDomain(req.headers.get('host'))
     const expectedMessageText = buildCanonicalVisibilityMessage({
       domain,
       walletAddress,

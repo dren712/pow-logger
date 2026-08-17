@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import { buildCanonicalRetryMessage, buildCanonicalRetryMessageV2, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { getVerifiedDomain, buildCanonicalRetryMessage, buildCanonicalRetryMessageV2, decodeBase58 } from '@/app/lib/canonicalMessage'
 
 export const maxDuration = 15 // Allow up to 15s execution for Irys Arweave upload
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Cryptographic Wallet Signature Verification for Retry
-    const reqHost = process.env.NEXT_PUBLIC_APP_DOMAIN?.trim().toLowerCase().split(':')[0] || 'provn-sol.vercel.app'
+    const reqHost = getVerifiedDomain(req.headers.get('host'))
 
     let expectedRetryMessage: string;
     if (challenge) {
