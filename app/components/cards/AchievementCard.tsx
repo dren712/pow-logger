@@ -59,7 +59,6 @@ export default function AchievementCard({
   }, [achievement.rarity, customTheme])
 
   const theme = achievement.earned ? earnedTheme : LOCKED_THEME
-  const serialId = `ACH-${achievement.id.slice(0, 4)}-${reputation.wallet.slice(0, 4).toUpperCase()}`
 
   const frontContent = (
     <div
@@ -87,7 +86,7 @@ export default function AchievementCard({
               display: 'block',
             }}
           >
-            {achievement.earned ? 'PROVN EARNED //' : 'LOCKED MILESTONE //'} {achievement.rarity.toUpperCase()}
+            {achievement.earned ? 'PROVN EARNED' : 'LOCKED MILESTONE'}
           </span>
           <div
             style={{
@@ -204,7 +203,7 @@ export default function AchievementCard({
               textTransform: 'uppercase',
             }}
           >
-            {achievement.earned ? 'VERIFIED 🗿' : 'PENDING'}
+            {achievement.earned ? 'MILESTONE REACHED' : 'PENDING'}
           </span>
         </div>
       </div>
@@ -222,7 +221,6 @@ export default function AchievementCard({
       <MetalCard
         theme={theme}
         frontContent={frontContent}
-        serialNumber={serialId}
         interactive={achievement.earned}
         aspectRatio="1.586 / 1"
       />

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs } from '@/app/lib/milestones'
-import { decodeBase58 } from '@/app/lib/canonicalMessage'
+import { verifyLogCryptographically, decodeBase58 } from '@/app/lib/canonicalMessage'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 export const dynamic = 'force-dynamic'
@@ -44,16 +44,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     }
 
     const logList = await fetchAllWalletLogs(supabase, wallet)
-    const totalLogs = logList.length
+    const verifiedLogList = logList.filter((l) => verifyLogCryptographically(l))
+    const totalLogs = verifiedLogList.length
 
-    const createdAts = logList.map((l) => l.created_at)
+    const createdAts = verifiedLogList.map((l) => l.created_at)
     const streak = calculateStreak(createdAts)
     const longestStreak = calculateLongestStreak(createdAts)
 
     const rawShort = wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet
     const shortWallet = escapeXml(rawShort)
 
-    const badgeSummary = computeBadgeSummary(totalLogs, streak, longestStreak, logList)
+    const badgeSummary = computeBadgeSummary(totalLogs, streak, longestStreak, verifiedLogList)
     const level = badgeSummary.level
     const levelTitle = escapeXml(level.title)
     const levelColor = escapeXml(level.color)

@@ -111,7 +111,7 @@ export default function BountyDemoPage() {
                 EVALUATION POLICY: {activePolicy.name}
               </span>
               <h2 className="text-base sm:text-lg font-bold font-mono text-white mt-2">
-                Programmatic Evidence Gating Contract
+                Policy Evaluation Example (Unofficial)
               </h2>
             </div>
             <div className="text-left sm:text-right">

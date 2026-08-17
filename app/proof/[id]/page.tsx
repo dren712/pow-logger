@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: ProofPageProps): Promise<Meta
   const resolvedParams = await params
   const proofId = resolvedParams.id
   return {
-    title: `PROVN Proof #${proofId} — Cryptographically Verified`,
+    title: `PROVN Proof #${proofId} — Wallet-Signed Evidence Record`,
     description: `Inspect individual proof-of-work record #${proofId} with live Ed25519 signature verification on Solana.`,
   }
 }
@@ -173,17 +173,52 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         </div>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
           <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>3. Evidence</div>
-          <div style={{ color: proof.github_url || proof.evidence_url ? '#ab9ff2' : '#666', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {proof.github_url ? 'GitHub Link Attached' : proof.evidence_url ? 'Demo Link Attached' : 'None Attached'}
+          <div style={{ color: proof.provenance_level === 'source_verified' ? '#00ff88' : proof.provenance_level === 'source_linked' ? '#00e5ff' : '#aaa', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
+            {proof.provenance_level === 'source_verified' ? 'Source API Verified' : proof.provenance_level === 'source_linked' ? 'Source URL Linked' : 'Self-Attested'}
           </div>
         </div>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
           <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>4. Storage</div>
-          <div style={{ color: proof.archival_state === 'archived' ? '#27c93f' : '#ffb800', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {proof.archival_state === 'archived' ? 'Arweave Confirmed' : 'Database Stored'}
+          <div style={{ color: (proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized') ? '#27c93f' : '#ffb800', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
+            {(proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized') ? 'Arweave Confirmed' : 'Database Stored'}
           </div>
         </div>
       </div>
+
+      {/* Source Verification Details Section */}
+      {proof.provenance_level === 'source_verified' && proof.source_metadata && typeof proof.source_metadata === 'object' && (
+        <div className="terminal-card" style={{ padding: '24px', marginBottom: '20px', borderLeft: '3px solid #00ff88' }}>
+          <h2 style={{ color: '#00ff88', fontSize: '12px', textTransform: 'uppercase', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>✓</span> Source Verification API Result
+          </h2>
+          <div style={{ fontSize: '12px', color: '#ccc', marginBottom: '16px', lineHeight: '1.5' }}>
+            PROVN verified via the GitHub API that this source exists.<br />
+            <span style={{ color: '#ffb800' }}>Warning: PROVN verifies the source exists, but does not definitively prove this wallet holder owns the GitHub account.</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
+            <div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Source Type</div>
+              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>{proof.evidence_type === 'github_pr' ? 'GitHub Pull Request' : 'GitHub Commit'}</div>
+            </div>
+            <div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Author Handle</div>
+              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>{(proof.source_metadata as any).author || 'Unknown'}</div>
+            </div>
+            <div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Merge State</div>
+              <div style={{ color: (proof.source_metadata as any).state === 'closed' ? ((proof.source_metadata as any).merged_at ? '#ab9ff2' : '#ff4444') : '#27c93f', fontSize: '12px', marginTop: '4px' }}>
+                {(proof.source_metadata as any).state === 'closed' ? ((proof.source_metadata as any).merged_at ? 'Merged' : 'Closed') : ((proof.source_metadata as any).state === 'open' ? 'Open' : (proof.source_metadata as any).state || 'Committed')}
+              </div>
+            </div>
+            <div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Verified At</div>
+              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>
+                {proof.source_verified_at ? new Date(proof.source_verified_at).toLocaleString() : 'N/A'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Proof Content Card */}
       <div className="terminal-card" style={{ padding: '24px', marginBottom: '20px' }}>
@@ -205,7 +240,9 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
           {proof.github_url && (
             <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>GitHub Evidence (Self-Attested)</div>
+              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>
+                GitHub Evidence ({proof.provenance_level === 'source_verified' ? 'Source-Verified' : 'Self-Attested'})
+              </div>
               <a
                 href={proof.github_url}
                 target="_blank"
@@ -268,7 +305,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ color: '#666' }}>Archival State:</span>
-            <span style={{ color: proof.archival_state === 'archived' ? '#00ff88' : '#ffb800' }}>
+            <span style={{ color: (proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized') ? '#00ff88' : '#ffb800' }}>
               {proof.archival_state?.toUpperCase() || 'PENDING'}
             </span>
           </div>

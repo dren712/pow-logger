@@ -120,7 +120,7 @@ async function backfillIrysArchives() {
           .from('logs')
           .update({
             irys_tx_id: irysTxId,
-            archival_state: 'archived',
+            archival_state: 'receipt_obtained',
           })
           .eq('id', log.id)
 

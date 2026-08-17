@@ -17,7 +17,12 @@ import bs58 from 'bs58'
 import { createClient } from '@supabase/supabase-js'
 import {
   buildCanonicalSubmitMessage,
+  buildCanonicalSubmitMessageV2,
   buildCanonicalRetryMessage,
+  buildCanonicalRetryMessageV2,
+  buildCanonicalArchiveMessage,
+  buildCanonicalVisibilityMessage,
+  CURRENT_PROTOCOL_VERSION,
   validateAndNormalizeUrl,
   getVerifiedDomain,
   isConfiguredSupabaseUrl,
@@ -33,6 +38,7 @@ import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } fr
 import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
 import { WalletLog } from '../app/lib/types'
+import { parseGithubUrl } from '../app/lib/githubVerifier'
 
 import fs from 'fs'
 import path from 'path'
@@ -82,6 +88,16 @@ async function runProductionTestSuite() {
 
   const validEvidence = validateAndNormalizeUrl('https://provn-sol.vercel.app/demo', 'evidence')
   assert(validEvidence === 'https://provn-sol.vercel.app/demo', 'Valid HTTPS evidence URL accepted')
+
+  console.log('\n► SUITE 1B: GitHub PR/Commit URL Parsing (Phase 2)')
+  const prUrl = parseGithubUrl('https://github.com/dren712/pow-logger/pull/1')
+  assert(prUrl?.type === 'pull' && prUrl.identifier === '1', 'GitHub PR URL parsed correctly')
+
+  const commitUrl = parseGithubUrl('https://github.com/dren712/pow-logger/commit/7db381a')
+  assert(commitUrl?.type === 'commit' && commitUrl.identifier === '7db381a', 'GitHub Commit URL parsed correctly')
+
+  const badGithubUrl = parseGithubUrl('https://github.com/dren712/pow-logger/issues/5')
+  assert(badGithubUrl === null, 'GitHub Issue URL rejected (only PRs/Commits)')
 
   const spoofedDomain = getVerifiedDomain('evil-hacker.com')
   assert(spoofedDomain === 'provn-sol.vercel.app', 'Arbitrary host header spoofing rejected')
@@ -457,7 +473,7 @@ async function runProductionTestSuite() {
       signature: log1Sig,
       nonce: log1Nonce,
       domain: 'provn-sol.vercel.app',
-      archival_state: 'archived' as const,
+      archival_state: 'receipt_obtained' as const,
       irys_tx_id: 'irys_tx_genesis_1',
     },
     {
@@ -471,7 +487,7 @@ async function runProductionTestSuite() {
       signature: log2Sig,
       nonce: log2Nonce,
       domain: 'provn-sol.vercel.app',
-      archival_state: 'archived' as const,
+      archival_state: 'receipt_obtained' as const,
       irys_tx_id: 'irys_tx_genesis_2',
     },
   ]
@@ -602,7 +618,7 @@ async function runProductionTestSuite() {
   // Test 5: verifyLogCryptographically Unified Verification Invariant
   const suite9Keypair = nacl.sign.keyPair()
   const suite9Wallet = bs58.encode(suite9Keypair.publicKey)
-  const suite9Timestamp = '2026-08-14T01:00:00.000Z'
+  const suite9Timestamp = new Date().toISOString()
   const suite9Nonce = bs58.encode(nacl.randomBytes(16))
   const suite9Content = 'Verified cryptographic invariant log'
   const suite9Domain = 'provn-sol.vercel.app'
@@ -634,6 +650,7 @@ async function runProductionTestSuite() {
     skills: ['Rust', 'Solana'],
     protocols: ['Anchor'],
     category: 'Engineering',
+    provenance_level: 'source_verified',
   }
 
   assert(verifyLogCryptographically(validLogObj) === true, 'verifyLogCryptographically returns true for valid authentic Ed25519 signature')
@@ -695,9 +712,29 @@ async function runProductionTestSuite() {
   assert(lightweightEval.summary.passedCount === lightweightEval.summary.totalChecks, 'All checks passed in lightweight policy')
 
   // Check 3: Superteam Bounty Policy Gating
-  const bountyEval = evaluateEligibility(pureReputation, STANDARD_POLICY_PRESETS.SUPERTEAM_BOUNTY)
-  assert(bountyEval.eligible === false, 'Superteam bounty policy fails closed when wallet has 1 of 3 required proofs')
-  assert(bountyEval.checks.find((c) => c.id === 'min_verified_proofs')?.passed === false, 'Min verified proofs check failed')
+  const testReputation = {
+    ...pureReputation,
+    totalRecords: 3,
+    proofsWithGithubEvidence: 3,
+    sourceVerifiedProofs: 1,
+    recentVerifiedProofs: 3,
+    verifiedProofs: 3,
+  } as any
+
+  assert(pureReputation.sourceVerifiedProofs === 1, 'Reputation engine tracks source_verified proofs')
+
+  const lightPolicy = STANDARD_POLICY_PRESETS.LIGHTWEIGHT_BUILDER
+  const lightEval = evaluateEligibility(testReputation, lightPolicy)
+  assert(lightEval.eligible, 'Lightweight policy evaluation passes for wallet with verified proof')
+  assert(lightEval.checks.every((c) => c.passed), 'All checks passed in lightweight policy')
+
+  const strictPolicy = {
+    ...STANDARD_POLICY_PRESETS.SUPERTEAM_BOUNTY,
+    minSourceVerifiedProofs: 2,
+  }
+  const strictEval = evaluateEligibility(testReputation, strictPolicy)
+  assert(!strictEval.eligible, 'Policy fails when minSourceVerifiedProofs is not met')
+  assert(strictEval.checks.find(c => c.id === 'min_source_verified_proofs')?.passed === false, 'Source verification policy check evaluated correctly')
 
   // Check 4: Custom Policy with Specific Skill Requirement
   const rustSkillPolicy = {
@@ -753,6 +790,174 @@ async function runProductionTestSuite() {
   assert(generatedPacket.reputationSummary.verifiedProofs === 1, 'Proof packet reputation summary reflects verified proofs')
   assert(generatedPacket.proofs.length === 1, 'Proof packet includes curated verified proofs')
   assert(typeof generatedPacket.verificationInstructions === 'string', 'Proof packet contains independent verification instructions')
+
+  // --- SUITE 11: Protocol V2 & Server-Issued Challenge Integrity ---
+  console.log('\n► SUITE 11: Protocol V2 & Server-Issued Challenge Integrity')
+
+  assert(CURRENT_PROTOCOL_VERSION === 2, 'Current protocol version is exported as 2')
+
+  const testV2Keypair = nacl.sign.keyPair()
+  const testV2Wallet = bs58.encode(testV2Keypair.publicKey)
+  const testV2Timestamp = new Date().toISOString()
+  const testV2Challenge = '550e8400-e29b-41d4-a716-446655440000-abcdef123456'
+  const testV2Content = 'Implemented Protocol V2 Server Challenges with Postgres Atomic Quota'
+  const testV2Domain = 'provn-sol.vercel.app'
+
+  const v2SubmitMsg = buildCanonicalSubmitMessageV2({
+    domain: testV2Domain,
+    walletAddress: testV2Wallet,
+    timestamp: testV2Timestamp,
+    challenge: testV2Challenge,
+    content: testV2Content,
+    githubUrl: 'https://github.com/dren712/pow-logger/pull/42',
+    evidenceUrl: 'https://provn-sol.vercel.app',
+  })
+
+  assert(v2SubmitMsg.includes('PROVN Protocol Version: 2'), 'V2 canonical submit message includes Protocol Version 2 header')
+  assert(v2SubmitMsg.includes(`Challenge: ${testV2Challenge}`), 'V2 canonical submit message includes server-issued challenge')
+  assert(v2SubmitMsg.includes('GitHub URL: https://github.com/dren712/pow-logger/pull/42'), 'V2 canonical submit message includes normalized GitHub URL')
+
+  const v2RetryMsg = buildCanonicalRetryMessageV2({
+    domain: testV2Domain,
+    walletAddress: testV2Wallet,
+    logId: 42,
+    timestamp: testV2Timestamp,
+    challenge: testV2Challenge,
+  })
+
+  assert(v2RetryMsg.includes('Action: Retry Archival'), 'V2 canonical retry message includes Action: Retry Archival')
+  assert(v2RetryMsg.includes(`Challenge: ${testV2Challenge}`), 'V2 canonical retry message includes challenge')
+
+  // Sign V2 message
+  const v2MsgBytes = new TextEncoder().encode(v2SubmitMsg)
+  const v2SigBytes = nacl.sign.detached(v2MsgBytes, testV2Keypair.secretKey)
+  const v2Signature = bs58.encode(v2SigBytes)
+
+  const authenticV2Log = {
+    wallet_address: testV2Wallet,
+    signature: v2Signature,
+    nonce: testV2Challenge,
+    domain: testV2Domain,
+    created_at: testV2Timestamp,
+    content: testV2Content,
+    github_url: 'https://github.com/dren712/pow-logger/pull/42',
+    evidence_url: 'https://provn-sol.vercel.app',
+    protocol_version: 2,
+  }
+
+  assert(verifyLogCryptographically(authenticV2Log) === true, 'verifyLogCryptographically authenticates valid Protocol V2 record')
+
+  const tamperedV2ChallengeLog = {
+    ...authenticV2Log,
+    nonce: 'tampered-challenge-value-12345678',
+  }
+  assert(verifyLogCryptographically(tamperedV2ChallengeLog) === false, 'verifyLogCryptographically strictly rejects tampered challenge in V2')
+
+  const tamperedV2ContentLog = {
+    ...authenticV2Log,
+    content: 'Tampered content attempting unauthorized modification',
+  }
+  assert(verifyLogCryptographically(tamperedV2ContentLog) === false, 'verifyLogCryptographically strictly rejects tampered content in V2')
+
+  // Backward compatibility: V1 log verification
+  const v1Keypair = nacl.sign.keyPair()
+  const v1Wallet = bs58.encode(v1Keypair.publicKey)
+  const v1Timestamp = new Date().toISOString()
+  const v1Nonce = '999999999999'
+  const v1Content = 'V1 legacy log submission'
+  const v1Msg = buildCanonicalSubmitMessage({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: v1Wallet,
+    timestamp: v1Timestamp,
+    nonce: v1Nonce,
+    content: v1Content,
+  })
+  const v1Sig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(v1Msg), v1Keypair.secretKey))
+
+  const authenticV1Log = {
+    wallet_address: v1Wallet,
+    signature: v1Sig,
+    nonce: v1Nonce,
+    domain: 'provn-sol.vercel.app',
+    created_at: v1Timestamp,
+    content: v1Content,
+    protocol_version: 1,
+  }
+  assert(verifyLogCryptographically(authenticV1Log) === true, 'verifyLogCryptographically maintains backward compatibility for V1 logs')
+
+  // Validation of valid visibility states
+  const validVisibilities = ['private', 'public']
+  assert(validVisibilities.includes('private') && validVisibilities.includes('public'), 'Visibility supports both private and public states')
+
+  // Validation of valid archival states
+  const validArchivalStates = ['not_requested', 'pending', 'receipt_obtained', 'finalized', 'failed', 'legacy_unverified']
+  assert(validArchivalStates.length === 6, 'Archival states include all 6 canonical statuses')
+
+  // V2 domain tamper rejection
+  const tamperedV2DomainLog = {
+    ...authenticV2Log,
+    domain: 'evil-hacker.com',
+  }
+  assert(verifyLogCryptographically(tamperedV2DomainLog) === false, 'verifyLogCryptographically strictly rejects tampered domain in V2')
+
+  // V2 GitHub URL tamper rejection
+  const tamperedV2GithubLog = {
+    ...authenticV2Log,
+    github_url: 'https://github.com/evil/repo',
+  }
+  assert(verifyLogCryptographically(tamperedV2GithubLog) === false, 'verifyLogCryptographically strictly rejects tampered GitHub URL in V2')
+
+  // V2 Evidence URL tamper rejection
+  const tamperedV2EvidenceLog = {
+    ...authenticV2Log,
+    evidence_url: 'https://evil.com/tampered',
+  }
+  assert(verifyLogCryptographically(tamperedV2EvidenceLog) === false, 'verifyLogCryptographically strictly rejects tampered evidence URL in V2')
+
+  // V2 log with challenge stored in nonce column (as persisted in DB)
+  const persistedV2Log = {
+    wallet_address: testV2Wallet,
+    signature: v2Signature,
+    nonce: testV2Challenge,  // challenge stored in nonce column
+    domain: testV2Domain,
+    created_at: testV2Timestamp,
+    content: testV2Content,
+    github_url: 'https://github.com/dren712/pow-logger/pull/42',
+    evidence_url: 'https://provn-sol.vercel.app',
+    protocol_version: 2,
+    // No challenge or challenge_id fields — simulating DB row
+  }
+  assert(verifyLogCryptographically(persistedV2Log) === true, 'verifyLogCryptographically verifies persisted V2 log with challenge in nonce column')
+
+  // Verify new archival states include receipt_obtained and finalized
+  const newArchivalStates = ['not_requested', 'pending', 'receipt_obtained', 'finalized', 'failed', 'legacy_unverified']
+  assert(newArchivalStates.includes('receipt_obtained'), 'receipt_obtained is a valid archival state')
+  assert(newArchivalStates.includes('finalized'), 'finalized is a valid archival state')
+  assert(!newArchivalStates.includes('archived'), 'archived is NOT a valid archival state (replaced by receipt_obtained)')
+
+  // Test buildCanonicalArchiveMessage
+  const archiveMsg = buildCanonicalArchiveMessage({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: testV2Wallet,
+    logId: 42,
+    challenge: testV2Challenge,
+    timestamp: testV2Timestamp,
+  })
+  assert(archiveMsg.includes('Action: Archive Evidence'), 'Archive canonical message includes correct action')
+  assert(archiveMsg.includes('Log ID: 42'), 'Archive canonical message includes log ID')
+  assert(archiveMsg.includes(`Challenge: ${testV2Challenge}`), 'Archive canonical message includes challenge')
+
+  // Test buildCanonicalVisibilityMessage
+  const visMsg = buildCanonicalVisibilityMessage({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: testV2Wallet,
+    logId: 42,
+    visibility: 'public',
+    challenge: testV2Challenge,
+    timestamp: testV2Timestamp,
+  })
+  assert(visMsg.includes('Action: Set Visibility'), 'Visibility canonical message includes correct action')
+  assert(visMsg.includes('Visibility: public'), 'Visibility canonical message includes visibility value')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')

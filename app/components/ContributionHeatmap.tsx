@@ -300,7 +300,7 @@ export default function ContributionHeatmap({ logs }: ContributionHeatmapProps) 
             }}
           >
             <span style={{ fontSize: '10px', color: '#555' }}>
-              Immutable Cryptographic Proofs • Solana &amp; Arweave
+              Signed Evidence Activity • Solana &amp; Arweave
             </span>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>

@@ -47,13 +47,8 @@ export default function BuilderBadge({ badge, compact = false }: BuilderBadgePro
         </div>
         <div>
           <div style={{ fontSize: '11px', color: level.color, fontWeight: 700, letterSpacing: '0.3px' }}>
-            LVL {level.level} • {level.title}
+            {badge.totalLogs} Logs
           </div>
-          {nextLevel && (
-            <div style={{ fontSize: '9px', color: '#555', marginTop: '2px' }}>
-              {nextLevel.logsRemaining} logs to {nextLevel.next.title}
-            </div>
-          )}
         </div>
       </div>
     )
@@ -106,144 +101,11 @@ export default function BuilderBadge({ badge, compact = false }: BuilderBadgePro
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Builder Level
+            Activity Level
           </div>
           <div style={{ color: level.color, fontSize: '18px', fontWeight: 800, letterSpacing: '-0.3px' }}>
-            Level {level.level} — {level.title}
+            {badge.totalLogs} Logs
           </div>
-        </div>
-      </div>
-
-      {/* XP Progress Bar */}
-      {nextLevel && (
-        <div style={{ marginBottom: '18px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#666', marginBottom: '6px' }}>
-            <span>Progress to {nextLevel.next.emoji} {nextLevel.next.title}</span>
-            <span style={{ color: level.color }}>{levelProgress}%</span>
-          </div>
-          <div
-            style={{
-              height: '6px',
-              background: '#0d1117',
-              borderRadius: '3px',
-              border: '1px solid #1c2230',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                width: `${levelProgress}%`,
-                background: `linear-gradient(90deg, ${level.color}, ${nextLevel.next.color})`,
-                borderRadius: '3px',
-                transition: 'width 0.6s ease',
-                boxShadow: `0 0 8px ${level.color}`,
-              }}
-            />
-          </div>
-          <div style={{ fontSize: '9px', color: '#444', marginTop: '4px' }}>
-            {nextLevel.logsRemaining} more {nextLevel.logsRemaining === 1 ? 'log' : 'logs'} to level up
-          </div>
-        </div>
-      )}
-
-      {levelProgress === 100 && (
-        <div style={{ marginBottom: '18px', fontSize: '11px', color: '#ff4400', fontWeight: 700, textAlign: 'center' }}>
-          👑 MAX LEVEL ACHIEVED
-        </div>
-      )}
-
-      {/* Streak Milestone Trophies */}
-      <div>
-        <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
-          Streak Trophies
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {([
-            { days: 7,   emoji: '🔥', title: '7d' },
-            { days: 14,  emoji: '⚡', title: '14d' },
-            { days: 30,  emoji: '🛡️',  title: '30d' },
-            { days: 60,  emoji: '⚔️',  title: '60d' },
-            { days: 100, emoji: '💎', title: '100d' },
-            { days: 365, emoji: '👑', title: '365d' },
-          ] as { days: number; emoji: string; title: string }[]).map((m) => {
-            const earned = Array.isArray(earnedMilestones) && earnedMilestones.some((em: StreakMilestone) => em?.days === m.days)
-            return (
-              <div
-                key={m.days}
-                title={earned ? `${m.title} Streak — Earned!` : `${m.title} Streak — ${m.days - currentStreak} days remaining`}
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '18px',
-                  background: earned ? 'rgba(0,255,136,0.08)' : '#0a0c10',
-                  border: `1.5px solid ${earned ? '#00ff88' : '#1c2230'}`,
-                  opacity: earned ? 1 : 0.35,
-                  cursor: 'default',
-                  transition: 'all 0.3s ease',
-                  boxShadow: earned ? '0 0 10px rgba(0,255,136,0.15)' : 'none',
-                }}
-              >
-                {m.emoji}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Next Milestone Hint */}
-        {nextMilestone && (
-          <div style={{ fontSize: '10px', color: '#555', marginTop: '8px' }}>
-            Next: {nextMilestone.milestone.emoji} {nextMilestone.milestone.title} in{' '}
-            <span style={{ color: nextMilestone.milestone.color, fontWeight: 700 }}>
-              {nextMilestone.daysRemaining} {nextMilestone.daysRemaining === 1 ? 'day' : 'days'}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* LeetCode / Codeforces Style Skill Badges */}
-      <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #161a24' }}>
-        <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
-          Skill & Specialization Badges
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {([
-            { id: 'rust_anchor', title: 'Anchor Specialist', emoji: '⚓', color: '#ff0055', desc: '3+ Solana/Anchor logs' },
-            { id: 'security_auditor', title: 'Security Auditor', emoji: '🛡️', color: '#ff4444', desc: '2+ Security logs' },
-            { id: 'open_source', title: 'Open Source Builder', emoji: '🐙', color: '#ab9ff2', desc: '3+ Verified GitHub links' },
-            { id: 'permanent_archivist', title: 'Arweave Archivist', emoji: '📜', color: '#00e5ff', desc: '5+ Permanent Arweave logs' },
-            { id: 'century_builder', title: 'Century Club', emoji: '💯', color: '#ff00ff', desc: '100+ Total logs' },
-          ] as { id: string; title: string; emoji: string; color: string; desc: string }[]).map((sb) => {
-            const earned = Array.isArray(badge.earnedSkillBadges) && badge.earnedSkillBadges.some((esb) => esb.id === sb.id)
-            return (
-              <div
-                key={sb.id}
-                title={earned ? `${sb.title} — Unlocked!` : `${sb.title} — Locked (${sb.desc})`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '5px 10px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  background: earned ? `${sb.color}15` : '#0a0c10',
-                  border: `1px solid ${earned ? sb.color : '#1c2230'}`,
-                  color: earned ? sb.color : '#555',
-                  opacity: earned ? 1 : 0.4,
-                  transition: 'all 0.3s ease',
-                  boxShadow: earned ? `0 0 10px ${sb.color}20` : 'none',
-                }}
-              >
-                <span>{sb.emoji}</span>
-                <span>{sb.title}</span>
-              </div>
-            )
-          })}
         </div>
       </div>
     </div>

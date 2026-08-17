@@ -7,9 +7,8 @@
 
 import bs58 from 'bs58'
 import {
-  buildCanonicalSubmitMessage,
-  buildCanonicalRetryMessage,
-  getVerifiedDomain,
+  buildCanonicalSubmitMessageV2,
+  buildCanonicalRetryMessageV2,
 } from './canonicalMessage'
 import { ArchivalState, LogRecord } from './types'
 
@@ -53,13 +52,32 @@ const encodeBase58 = (bytes: Uint8Array): string => {
   return fn(bytes)
 }
 
-function generateNonce(): string {
+/** @deprecated Use challenges instead */
+export function generateLegacyNonce(): string {
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     const bytes = new Uint8Array(16)
     crypto.getRandomValues(bytes)
     return encodeBase58(bytes)
   }
   throw new Error('Secure random generator (crypto.getRandomValues) unavailable.')
+}
+
+export async function requestChallenge(walletAddress: string): Promise<string> {
+  const response = await fetch('/api/challenge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ walletAddress }),
+  })
+  if (!response.ok) {
+    let msg = 'Failed to fetch signing challenge'
+    try {
+      const err = await response.json()
+      if (err.error) msg = err.error
+    } catch {}
+    throw new Error(msg)
+  }
+  const data = await response.json()
+  return data.challenge
 }
 
 export async function submitVerifiedLog(
@@ -70,17 +88,17 @@ export async function submitVerifiedLog(
   githubUrl?: string
 ): Promise<SubmitLogResponse> {
   const timestamp = new Date().toISOString()
-  const nonce = generateNonce()
+  const challenge = await requestChallenge(walletAddress)
 
   // 1. Build canonical proof message cryptographically binding content AND evidence URLs
   const clientDomain = typeof window !== 'undefined' && window.location?.host
-    ? getVerifiedDomain(window.location.host)
+    ? window.location.host.split(':')[0]
     : 'provn-sol.vercel.app'
-  const messageText = buildCanonicalSubmitMessage({
+  const messageText = buildCanonicalSubmitMessageV2({
     domain: clientDomain,
     walletAddress,
     timestamp,
-    nonce,
+    challenge,
     content,
     evidenceUrl,
     githubUrl,
@@ -105,7 +123,7 @@ export async function submitVerifiedLog(
       content: content.trim(),
       walletAddress,
       timestamp,
-      nonce,
+      challenge,
       signature: signatureBase58,
       evidenceUrl: evidenceUrl?.trim() || null,
       githubUrl: githubUrl?.trim() || null,
@@ -137,14 +155,18 @@ export async function requestAuthorizedArchivalRetry(
   logId: number
 ): Promise<RetryArchivalResponse> {
   const timestamp = new Date().toISOString()
-  const nonce = generateNonce()
+  const challenge = await requestChallenge(walletAddress)
 
   // 1. Build canonical retry message
-  const messageText = buildCanonicalRetryMessage({
+  const clientDomain = typeof window !== 'undefined' && window.location?.host
+    ? window.location.host.split(':')[0]
+    : 'provn-sol.vercel.app'
+  const messageText = buildCanonicalRetryMessageV2({
+    domain: clientDomain,
     walletAddress,
     logId,
     timestamp,
-    nonce,
+    challenge,
   })
 
   const messageBytes = new TextEncoder().encode(messageText)
@@ -166,7 +188,7 @@ export async function requestAuthorizedArchivalRetry(
       logId,
       walletAddress,
       timestamp,
-      nonce,
+      challenge,
       signature: signatureBase58,
     }),
   })

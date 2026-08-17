@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { classifyLog } from '@/app/lib/classifier'
-import { buildCanonicalSubmitMessage } from '@/app/lib/canonicalMessage'
+import { buildCanonicalSubmitMessageV2 } from '@/app/lib/canonicalMessage'
 
 export interface ProofTemplate {
   id: string
@@ -119,11 +119,11 @@ export default function TerminalStudio({
 
   // Canonical Message Preview Construction
   const previewDomain = typeof window !== 'undefined' && window.location?.host ? window.location.host : 'provn-sol.vercel.app'
-  const previewMessage = buildCanonicalSubmitMessage({
+  const previewMessage = buildCanonicalSubmitMessageV2({
     domain: previewDomain,
     walletAddress: walletAddress || 'YOUR_SOLANA_WALLET_PUBLIC_KEY',
     timestamp: new Date().toISOString(),
-    nonce: 'PREVIEW_BASE58_NONCE_7x9...',
+    challenge: '[server-issued challenge]',
     content: log.trim() || 'Your work claim description will appear here.',
     githubUrl: githubUrl.trim() || undefined,
     evidenceUrl: evidenceUrl.trim() || undefined,
@@ -131,6 +131,20 @@ export default function TerminalStudio({
 
   const handleReviewAndSign = () => {
     if (!log.trim() || !connected || isDailyLimitReached) return
+    
+    if (githubUrl.trim()) {
+      try {
+        const u = new URL(githubUrl.trim())
+        if (!u.hostname.includes('github.com')) {
+          alert('GitHub URL must be a valid github.com PR or Commit URL.')
+          return
+        }
+      } catch (e) {
+        alert('Invalid GitHub URL format.')
+        return
+      }
+    }
+    
     setIsPreviewOpen(true)
   }
 
@@ -219,7 +233,7 @@ export default function TerminalStudio({
       {/* Log Input Area */}
       <div style={{ marginBottom: '14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px', color: '#888' }}>
-          <span>Describe your work output...</span>
+          <span>Add Evidence...</span>
           <span style={{ color: log.length > maxChars ? '#ff4444' : charPercent > 80 ? '#ffb800' : '#888' }}>
             {log.length}/{maxChars}
           </span>
@@ -303,7 +317,7 @@ export default function TerminalStudio({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '16px' }}>
         <div>
           <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>
-            GitHub PR / Commit URL (Self-attested evidence)
+            GitHub PR / Commit URL (Source-verified evidence)
           </label>
           <input
             type="url"
@@ -381,6 +395,18 @@ export default function TerminalStudio({
           {statusMsg}
         </div>
       )}
+
+      {/* What does PROVN verify? */}
+      <details style={{ marginBottom: '16px', fontSize: '11px', color: '#888', border: '1px solid #1c2230', borderRadius: '6px', padding: '10px 14px', background: '#0a0d14' }}>
+        <summary style={{ cursor: 'pointer', color: '#00e5ff', fontWeight: 600, outline: 'none' }}>
+          What does PROVN verify?
+        </summary>
+        <div style={{ marginTop: '8px', lineHeight: '1.5' }}>
+          <strong>Cryptographic Signature:</strong> PROVN verifies that your connected Solana wallet signed this exact payload.<br/>
+          <strong>Source Verification:</strong> If you provide a GitHub PR/Commit URL, PROVN will verify via the GitHub API that the PR or commit actually exists, and record its state (e.g., merged, open) and author.<br/>
+          <em style={{ color: '#555' }}>Note: PROVN verifies the source exists, but does not definitively prove you own the GitHub account, unless you link it on your profile.</em>
+        </div>
+      </details>
 
       {/* Review & Preview Button */}
       <button

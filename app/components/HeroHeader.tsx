@@ -43,7 +43,7 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
             <span style={{ fontSize: '18px' }}>🗿</span>
           </Link>
           <p style={{ color: '#667', margin: '4px 0 0 0', fontSize: '11px', letterSpacing: '0.2px' }}>
-            Solana Proof-of-Work Protocol • Permanent Arweave Archival
+            Solana Evidence Protocol • Optional Arweave Archival
           </p>
         </div>
 
@@ -88,10 +88,10 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
         >
           <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
             <h2 style={{ color: '#f0f4fc', fontSize: '1.6rem', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-              Cryptographic Proof-of-Work on Solana
+              Wallet-Signed Evidence Records on Solana
             </h2>
             <p style={{ color: '#889', fontSize: '13px', lineHeight: '1.6', margin: '0 0 20px 0' }}>
-              Sign daily engineering logs with your Ed25519 wallet. Immutable timestamped proofs, auto-classified skills, and permanent Arweave storage.
+              Sign daily engineering logs with your Ed25519 wallet. Immutable timestamped records, self-attested tags, and optional Arweave storage.
             </p>
 
             <form

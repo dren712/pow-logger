@@ -103,7 +103,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     icon: '📦',
     rarity: 'Rare',
     evaluate: (logs) => {
-      const archivedLogs = logs.filter((l) => l.archival_state === 'archived' || Boolean(l.irys_tx_id))
+      const archivedLogs = logs.filter((l) => l.archival_state === 'receipt_obtained' || l.archival_state === 'finalized' || Boolean(l.irys_tx_id))
       return { earned: archivedLogs.length >= 10 }
     },
   },

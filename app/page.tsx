@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js'
 import HeroHeader from './components/HeroHeader'
 import TerminalStudio from './components/TerminalStudio'
 import ContributionHeatmap from './components/ContributionHeatmap'
-import NFTBadgeModal from './components/NFTBadgeModal'
+import ShareCardModal from './components/ShareCardModal'
 import NetworkBanner from './components/NetworkBanner'
 import MobileWalletNotice from './components/MobileWalletNotice'
 import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
@@ -160,7 +160,7 @@ export default function LoggerApp() {
       const data = await requestAuthorizedArchivalRetry(signMessage, publicKey.toBase58(), logId)
       if (data.success && data.irysTxId) {
         setLogs((prev) =>
-          prev.map((l) => (l.id === logId ? { ...l, irys_tx_id: data.irysTxId, archival_state: 'archived' } : l))
+          prev.map((l) => (l.id === logId ? { ...l, irys_tx_id: data.irysTxId, archival_state: 'receipt_obtained' } : l))
         )
       }
     } catch (e: unknown) {
@@ -503,7 +503,7 @@ export default function LoggerApp() {
       )}
 
       {/* NFT Proof Card Modal */}
-      <NFTBadgeModal
+      <ShareCardModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         svgString={modalSvg}

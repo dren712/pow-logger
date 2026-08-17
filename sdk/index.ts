@@ -90,8 +90,8 @@ export class ProvnClient {
     // Select verified proofs with highest evidence quality
     const verifiedProofs = proofs.filter((p) => p.isCryptographicallyVerified)
     const sorted = [...verifiedProofs].sort((a, b) => {
-      const aScore = (a.githubUrl ? 2 : 0) + (a.archivalState === 'archived' ? 2 : 0)
-      const bScore = (b.githubUrl ? 2 : 0) + (b.archivalState === 'archived' ? 2 : 0)
+      const aScore = (a.githubUrl ? 2 : 0) + ((a.archivalState === 'receipt_obtained' || a.archivalState === 'finalized') ? 2 : 0)
+      const bScore = (b.githubUrl ? 2 : 0) + ((b.archivalState === 'receipt_obtained' || b.archivalState === 'finalized') ? 2 : 0)
       return bScore - aScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
 

@@ -1,6 +1,6 @@
 # 🗺️ PROVN Protocol — Engineering Roadmap
 
-*A Solana-Native, Cryptographically Verifiable Builder Provenance Protocol with Permanent Arweave Archival*
+*A Solana-Native, Wallet-Signed Builder Evidence Protocol with Optional Arweave Archival*
 
 ---
 
@@ -13,7 +13,7 @@
 │  [ Phase 0: Core Protocol Engine ] ──────────► ✅ SHIPPED & VERIFIED        │
 │  [ Phase 1: Builder Passport & Identity ] ───► ✅ SHIPPED & LIVE            │
 │  [ Phase 2: Ecosystem Integrations ] ────────► 🧪 EXPERIMENTAL / IN PROGRESS │
-│  [ Phase 3: Portable cNFT Achievements ] ────► 🔮 PLANNED (GRANT-FUNDED)    │
+│  [ Phase 3: Ecosystem & Review Dashboards ] ─► 🔮 PLANNED (GRANT-FUNDED)    │
 │  [ Phase 4: Scale & Infrastructure ] ────────► 🔮 FUTURE                    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -51,11 +51,11 @@
 
 ---
 
-## 🔮 Phase 3: Portable cNFT Achievements (Planned / Grant-Funded)
+## 🔮 Phase 3: Ecosystem & Review Dashboards (Planned / Grant-Funded)
 
-- [ ] **Metaplex Bubblegum Deployment**: Deploying an on-chain Concurrent Merkle Tree on Solana for low-cost compressed NFT achievement minting.
-- [ ] **Helius DAS Integration**: Querying builder cNFT holdings directly via Helius Digital Asset Standard RPC endpoints.
-- [ ] **Automated Minting Pipeline**: Gasless relayer for issuing achievement cNFTs upon verified milestone triggers.
+- [ ] **Superteam Earn Integration**: Allowing users to attach wallet-signed evidence packets to bounty submissions.
+- [ ] **Solana Foundation Grants**: Exportable evidence bundles to supplement grant application credibility.
+- [ ] **Manual Review Dashboards**: Interfaces for grant and bounty managers to inspect evidence provenance.
 
 ---
 

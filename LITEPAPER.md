@@ -1,6 +1,6 @@
 # 🗿 PROVN Protocol — Technical Litepaper v1.0
 
-**A Solana-Native, Cryptographically Verifiable Builder Reputation Protocol with Permanent Arweave Archival**
+**A Solana-Native, Wallet-Signed Builder Evidence Protocol with Optional Arweave Archival**
 
 *Author: dren712*  
 *Repository: [github.com/dren712/pow-logger](https://github.com/dren712/pow-logger)*  
@@ -12,7 +12,7 @@
 
 In the modern Web3 software ecosystem, developer reputation is fragmented, unverified, and prone to fabrication. Resumes, social media posts, and unauthenticated portfolio claims fail to provide immutable proof of daily engineering contributions. Conversely, existing centralized platforms rely on single points of trust that can alter, censor, or delete historical developer records.
 
-**PROVN** solves this challenge by establishing a **lightweight, cryptographically verifiable proof-of-work protocol for developers**. By combining **SIWS-inspired canonical proof messages** and Ed25519 wallet signatures with **Arweave permanent storage** via Irys Node #1, PROVN creates a publicly verifiable, permanently archived record of developer-signed daily work claims.
+**PROVN** solves this challenge by establishing a **lightweight, wallet-signed evidence protocol for developers**. By combining **SIWS-inspired canonical proof messages** and Ed25519 wallet signatures with **optional Arweave permanent storage**, PROVN creates a publicly verifiable, manual-review-ready record of developer-signed daily work claims.
 
 ---
 
@@ -78,34 +78,7 @@ The payload is stored permanently on **Arweave** via **Irys Node #1**. Because l
 
 ---
 
-## 4. Pure Deterministic Reputation & Milestones System
 
-PROVN implements an objective, deterministic reputation model:
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    PROVN REPUTATION & BADGE ENGINE                          │
-│                                                                             │
-│  LEVEL PROGRESSION (5 Tiers):                                               │
-│  • Level 1: Apprentice Builder (0-6 logs)   [🔧 #888888]                    │
-│  • Level 2: Verified Craftsman (7-29 logs)  [⚒️ #00e5ff]                    │
-│  • Level 3: Senior Architect   (30-99 logs) [🏗️ #ffb800]                    │
-│  • Level 4: Protocol Master    (100-364 logs)[💎 #ff00ff]                    │
-│  • Level 5: Grand Legend       (365+ logs)  [👑 #00ff88]                    │
-│                                                                             │
-│  BUILDER ACHIEVEMENTS:                                                      │
-│  • ⚡ Genesis Proof          (Submit 1 verified proof log)                  │
-│  • 🔥 7-Day Builder          (Active or historical 7-day streak)            │
-│  • 🛡️ 30-Day Builder         (Active or historical 30-day streak)           │
-│  • 👑 100-Day Builder        (Active or historical 100-day streak)          │
-│  • 🟣 Solana Contributor     (10+ Solana protocol logs, regex classified)   │
-│  • 🐙 Open Source Contributor(5+ GitHub-linked proof logs)                  │
-│  • 📦 Permanent Provenance   (10+ Permanent Arweave archived logs)          │
-│  • 💎 Protocol Master        (365+ Total verified proof logs)               │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
 
 ## 5. Live GitHub SVG Embed Engine (`/api/badge/[wallet].svg`)
 
@@ -128,12 +101,12 @@ The server dynamically renders a responsive vector SVG displaying the builder's 
 
 ---
 
-## 7. Future Protocols: Compressed NFTs (cNFTs) & Helius RPC
+## 7. Future Protocols: Ecosystem Integration
 
-The codebase contains cNFT metadata generation and scaffolding in [`app/lib/cnft.ts`](app/lib/cnft.ts). On-chain Bubblegum Concurrent Merkle Tree minting is planned for Phase 2 mainnet deployment when fee payer keypair and tree pubkey are configured.
+Integration with ecosystem programs like Superteam Earn and Solana foundation grants.
 
 ---
 
 ## 8. Summary
 
-PROVN bridges off-chain developer activity with on-chain cryptographic proof, establishing a permanent, transparent reputation score for the global Solana ecosystem.
+PROVN bridges off-chain developer activity with on-chain cryptographic signatures, establishing a transparent evidence layer for the global Solana ecosystem to support manual review and credibility.

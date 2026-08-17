@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-interface NFTBadgeModalProps {
+interface ShareCardModalProps {
   isOpen: boolean
   onClose: () => void
   svgString: string
@@ -12,7 +12,7 @@ interface NFTBadgeModalProps {
   irysTxId?: string
 }
 
-export default function NFTBadgeModal({
+export default function ShareCardModal({
   isOpen,
   onClose,
   svgString,
@@ -20,7 +20,7 @@ export default function NFTBadgeModal({
   logId,
   logContent = '',
   irysTxId,
-}: NFTBadgeModalProps) {
+}: ShareCardModalProps) {
   const [copiedSvg, setCopiedSvg] = useState(false)
   const [copiedImage, setCopiedImage] = useState(false)
   const [pngDataUrl, setPngDataUrl] = useState<string | null>(null)
@@ -228,7 +228,7 @@ export default function NFTBadgeModal({
         >
           <img
             src={displayImage}
-            alt="PROVN NFT Proof Badge"
+            alt="PROVN Proof Card"
             style={{
               maxWidth: '100%',
               height: 'auto',

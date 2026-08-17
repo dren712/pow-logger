@@ -32,12 +32,12 @@ export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderR
   const totalProofs = verifiedProofs // Invariant alias
   
   // Explicit categorization of historical & unverified records
-  const legacyRecords = safeLogs.filter((l) => !l.nonce).length
-  const unverifiedRecords = safeLogs.filter((l) => l.nonce && !verifyLogCryptographically(l)).length
+  const legacyRecords = safeLogs.filter((l) => !l.nonce && l.protocol_version !== 2).length
+  const unverifiedRecords = safeLogs.filter((l) => (l.nonce || l.protocol_version === 2) && !verifyLogCryptographically(l)).length
   
   // Archived verified proofs (Irys / Arweave confirmed)
   const archivedVerifiedProofs = verifiedLogs.filter(
-    (l) => l.archival_state === 'archived' || (Boolean(l.irys_tx_id) && !l.irys_tx_id?.startsWith('powl_'))
+    (l) => l.archival_state === 'receipt_obtained' || l.archival_state === 'finalized' || (Boolean(l.irys_tx_id) && !l.irys_tx_id?.startsWith('powl_'))
   ).length
   const archivedProofs = archivedVerifiedProofs
 
@@ -50,6 +50,7 @@ export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderR
 
   // Evidence density
   const proofsWithGithubEvidence = verifiedLogs.filter((l) => Boolean(l.github_url && l.github_url.trim())).length
+  const sourceVerifiedProofs = verifiedLogs.filter((l) => l.provenance_level === 'source_verified').length
   const proofsWithOtherEvidence = verifiedLogs.filter((l) => Boolean(l.evidence_url && l.evidence_url.trim())).length
 
   // Extract timestamps ONLY from cryptographically verified proofs
@@ -134,6 +135,7 @@ export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderR
     totalRecords,
     totalProofs,
     verifiedProofs,
+    sourceVerifiedProofs,
     legacyRecords,
     unverifiedRecords,
     archivedProofs,

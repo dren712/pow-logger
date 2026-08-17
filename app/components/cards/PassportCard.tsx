@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import MetalCard from './MetalCard'
 import { CardTheme, DEFAULT_CARD_THEME } from '@/app/lib/cardThemes'
 import { BuilderReputation } from '@/app/lib/types'
+import { useQRCode } from '@/app/lib/qrcode'
 
 export interface PassportCardProps {
   reputation: BuilderReputation
@@ -21,9 +22,11 @@ export default function PassportCard({
   const [isFlipped, setIsFlipped] = useState(false)
   const walletShort = `${reputation.wallet.slice(0, 4)}...${reputation.wallet.slice(-4)}`
   const verificationUrl = `https://provn-sol.vercel.app/u/${reputation.wallet}`
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-    verificationUrl
-  )}&bgcolor=08090c&color=${theme.accentTone.replace('#', '')}`
+  const qrUrl = useQRCode(verificationUrl, {
+    width: 160,
+    darkColor: theme.accentTone,
+    lightColor: '#08090c',
+  })
 
   const serialId = `PRV-${reputation.wallet.slice(0, 4).toUpperCase()}-${reputation.totalProofs.toString().padStart(4, '0')}`
 
@@ -62,26 +65,6 @@ export default function PassportCard({
           </div>
         </div>
 
-        {/* Smart Card Chip Hologram Accent */}
-        <div
-          style={{
-            width: 'clamp(28px, 6.5vw, 36px)',
-            height: 'clamp(22px, 5vw, 28px)',
-            borderRadius: '4px',
-            background: 'linear-gradient(135deg, #d4af37 0%, #aa8c2c 40%, #f5e184 70%, #997b25 100%)',
-            border: '1px solid rgba(0,0,0,0.5)',
-            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.6)',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '2px',
-            padding: '2px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div style={{ border: '0.5px solid rgba(0,0,0,0.3)', borderRadius: '1px' }} />
-          <div style={{ border: '0.5px solid rgba(0,0,0,0.3)', borderRadius: '1px' }} />
-          <div style={{ border: '0.5px solid rgba(0,0,0,0.3)', borderRadius: '1px' }} />
-        </div>
       </div>
 
       {/* Middle Bar: Identity & Core Stats */}
@@ -192,7 +175,7 @@ export default function PassportCard({
             ))}
           </div>
           <div style={{ fontSize: 'clamp(6.5px, 1.6vw, 8px)', fontFamily: 'var(--font-geist-mono), monospace', color: theme.technicalTextColor, letterSpacing: '0.5px' }}>
-            VERIFIED PROOF-OF-WORK // ED25519
+            WALLET-SIGNED // ED25519
           </div>
         </div>
 
@@ -213,14 +196,18 @@ export default function PassportCard({
           }}
           title="Scan to verify passport"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={qrUrl}
-            alt="Passport QR"
-            width={38}
-            height={38}
-            style={{ display: 'block', borderRadius: '3px', width: '100%', height: '100%', objectFit: 'contain' }}
-          />
+          {qrUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={qrUrl}
+              alt="Passport QR"
+              width={38}
+              height={38}
+              style={{ display: 'block', borderRadius: '3px', width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '3px' }} />
+          )}
         </div>
       </div>
     </>

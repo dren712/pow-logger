@@ -31,12 +31,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     }
 
     const rawLog = log as WalletLog
-    const hostHeader = req.headers.get('host')
-    const signatureValid = verifyLogCryptographically(rawLog, hostHeader)
-    const canonicalMessageReconstructed = Boolean(rawLog.nonce && rawLog.wallet_address)
+    const signatureValid = verifyLogCryptographically(rawLog)
+    const canonicalMessageReconstructed = Boolean((rawLog.nonce || rawLog.protocol_version === 2) && rawLog.wallet_address)
     const domainVerified = signatureValid
 
-    const verificationState = signatureValid ? 'VERIFIED' : (!rawLog.nonce ? 'LEGACY' : 'UNVERIFIED')
+    const verificationState = signatureValid ? 'VERIFIED' : ((!rawLog.nonce && rawLog.protocol_version !== 2) ? 'LEGACY' : 'UNVERIFIED')
 
     const proofDetail: ProofDetail = {
       id: rawLog.id,
@@ -52,7 +51,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       protocols: rawLog.protocols,
       category: rawLog.category,
       irysTxId: rawLog.irys_tx_id || null,
-      archivalState: rawLog.archival_state || 'pending',
+      archivalState: rawLog.archival_state || 'not_requested',
       isCryptographicallyVerified: signatureValid,
       verificationState,
       verificationDetails: {

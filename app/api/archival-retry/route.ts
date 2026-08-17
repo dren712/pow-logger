@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import { buildCanonicalRetryMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { buildCanonicalRetryMessage, buildCanonicalRetryMessageV2, decodeBase58 } from '@/app/lib/canonicalMessage'
 
 export const maxDuration = 15 // Allow up to 15s execution for Irys Arweave upload
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid or malformed JSON body' }, { status: 400 })
     }
 
-    const { logId, walletAddress, timestamp, nonce, signature } = body
+    const { logId, walletAddress, timestamp, nonce, challenge, signature } = body
 
     // 1. Input Validation
     if (!logId || typeof logId !== 'number') {
@@ -55,12 +55,26 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Cryptographic Wallet Signature Verification for Retry
-    const expectedRetryMessage = buildCanonicalRetryMessage({
-      walletAddress,
-      logId,
-      timestamp,
-      nonce: typeof nonce === 'string' ? nonce : 'legacy',
-    })
+    const reqHost = process.env.NEXT_PUBLIC_APP_DOMAIN?.trim().toLowerCase().split(':')[0] || 'provn-sol.vercel.app'
+
+    let expectedRetryMessage: string;
+    if (challenge) {
+      expectedRetryMessage = buildCanonicalRetryMessageV2({
+        domain: reqHost,
+        walletAddress,
+        logId,
+        timestamp,
+        challenge: typeof challenge === 'string' ? challenge : '',
+      })
+    } else {
+      expectedRetryMessage = buildCanonicalRetryMessage({
+        domain: reqHost,
+        walletAddress,
+        logId,
+        timestamp,
+        nonce: typeof nonce === 'string' ? nonce : 'legacy',
+      })
+    }
 
     const messageBytes = new TextEncoder().encode(expectedRetryMessage)
 
@@ -96,17 +110,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (logRow.irys_tx_id && !logRow.irys_tx_id.startsWith('powl_')) {
-      if (logRow.archival_state !== 'archived') {
+      if (logRow.archival_state !== 'receipt_obtained') {
         await supabase
           .from('logs')
-          .update({ archival_state: 'archived' })
+          .update({ archival_state: 'receipt_obtained' })
           .eq('id', logId)
       }
       return NextResponse.json({
         success: true,
         message: 'Log entry is already archived on Irys',
         irysTxId: logRow.irys_tx_id,
-        archivalState: 'archived',
+        archivalState: 'receipt_obtained',
         gatewayUrl: `https://gateway.irys.xyz/${logRow.irys_tx_id}`,
       })
     }
@@ -129,7 +143,7 @@ export async function POST(req: NextRequest) {
         success: true,
         message: 'Log entry is already archived on Irys',
         irysTxId: freshCheck.irys_tx_id,
-        archivalState: 'archived',
+        archivalState: 'receipt_obtained',
         gatewayUrl: `https://gateway.irys.xyz/${freshCheck.irys_tx_id}`,
       })
     }
@@ -137,12 +151,13 @@ export async function POST(req: NextRequest) {
     // 5. Execute Retry Upload to Irys Node #1
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
-      version: 1,
+      version: challenge ? 2 : 1,
       retryAttempt: true,
       logId: logRow.id,
       walletAddress,
       timestamp: logRow.created_at,
-      nonce: typeof nonce === 'string' ? nonce : 'legacy',
+      nonce: challenge ? undefined : (typeof nonce === 'string' ? nonce : 'legacy'),
+      challenge: challenge ? challenge : undefined,
       content: logRow.content.trim(),
       signature: logRow.signature,
       evidenceUrl: logRow.evidence_url,
@@ -175,7 +190,7 @@ export async function POST(req: NextRequest) {
       .from('logs')
       .update({
         irys_tx_id: irysTxId,
-        archival_state: 'archived',
+        archival_state: 'receipt_obtained',
       })
       .eq('id', logId)
 
@@ -185,7 +200,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      archivalState: 'archived',
+      archivalState: 'receipt_obtained',
       irysTxId,
       gatewayUrl: `https://gateway.irys.xyz/${irysTxId}`,
     })

@@ -49,7 +49,7 @@ export default function ExportPassportModal({
   const generateMarkdownDossier = () => {
     const earnedAchievements = reputation.achievements.filter((a) => a.earned)
 
-    return `# PROVN Verified Builder Dossier: ${wallet}
+    return `# PROVN Evidence Export: ${wallet}
 
 > **Solana Builder Passport** • Cryptographically verified Ed25519 proof-of-work records permanently archived on Arweave.
 > **Verification URL**: [${verificationUrl}](${verificationUrl})

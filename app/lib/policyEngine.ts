@@ -62,6 +62,19 @@ export function evaluateEligibility(
     })
   }
 
+  // 1B. Min Source Verified Proofs Check
+  if (typeof policy.minSourceVerifiedProofs === 'number' && policy.minSourceVerifiedProofs > 0) {
+    const passed = reputation.sourceVerifiedProofs >= policy.minSourceVerifiedProofs
+    checks.push({
+      id: 'min_source_verified_proofs',
+      label: 'Minimum Source-Verified Proofs',
+      required: policy.minSourceVerifiedProofs,
+      actual: reputation.sourceVerifiedProofs,
+      passed,
+      description: `Requires at least ${policy.minSourceVerifiedProofs} proofs with GitHub API source verification.`,
+    })
+  }
+
   // 2. Min Recent Proofs Check (Last 30 days)
   if (typeof policy.minRecentProofs === 'number' && policy.minRecentProofs > 0) {
     const passed = reputation.recentVerifiedProofs >= policy.minRecentProofs

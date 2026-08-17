@@ -361,7 +361,7 @@ export const SKILL_BADGES: SkillBadge[] = [
     checkUnlocked: (logs) =>
       logs.filter(
         (l: Record<string, unknown>) =>
-          l.archival_state === 'archived' &&
+          (l.archival_state === 'receipt_obtained' || l.archival_state === 'finalized') &&
           Boolean(l.irys_tx_id) &&
           typeof l.irys_tx_id === 'string' &&
           !l.irys_tx_id.startsWith('powl_')

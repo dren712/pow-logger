@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import { buildCanonicalSubmitMessage, validateAndNormalizeUrl, getVerifiedDomain } from '@/app/lib/canonicalMessage'
-import { ArchivalState } from '@/app/lib/irys'
+import { buildCanonicalSubmitMessage, buildCanonicalSubmitMessageV2, validateAndNormalizeUrl, decodeBase58 } from '@/app/lib/canonicalMessage'
 
 export const maxDuration = 15 // Allow up to 15s execution for Irys Arweave upload
 
@@ -18,9 +17,9 @@ const supabaseKey = serviceKey || anonKey || 'placeholder'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 import { checkRateLimit } from '@/app/lib/rateLimiter'
-import { decodeBase58 } from '@/app/lib/canonicalMessage'
 import { classifyLog } from '@/app/lib/classifier'
-import { calculateStreak, checkNewMilestoneReached, getBuilderLevel, getProtocolStartOfDay, fetchAllWalletLogs } from '@/app/lib/milestones'
+import { verifyGithubSource } from '@/app/lib/githubVerifier'
+import { calculateStreak, checkNewMilestoneReached, getBuilderLevel, fetchAllWalletLogs } from '@/app/lib/milestones'
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +37,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid or malformed JSON body' }, { status: 400 })
     }
 
-    const { content, walletAddress, timestamp, nonce, signature, evidenceUrl, githubUrl } = body
+    const content = typeof body.content === 'string' ? body.content : undefined
+    const walletAddress = typeof body.walletAddress === 'string' ? body.walletAddress : undefined
+    const timestamp = typeof body.timestamp === 'string' ? body.timestamp : undefined
+    const nonce = typeof body.nonce === 'string' ? body.nonce : undefined
+    const challenge = typeof body.challenge === 'string' ? body.challenge : undefined
+    const signature = typeof body.signature === 'string' ? body.signature : undefined
+    const evidenceUrl = typeof body.evidenceUrl === 'string' ? body.evidenceUrl : undefined
+    const githubUrl = typeof body.githubUrl === 'string' ? body.githubUrl : undefined
+    const visibility = typeof body.visibility === 'string' ? body.visibility : undefined
+
+    if (!challenge && !nonce) {
+      return NextResponse.json({ error: 'Either challenge (v2) or nonce (v1) is required' }, { status: 400 })
+    }
+
+    if (visibility && visibility !== 'private' && visibility !== 'public') {
+      return NextResponse.json({ error: 'Invalid visibility' }, { status: 400 })
+    }
 
     // 1. Mandatory Input Sanitization & Boundaries
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
@@ -61,7 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Timestamp is required' }, { status: 400 })
     }
 
-    if (nonce !== undefined && nonce !== null) {
+    if (!challenge && nonce !== undefined && nonce !== null) {
       if (typeof nonce !== 'string' || nonce.trim().length < 8 || nonce !== nonce.trim()) {
         return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters with no leading or trailing whitespace' }, { status: 400 })
       }
@@ -69,6 +84,10 @@ export async function POST(req: NextRequest) {
         decodeBase58(nonce)
       } catch {
         return NextResponse.json({ error: 'Nonce must be a valid Base58 encoded string' }, { status: 400 })
+      }
+    } else if (challenge) {
+      if (typeof challenge !== 'string' || challenge.trim().length === 0) {
+        return NextResponse.json({ error: 'Challenge must be a valid string' }, { status: 400 })
       }
     }
 
@@ -84,18 +103,50 @@ export async function POST(req: NextRequest) {
     const cleanEvidenceUrl = validateAndNormalizeUrl(evidenceUrl as string | null, 'evidence')
 
     // Extract & strictly validate domain against injection attacks
-    const reqHost = getVerifiedDomain(req.headers.get('host'))
+    const reqHost = process.env.NEXT_PUBLIC_APP_DOMAIN?.trim().toLowerCase().split(':')[0] || 'provn-sol.vercel.app'
+
+    let consumedChallengeId: string | null = null
+
+    if (challenge) {
+      const { data: consumedData, error: consumeError } = await supabase
+        .from('signing_challenges')
+        .update({ consumed_at: new Date().toISOString() })
+        .eq('challenge', challenge)
+        .eq('wallet_address', walletAddress)
+        .is('consumed_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .select('id')
+        .maybeSingle()
+
+      if (consumeError || !consumedData) {
+        return NextResponse.json({ error: 'Invalid, expired, or already-consumed challenge' }, { status: 401 })
+      }
+      consumedChallengeId = consumedData.id
+    }
 
     // 4. Cryptographic Ed25519 Signature Verification
-    const expectedMessageText = buildCanonicalSubmitMessage({
-      domain: reqHost,
-      walletAddress,
-      timestamp,
-      nonce: typeof nonce === 'string' ? nonce : 'legacy',
-      content: content.trim(),
-      githubUrl: cleanGithubUrl,
-      evidenceUrl: cleanEvidenceUrl,
-    })
+    let expectedMessageText: string
+    if (challenge) {
+      expectedMessageText = buildCanonicalSubmitMessageV2({
+        domain: reqHost,
+        walletAddress,
+        timestamp,
+        challenge,
+        content: content.trim(),
+        githubUrl: cleanGithubUrl,
+        evidenceUrl: cleanEvidenceUrl,
+      })
+    } else {
+      expectedMessageText = buildCanonicalSubmitMessage({
+        domain: reqHost,
+        walletAddress,
+        timestamp,
+        nonce: typeof nonce === 'string' ? nonce : 'legacy',
+        content: content.trim(),
+        githubUrl: cleanGithubUrl,
+        evidenceUrl: cleanEvidenceUrl,
+      })
+    }
 
     const messageBytes = new TextEncoder().encode(expectedMessageText)
 
@@ -136,134 +187,64 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 6. Server-Enforced Daily Log Quota Check (via Postgres RPC)
-    const startOfDay = getProtocolStartOfDay()
+    // 6. Phase 2: Source-Aware Evidence Verification
+    let evidenceType = 'self_attested'
+    let provenanceLevel = 'self_attested'
+    let sourceProvider: string | null = null
+    let sourceMetadata: any = null
+    let sourceVerificationStatus = 'not_verified'
+    let sourceVerifiedAt: string | null = null
 
-    let todayCount = 0
-    const { data: rpcCount, error: rpcError } = await supabase
-      .rpc('get_daily_log_count', {
-        p_wallet: walletAddress,
-        p_start_time: startOfDay.toISOString(),
-      })
-
-    if (!rpcError && typeof rpcCount === 'number') {
-      todayCount = rpcCount
-    } else {
-      console.error('Database Quota RPC get_daily_log_count Warning/Error:', rpcError?.message)
-      const { data: todayLogs, error: countError } = await supabase
-        .from('logs')
-        .select('id')
-        .eq('wallet_address', walletAddress)
-        .gte('created_at', startOfDay.toISOString())
-
-      if (countError) {
-        return NextResponse.json(
-          { error: 'Database service unavailable while checking daily quota' },
-          { status: 500 }
-        )
+    if (cleanGithubUrl) {
+      const verification = await verifyGithubSource(cleanGithubUrl)
+      evidenceType = verification.evidenceType
+      provenanceLevel = verification.provenanceLevel
+      sourceVerificationStatus = verification.status
+      if (verification.snapshot) {
+        sourceProvider = verification.snapshot.provider
+        sourceMetadata = verification.snapshot.raw
+        sourceVerifiedAt = verification.snapshot.verifiedAt
       }
-      todayCount = todayLogs ? todayLogs.length : 0
+    } else if (cleanEvidenceUrl) {
+      evidenceType = 'public_url'
+      provenanceLevel = 'source_linked'
     }
 
-    if (todayCount >= 3) {
-      return NextResponse.json(
-        { error: 'Daily log quota reached (3/3 logs submitted today). Come back tomorrow 🗿' },
-        { status: 429 }
-      )
-    }
-
-    // 7. Wallet Rate Limiting (ENFORCED AFTER ED25519 VERIFICATION + DUPLICATE REPLAY CHECK TO PREVENT GRIEFING)
-    const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
-    if (!walletLimit.allowed) {
-      return NextResponse.json({ error: walletLimit.error }, { status: 429 })
-    }
-
-    // 7. Classify Log Content
     const classification = classifyLog(content.trim())
 
-    if (!serviceKey) {
-      console.error('CRITICAL SERVER ERROR: SUPABASE_SERVICE_ROLE_KEY is missing!')
-      return NextResponse.json(
-        { error: 'Server misconfiguration: SUPABASE_SERVICE_ROLE_KEY is missing.' },
-        { status: 500 }
-      )
-    }
-
-    // 8. Database Reservation (Store metadata & signature in Supabase)
-    const insertRes = await supabase
-      .from('logs')
-      .insert([{
-        content: content.trim(),
-        wallet_address: walletAddress,
-        signature,
-        created_at: timestamp,
-        skills: classification.skills,
-        protocols: classification.protocols,
-        category: classification.category,
-        nonce: typeof nonce === 'string' ? nonce : 'legacy',
-        domain: reqHost,
-        evidence_url: cleanEvidenceUrl,
-        github_url: cleanGithubUrl,
-        archival_state: 'pending' as ArchivalState,
-      }])
-      .select()
-
-    if (insertRes.error || !insertRes.data || insertRes.data.length === 0) {
-      console.error('Supabase insert error:', insertRes.error)
-      return NextResponse.json({ error: `Failed to save log to database: ${insertRes.error?.message || 'Unknown database error'}` }, { status: 500 })
-    }
-
-    const savedLog = insertRes.data[0]
-
-    // 9. Upload Envelope to Arweave via Irys Node #1 (After DB reservation)
-    const canonicalMessage = buildCanonicalSubmitMessage({
-      domain: reqHost,
-      walletAddress,
-      content: content.trim(),
-      timestamp,
-      nonce: typeof nonce === 'string' ? nonce : 'legacy',
-      githubUrl: cleanGithubUrl,
-      evidenceUrl: cleanEvidenceUrl,
+    const { data: savedLog, error: insertResError } = await supabase.rpc('atomic_insert_log', {
+      p_content: content.trim(),
+      p_wallet: walletAddress,
+      p_signature: signature,
+      p_created_at: timestamp,
+      p_nonce: challenge || nonce || 'legacy',
+      p_domain: reqHost,
+      p_evidence_url: cleanEvidenceUrl,
+      p_github_url: cleanGithubUrl,
+      p_skills: classification.skills,
+      p_protocols: classification.protocols,
+      p_category: classification.category,
+      p_archival_state: 'not_requested',
+      p_visibility: visibility || 'private',
+      p_protocol_version: challenge ? 2 : 1,
+      p_challenge_id: consumedChallengeId,
+      p_evidence_type: evidenceType,
+      p_provenance_level: provenanceLevel,
+      p_source_provider: sourceProvider,
+      p_source_metadata: sourceMetadata,
+      p_source_verification_status: sourceVerificationStatus,
+      p_source_verified_at: sourceVerifiedAt
     })
 
-    const structuredEnvelope = JSON.stringify({
-      app: 'PROVN',
-      version: 1,
-      domain: reqHost,
-      walletAddress,
-      timestamp,
-      nonce: typeof nonce === 'string' ? nonce : 'legacy',
-      content: content.trim(),
-      signature,
-      evidenceUrl: cleanEvidenceUrl,
-      githubUrl: cleanGithubUrl,
-      canonicalMessage,
-      classification,
-    }, null, 2)
-
-    const tags = [
-      { name: 'App-Name', value: 'PROVN' },
-      { name: 'Content-Type', value: 'application/json' },
-      { name: 'Builder-Address', value: walletAddress },
-      { name: 'Proof-Type', value: 'Ed25519-Signed-Log' },
-      { name: 'Timestamp', value: timestamp },
-      { name: 'Category', value: classification.category },
-    ]
-
-    if (cleanEvidenceUrl) tags.push({ name: 'Evidence-URL', value: cleanEvidenceUrl })
-    if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
-
-    const { uploadEnvelopeToIrys } = await import('@/app/lib/irysUploader')
-    const uploadRes = await uploadEnvelopeToIrys(structuredEnvelope, tags)
-    const irysTxId = uploadRes.irysTxId || null
-    const archivalState: ArchivalState = uploadRes.success && irysTxId ? 'archived' : 'pending'
-
-    // Update log row with Arweave receipt if successful
-    if (irysTxId) {
-      await supabase
-        .from('logs')
-        .update({ irys_tx_id: irysTxId, archival_state: archivalState })
-        .eq('id', savedLog.id)
+    if (insertResError) {
+      if (insertResError.message === 'DAILY_QUOTA_EXCEEDED') {
+        return NextResponse.json(
+          { error: 'Daily log quota reached (3/3 logs submitted today). Come back tomorrow 🗿' },
+          { status: 429 }
+        )
+      }
+      console.error('Supabase atomic_insert_log error:', insertResError)
+      return NextResponse.json({ error: 'Failed to save log to database' }, { status: 500 })
     }
 
     // ─── Milestone Detection ─────────────────────────────────────────────
@@ -285,16 +266,13 @@ export async function POST(req: NextRequest) {
         ...savedLog,
         evidence_url: cleanEvidenceUrl,
         github_url: cleanGithubUrl,
-        irys_tx_id: irysTxId,
-        archival_state: archivalState,
+        irys_tx_id: null,
+        archival_state: 'not_requested',
       },
       classification,
-      archivalState,
-      irysTxId,
-      cnftAssetId: null,
-      hasMerkleTree: !!process.env.SOLANA_MERKLE_TREE_PUBKEY,
-      hasHeliusRpc: !!process.env.HELIUS_RPC_URL,
-      gatewayUrl: irysTxId ? `https://gateway.irys.xyz/${irysTxId}` : null,
+      archivalState: 'not_requested',
+      irysTxId: null,
+      gatewayUrl: null,
       // Milestone & Badge data
       streak: newStreak,
       builderLevel: {
@@ -312,7 +290,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (error: unknown) {
     console.error('Log submission API error:', error)
-    const detail = error instanceof Error ? error.message : 'Internal server error'
-    return NextResponse.json({ error: detail }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

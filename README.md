@@ -118,28 +118,6 @@ Modifying any character in the content, links, timestamp, or nonce breaks the Ed
 
 ---
 
-## 6. Reputation & Achievements
-
-Builder reputation is computed deterministically from verified logs:
-
-### Builder Levels ([`app/lib/milestones.ts`](app/lib/milestones.ts))
-- `LVL 1` 🔧 **Apprentice Builder** (0+ logs)
-- `LVL 2` ⚒️ **Verified Craftsman** (7+ logs)
-- `LVL 3` 🏗️ **Senior Architect** (30+ logs)
-- `LVL 4` 💎 **Protocol Master** (100+ logs)
-- `LVL 5` 👑 **Grand Legend** (365+ logs)
-
-### Builder Achievements ([`app/lib/achievements.ts`](app/lib/achievements.ts))
-- ⚡ **Genesis Proof**: Submit 1 verified proof log.
-- 🔥 **7-Day Builder**: Maintain an active or historical 7-day streak.
-- 🛡️ **30-Day Builder**: Maintain an active or historical 30-day streak.
-- 👑 **100-Day Builder**: Maintain an active or historical 100-day streak.
-- 🟣 **Solana Contributor**: Log 10+ proofs classified with Solana ecosystem protocols.
-- 🐙 **Open Source Contributor**: Submit 5+ verified Pull Request / Commit links.
-- 📦 **Permanent Provenance**: 10+ logs permanently archived on Arweave.
-- 💎 **Protocol Master**: Log 365+ lifetime verified proofs.
-
----
 
 ## 7. Local Development & Testing
 

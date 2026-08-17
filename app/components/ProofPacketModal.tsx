@@ -29,8 +29,8 @@ export default function ProofPacketModal({
   
   // Sort proofs prioritizing GitHub evidence and recent timestamps
   const topProofs = [...verifiedLogs].sort((a, b) => {
-    const aScore = (a.github_url ? 2 : 0) + (a.archival_state === 'archived' ? 2 : 0)
-    const bScore = (b.github_url ? 2 : 0) + (b.archival_state === 'archived' ? 2 : 0)
+    const aScore = (a.github_url ? 2 : 0) + ((a.archival_state === 'receipt_obtained' || a.archival_state === 'finalized') ? 2 : 0)
+    const bScore = (b.github_url ? 2 : 0) + ((b.archival_state === 'receipt_obtained' || b.archival_state === 'finalized') ? 2 : 0)
     return bScore - aScore || new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   }).slice(0, 5)
 
@@ -50,6 +50,16 @@ export default function ProofPacketModal({
         md += `### ${idx + 1}. Proof #${p.id} — ${new Date(p.created_at).toLocaleDateString()}\n`
         md += `- **Claim:** ${p.content}\n`
         md += `- **Cryptographic Verification:** Ed25519 Wallet Signature (Verified ✓)\n`
+        
+        // Phase 2: Provenance Label
+        if (p.provenance_level === 'source_verified') {
+          md += `- **Provenance Quality:** 🟢 Source API Verified\n`
+        } else if (p.provenance_level === 'source_linked') {
+          md += `- **Provenance Quality:** 🔵 Source URL Linked (Manual Review Required)\n`
+        } else {
+          md += `- **Provenance Quality:** ⚪ Self-Attested (Manual Review Required)\n`
+        }
+
         if (p.github_url) md += `- **GitHub Evidence:** [${p.github_url}](${p.github_url})\n`
         if (p.evidence_url) md += `- **Evidence Link:** [${p.evidence_url}](${p.evidence_url})\n`
         if (p.irys_tx_id && !p.irys_tx_id.startsWith('powl_')) {
@@ -107,6 +117,10 @@ export default function ProofPacketModal({
         archivalState: p.archival_state || 'pending',
         isCryptographicallyVerified: true,
         verificationState: 'VERIFIED',
+        provenanceLevel: p.provenance_level || 'self_attested',
+        sourceProvider: p.source_provider || null,
+        sourceMetadata: p.source_metadata || null,
+        sourceVerifiedAt: p.source_verified_at || null,
       })),
       verificationUrl: packetUrl,
       verificationInstructions: 'Verify each proof signature independently using TweetNaCl Ed25519 or via https://provn-sol.vercel.app/proof/<id>.',
@@ -168,7 +182,7 @@ export default function ProofPacketModal({
             <span style={{ fontSize: '18px' }}>📦</span>
             <div>
               <div style={{ fontWeight: 800, fontSize: '15px', color: '#00ff88' }}>PROVN Proof Packet Studio</div>
-              <div style={{ fontSize: '10px', color: '#888' }}>Portable evidence bundle for grants, bounties, and hiring</div>
+              <div style={{ fontSize: '10px', color: '#888' }}>Portable evidence packet for review</div>
             </div>
           </div>
           <button

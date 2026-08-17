@@ -32,18 +32,7 @@ export default function StatsDashboard({
           marginBottom: '24px',
         }}
       >
-        <div className="terminal-card" style={{ padding: '14px 16px' }}>
-          <div className="corner-accent corner-top-left" />
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-            Builder Level
-          </div>
-          <div style={{ color: badgeSummary?.level?.color || '#888', fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>
-            {badgeSummary?.level?.emoji || '🔧'} LVL {badgeSummary?.level?.level || 1}
-          </div>
-          <div style={{ color: '#555', fontSize: '9px', marginTop: '2px' }}>
-            {badgeSummary?.level?.title || 'Apprentice Builder'}
-          </div>
-        </div>
+
 
         <div className="terminal-card" style={{ padding: '14px 16px' }}>
           <div className="corner-accent corner-top-left" />

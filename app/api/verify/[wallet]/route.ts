@@ -46,15 +46,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       )
     }
 
-    const hostHeader = req.headers.get('host')
     const allProcessedLogs = logs.map((l) => {
       let isCryptoVerified = false
       let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
 
-      if (!l.nonce) {
+      if (!l.nonce && (l as any).protocol_version !== 2) {
         status = 'legacy_unindexed'
       } else {
-        isCryptoVerified = verifyLogCryptographically(l, hostHeader)
+        isCryptoVerified = verifyLogCryptographically(l)
         status = isCryptoVerified ? 'verified' : 'unverified'
       }
 
@@ -74,9 +73,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     })
 
     // Strict Invariant: Metrics and badges are derived EXCLUSIVELY from cryptographically verified proofs
-    const verifiedLogs = logs.filter((l) => verifyLogCryptographically(l, hostHeader))
+    const verifiedLogs = logs.filter((l) => verifyLogCryptographically(l))
     const verifiedLogsCount = verifiedLogs.length
-    const legacyCount = logs.filter((l) => !l.nonce).length
+    const legacyCount = logs.filter((l) => !l.nonce && (l as any).protocol_version !== 2).length
 
     const createdAts = verifiedLogs.map((l) => l.created_at)
     const tz = req.nextUrl.searchParams.get('tz') || PROTOCOL_TIMEZONE
@@ -117,7 +116,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
 
     // Only count entries with real Irys receipts and confirmed 'archived' state from verified proofs
     const confirmedArchivedLogs = verifiedLogs.filter(
-      (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && l.archival_state === 'archived'
+      (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && (l.archival_state === 'receipt_obtained' || l.archival_state === 'finalized')
     )
 
     return NextResponse.json(

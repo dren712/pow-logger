@@ -1,7 +1,11 @@
 /**
- * PROVN Serverless-Compatible Token-Bucket Rate Limiter
+ * PROVN Best-Effort In-Memory Rate Limiter
  *
- * Enforces per-IP and per-Wallet rate limits (10 submissions per 15 minutes).
+ * WARNING: This is NOT authoritative security. In serverless environments (Vercel Lambda),
+ * in-memory state resets on cold starts and is not shared across instances.
+ * This exists only as a first-line UX protection to provide immediate feedback.
+ * All real security enforcement (daily quota, challenge consumption) is handled
+ * atomically in Postgres.
  */
 
 interface RateLimitRecord {

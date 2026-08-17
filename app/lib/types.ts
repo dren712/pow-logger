@@ -2,9 +2,13 @@
  * PROVN Canonical Domain Types
  */
 
-export type ArchivalState = 'pending' | 'archived' | 'failed' | 'legacy_unverified'
+export type ArchivalState = 'not_requested' | 'pending' | 'receipt_obtained' | 'finalized' | 'failed' | 'legacy_unverified'
 
 export type LogVerificationState = 'VERIFIED' | 'LEGACY' | 'UNVERIFIED'
+
+export type EvidenceType = 'self_attested' | 'github_pr' | 'github_commit' | 'github_release' | 'public_url'
+export type ProvenanceLevel = 'self_attested' | 'source_linked' | 'source_verified' | 'partner_attested'
+export type SourceVerificationStatus = 'not_verified' | 'verified' | 'failed' | 'unavailable'
 
 export interface WalletLog {
   id: number
@@ -21,6 +25,15 @@ export interface WalletLog {
   category?: string
   irys_tx_id?: string | null
   archival_state?: ArchivalState
+  
+  // Phase 2: Source-Aware Evidence
+  evidence_type?: EvidenceType
+  provenance_level?: ProvenanceLevel
+  source_provider?: string | null
+  source_metadata?: Record<string, unknown> | null
+  source_verification_status?: SourceVerificationStatus
+  source_verified_at?: string | null
+  
   [key: string]: unknown
 }
 
@@ -60,6 +73,7 @@ export interface BuilderReputation {
   proofsWithOtherEvidence: number
   currentStreak: number
   longestStreak: number
+  sourceVerifiedProofs: number
   builderLevel: {
     level: number
     title: string
@@ -134,6 +148,7 @@ export interface ProofPacket {
 export interface EvidencePolicy {
   name?: string
   minVerifiedProofs?: number
+  minSourceVerifiedProofs?: number
   minRecentProofs?: number
   minStreak?: number
   requiredProtocols?: string[]

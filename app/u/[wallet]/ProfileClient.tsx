@@ -11,6 +11,7 @@ import ProofPacketModal from '@/app/components/ProofPacketModal'
 import { CARD_THEMES, CardTheme, getCardTheme } from '@/app/lib/cardThemes'
 import { Achievement, WalletLog } from '@/app/lib/types'
 import { calculateReputation } from '@/app/lib/reputationEngine'
+import { useQRCode } from '@/app/lib/qrcode'
 
 export type LogItem = WalletLog
 
@@ -97,11 +98,28 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
     return matchesSearch && matchesCat && matchesSkill && matchesProtocol
   })
 
+  // Phase 2: Sort evidence by provenance quality
+  const provenanceRank: Record<string, number> = {
+    source_verified: 3,
+    source_linked: 2,
+    partner_attested: 2,
+    self_attested: 1,
+  }
+  
+  const sortedFilteredLogs = [...filteredLogs].sort((a, b) => {
+    const aRank = provenanceRank[a.provenance_level || 'self_attested'] || 1
+    const bRank = provenanceRank[b.provenance_level || 'self_attested'] || 1
+    if (aRank !== bRank) return bRank - aRank
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
+
   const walletShort = `${wallet.slice(0, 4)}...${wallet.slice(-4)}`
   const verificationUrl = `https://provn-sol.vercel.app/u/${wallet}`
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-    verificationUrl
-  )}&bgcolor=060709&color=00ff88`
+  const qrUrl = useQRCode(verificationUrl, {
+    width: 240,
+    darkColor: '#00ff88',
+    lightColor: '#060709',
+  })
 
   return (
     <main
@@ -539,12 +557,12 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ color: '#aaa', fontSize: '13px', margin: 0, fontWeight: 700 }}>
-            Verifiable Proof Timeline ({filteredLogs.length})
+            Verifiable Proof Timeline ({sortedFilteredLogs.length})
           </h2>
-          <span style={{ color: '#555', fontSize: '11px' }}>Sorted chronologically (newest first)</span>
+          <span style={{ color: '#555', fontSize: '11px' }}>Sorted by evidence quality (Source-Verified first)</span>
         </div>
 
-        {filteredLogs.length === 0 ? (
+        {sortedFilteredLogs.length === 0 ? (
           <div
             className="glass-card"
             style={{
@@ -557,7 +575,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             No proofs match your active filters.
           </div>
         ) : (
-          filteredLogs.map((log) => (
+          sortedFilteredLogs.map((log) => (
             <div
               key={log.id}
               className="terminal-card"
@@ -600,6 +618,21 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                       }}
                     >
                       {log.category}
+                    </span>
+                  )}
+                  {log.provenance_level === 'source_verified' && (
+                    <span style={{ background: 'rgba(0, 255, 136, 0.1)', border: '1px solid rgba(0, 255, 136, 0.3)', color: '#00ff88', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                      🟢 Source-Verified
+                    </span>
+                  )}
+                  {log.provenance_level === 'source_linked' && (
+                    <span style={{ background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', color: '#00e5ff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                      🔵 Source-Linked
+                    </span>
+                  )}
+                  {(!log.provenance_level || log.provenance_level === 'self_attested') && (
+                    <span style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#aaa', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                      ⚪ Self-Attested
                     </span>
                   )}
                 </div>
@@ -722,16 +755,24 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
                 borderRadius: '12px',
                 display: 'inline-block',
                 marginBottom: '16px',
+                minWidth: '200px',
+                minHeight: '200px',
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={qrUrl}
-                alt={`QR code for ${wallet}`}
-                width={200}
-                height={200}
-                style={{ display: 'block', borderRadius: '8px' }}
-              />
+              {qrUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={qrUrl}
+                  alt={`QR code for ${wallet}`}
+                  width={200}
+                  height={200}
+                  style={{ display: 'block', borderRadius: '8px' }}
+                />
+              ) : (
+                <div style={{ width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '11px' }}>
+                  Generating QR...
+                </div>
+              )}
             </div>
 
             <p style={{ color: '#888', fontSize: '11px', margin: '0 0 12px 0' }}>

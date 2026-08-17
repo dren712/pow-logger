@@ -14,7 +14,7 @@ export const revalidate = 0
 
 export const metadata: Metadata = {
   title: 'PROVN Grant Evidence & Ecosystem Metrics Dashboard',
-  description: 'Live cryptographic evidence metrics and traction data for Superteam India / Solana Foundation grant evaluation.',
+  description: 'Live cryptographic evidence metrics and traction data for Example Grant Review Dashboard.',
 }
 
 export default async function GrantEvidencePage() {
@@ -30,7 +30,7 @@ export default async function GrantEvidencePage() {
   const totalBuilders = uniqueWallets.size
 
   const archivedCount = logs.filter(
-    (l) => l.archival_state === 'archived' || (l.irys_tx_id && !l.irys_tx_id.startsWith('powl_'))
+    (l) => l.archival_state === 'receipt_obtained' || l.archival_state === 'finalized' || (l.irys_tx_id && !l.irys_tx_id.startsWith('powl_'))
   ).length
 
   const verifiedCount = logs.filter((l) => verifyLogCryptographically(l)).length
@@ -64,7 +64,7 @@ export default async function GrantEvidencePage() {
               <span>📊</span> Grant Evidence & Ecosystem Metrics
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              Live, queryable proof-of-work metrics backing the Superteam India & Solana Foundation grant application.
+              Live, queryable proof-of-work metrics backing the Example Grant Review Dashboard.
             </p>
           </div>
           <span className="text-xs font-mono bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 px-3 py-1.5 rounded-full font-bold">

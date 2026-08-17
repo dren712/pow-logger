@@ -37,10 +37,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
 
     const reputation = calculateReputation(wallet, logs)
 
-    const hostHeader = req.headers.get('host')
     const proofDetails: ProofDetail[] = logs.map((l) => {
-      const isValid = verifyLogCryptographically(l, hostHeader)
-      const verificationState = isValid ? 'VERIFIED' : (!l.nonce ? 'LEGACY' : 'UNVERIFIED')
+      const isValid = verifyLogCryptographically(l)
+      const verificationState = isValid ? 'VERIFIED' : ((!l.nonce && (l as any).protocol_version !== 2) ? 'LEGACY' : 'UNVERIFIED')
       return {
         id: l.id,
         walletAddress: l.wallet_address,
@@ -55,7 +54,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         protocols: l.protocols,
         category: l.category,
         irysTxId: l.irys_tx_id || null,
-        archivalState: l.archival_state || 'pending',
+        archivalState: l.archival_state || 'not_requested',
         isCryptographicallyVerified: isValid,
         verificationState,
       }

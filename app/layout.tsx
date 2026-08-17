@@ -10,11 +10,11 @@ export const viewport = {
 
 export const metadata: Metadata = {
   title: "PROVN — Proof-of-Work Logger 🗿",
-  description: "Solana-native, wallet-authenticated proof-of-work protocol permanently archived on Arweave.",
+  description: "Solana-native, wallet-authenticated proof-of-work protocol with optional Arweave archival.",
   metadataBase: new URL('https://provn-sol.vercel.app'),
   openGraph: {
     title: 'PROVN — Proof-of-Work Logger 🗿',
-    description: 'Solana-native, wallet-authenticated proof-of-work protocol permanently archived on Arweave.',
+    description: 'Solana-native, wallet-authenticated proof-of-work protocol with optional Arweave archival.',
     url: 'https://provn-sol.vercel.app',
     siteName: 'PROVN',
     type: 'website',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'PROVN — Proof-of-Work Logger 🗿',
-    description: 'Your work, cryptographically verified & permanently archived. 🗿',
+    description: 'Your work, cryptographically verified with optional Arweave archival. 🗿',
   },
   other: {
     'theme-color': '#060709',
