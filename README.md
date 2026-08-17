@@ -20,9 +20,13 @@ PROVN is a portable, cryptographically verifiable builder evidence protocol for 
 
 ## 1. What is PROVN?
 
+> [!IMPORTANT]
+> **What PROVN Proves vs. What it Doesn't**
+> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + nonce + optional links) at a specific time, and that statement is durably archived on Arweave. It **does NOT** independently prove that the underlying work was actually performed, that a linked GitHub URL is genuinely authored by the wallet holder, or anything about work quality. It is a tamper-evident cryptographic wrapper around a self-attested claim.
+
 In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and social posts. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
 
-PROVN gives developers a single, permanent record of their daily contributions:
+PROVN gives developers a single, permanent cryptographic record of their daily self-attested contributions:
 1. **Sign**: The builder signs a canonical message containing their work summary, evidence links, timestamp, and unique nonce with their Solana wallet.
 2. **Verify**: The server cryptographically validates the Ed25519 signature, checks the 15-minute anti-replay window, and indexes the attestation.
 3. **Archive**: The signed envelope is permanently stored on Arweave via the Irys L1 gateway.

@@ -1,8 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import WalletMultiButton from './WalletButton'
+
+interface NetworkStats {
+  totalBuilders: number
+  totalProofs: number
+  totalArchived: number
+}
 
 interface HeroHeaderProps {
   connected: boolean
@@ -11,6 +17,16 @@ interface HeroHeaderProps {
 
 export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps) {
   const [verifyWalletInput, setVerifyWalletInput] = useState('')
+  const [stats, setStats] = useState<NetworkStats | null>(null)
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data.totalBuilders === 'number') setStats(data)
+      })
+      .catch(console.error)
+  }, [])
 
   const handleVerifySubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -137,6 +153,31 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
                 Inspect Passport →
               </button>
             </form>
+
+            {/* Network Stats */}
+            {stats && (
+              <div style={{
+                marginTop: '28px',
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '24px',
+                borderTop: '1px solid #161a24',
+                paddingTop: '20px'
+              }}>
+                <div>
+                  <div style={{ color: '#00ff88', fontSize: '18px', fontWeight: 800 }}>{stats.totalBuilders}</div>
+                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Builders</div>
+                </div>
+                <div>
+                  <div style={{ color: '#00e5ff', fontSize: '18px', fontWeight: 800 }}>{stats.totalProofs}</div>
+                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Proofs</div>
+                </div>
+                <div>
+                  <div style={{ color: '#ffb800', fontSize: '18px', fontWeight: 800 }}>{stats.totalArchived}</div>
+                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Archived</div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       ) : (

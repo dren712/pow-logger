@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Problem Statement
 
-In the modern Web3 software ecosystem, developer reputation is fragmented, unverified, and prone to fabrication. Resumes, social media posts, and unauthenticated portfolio claims fail to provide immutable proof of daily engineering contributions. Conversely, existing centralized platforms rely on single points of trust that can alter, censor, or delete historical developer records.
+In the modern Web3 software ecosystem, developer reputation is fragmented, unauthenticated, and prone to fabrication. Resumes, social media posts, and unauthenticated portfolio claims fail to provide immutable proof of daily engineering contributions. Conversely, existing centralized platforms rely on single points of trust that can alter, censor, or delete historical developer records.
 
 **PROVN** solves this challenge by establishing a **lightweight, wallet-signed evidence protocol for developers**. By combining **SIWS-inspired canonical proof messages** and Ed25519 wallet signatures with **optional Arweave permanent storage**, PROVN creates a publicly verifiable, manual-review-ready record of developer-signed daily work claims.
 
@@ -68,7 +68,7 @@ The backend server (`/api/log-submit`) re-derives the exact canonical message fr
 
 ## 3. Storage Economics & Decentralized Archival
 
-Verified log envelopes are formatted into standardized JSON metadata structures containing:
+Cryptographically authenticated log envelopes are formatted into standardized JSON metadata structures containing:
 - Protocol metadata (`app: PROVN`, `version: 1`)
 - Cryptographic signature & Base58 public key
 - Classified skills, protocols, and work categories

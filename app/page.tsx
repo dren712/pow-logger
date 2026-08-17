@@ -272,6 +272,24 @@ export default function LoggerApp() {
 
       <MobileWalletNotice />
 
+      {/* Onboarding Zero State */}
+      {connected && logs.length === 0 && (
+        <div style={{
+          background: 'rgba(0, 229, 255, 0.05)',
+          border: '1px dashed rgba(0, 229, 255, 0.3)',
+          padding: '20px',
+          borderRadius: '12px',
+          marginBottom: '24px',
+          textAlign: 'center'
+        }}>
+          <h3 style={{ color: '#00e5ff', margin: '0 0 8px 0', fontSize: '1.2rem' }}>Welcome to PROVN! 🗿</h3>
+          <p style={{ color: '#889', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
+            Your builder passport is currently empty. Start by logging your first piece of engineering work below. 
+            Once you sign and submit, you&apos;ll instantly unlock the Level 1 badge and your verifiable profile link will be active.
+          </p>
+        </div>
+      )}
+
       {/* Primary Work Logging Terminal */}
       <TerminalStudio
         log={log}
