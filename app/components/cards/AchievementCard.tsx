@@ -38,7 +38,7 @@ const LOCKED_THEME: CardTheme = {
 
 export default function AchievementCard({
   achievement,
-  reputation,
+
   onClick,
   customTheme,
 }: AchievementCardProps) {

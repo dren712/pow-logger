@@ -58,7 +58,7 @@ export function parseGithubUrl(url: string): ParsedGithubUrl | null {
     }
 
     return null
-  } catch (e) {
+  } catch (_e) {
     return null
   }
 }

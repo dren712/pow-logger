@@ -139,7 +139,7 @@ export default function TerminalStudio({
           alert('GitHub URL must be a valid github.com PR or Commit URL.')
           return
         }
-      } catch (e) {
+      } catch (_e) {
         alert('Invalid GitHub URL format.')
         return
       }

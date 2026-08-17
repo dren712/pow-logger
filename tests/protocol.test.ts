@@ -37,7 +37,7 @@ import { evaluateAchievements } from '../app/lib/achievements'
 import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } from '../app/lib/cnftEligibility'
 import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
-import { WalletLog } from '../app/lib/types'
+import { WalletLog, BuilderReputation } from '../app/lib/types'
 import { parseGithubUrl } from '../app/lib/githubVerifier'
 
 import fs from 'fs'
@@ -719,7 +719,7 @@ async function runProductionTestSuite() {
     sourceVerifiedProofs: 1,
     recentVerifiedProofs: 3,
     verifiedProofs: 3,
-  } as any
+  } as unknown as BuilderReputation
 
   assert(pureReputation.sourceVerifiedProofs === 1, 'Reputation engine tracks source_verified proofs')
 
