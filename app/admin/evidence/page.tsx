@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default async function GrantEvidencePage() {
   const { data: rawLogs } = await supabase
     .from('logs')
-    .select('id, wallet_address, content, created_at, category, skills, protocols, archival_state, irys_tx_id, signature, nonce, domain, github_url, evidence_url')
+    .select('id, wallet_address, content, created_at, category, skills, protocols, archival_state, irys_tx_id, signature, nonce, domain, github_url, evidence_url, protocol_version, challenge_id')
     .order('created_at', { ascending: false })
 
   const logs = (rawLogs || []) as WalletLog[]

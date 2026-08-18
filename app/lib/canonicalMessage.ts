@@ -275,7 +275,7 @@ export function verifyLogCryptographically(
     return false
   }
 
-  const challengeStr = log.challenge || log.challenge_id || (log.protocol_version === 2 ? log.nonce : null)
+  const challengeStr = log.challenge || (log.protocol_version === 2 ? log.nonce : null)
   const isV2 = log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!challengeStr)
 
   if (isV2) {
@@ -315,13 +315,26 @@ export function verifyLogCryptographically(
     // Exact domain: strictly use the log's persisted domain
     const domain = log.domain || 'provn-sol.vercel.app'
 
+    // Postgres / Supabase transforms "2026-08-17T18:01:50.481Z" into "...+00:00" and may trim trailing ms zeroes.
+    // We MUST restore the exact string the client signed (which is standard JS .toISOString() format).
+    let fixedTimestamp = log.created_at;
+    if (fixedTimestamp.endsWith('+00:00')) {
+      fixedTimestamp = fixedTimestamp.replace('+00:00', 'Z');
+      const msMatch = fixedTimestamp.match(/\.(\d+)Z$/);
+      if (msMatch) {
+        let ms = msMatch[1];
+        while (ms.length < 3) ms += '0';
+        fixedTimestamp = fixedTimestamp.replace(/\.\d+Z$/, `.${ms}Z`);
+      }
+    }
+
     let canonicalMsg: string
     if (isV2) {
       canonicalMsg = buildCanonicalSubmitMessageV2({
         domain,
         walletAddress: log.wallet_address,
         content: log.content,
-        timestamp: log.created_at,
+        timestamp: fixedTimestamp,
         challenge: challengeStr!,
         githubUrl: log.github_url || undefined,
         evidenceUrl: log.evidence_url || undefined,
@@ -331,7 +344,7 @@ export function verifyLogCryptographically(
         domain,
         walletAddress: log.wallet_address,
         content: log.content,
-        timestamp: log.created_at,
+        timestamp: fixedTimestamp,
         nonce: log.nonce!,
         githubUrl: log.github_url || undefined,
         evidenceUrl: log.evidence_url || undefined,
