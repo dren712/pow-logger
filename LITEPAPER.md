@@ -32,7 +32,7 @@ PROVN operates as a 4-layer cryptographically verifiable pipeline:
 │  • Off-Chain Signature Re-derivation & TweetNaCl Ed25519 Verification        │
 │  • Replay Attack Defense (15-minute strict timestamp window)                │
 │  • Automatic Regex Classifier (16 skill, 15 protocol, 10 work categories)   │
-│  • Daily Quota Enforcement (3 logs/day via get_daily_log_count RPC)        │
+│  • Daily Quota Enforcement (3 logs/day via atomic daily_quotas table locks) │
 └──────────────────────┬──────────────────────────────┬───────────────────────┘
                        │                              │
                        ▼                              ▼
@@ -51,8 +51,8 @@ Every log submission requires the client wallet to sign a canonical, human-reada
 provn-sol.vercel.app wants you to sign in with your Solana account:
 <wallet_address>
 
-SIWS Schema Version: 1
-Nonce: <unique_base58_nonce>
+PROVN Protocol Version: 2
+Challenge: <server_issued_challenge>
 Timestamp: <iso_timestamp>
 Content: <work_log_text>
 GitHub URL: <normalized_github_url_or_none>
@@ -97,7 +97,7 @@ The server dynamically renders a responsive vector SVG displaying the builder's 
 - **PostgreSQL Row-Level Security**: Public clients (`anon`) are strictly restricted to read-only `SELECT` queries on the `logs` table. Direct client `INSERT`, `UPDATE`, or `DELETE` operations are rejected by PostgreSQL policies. All writes execute through the `service_role` on verified server routes.
 - **Unique Signature Index**: Enforces a database-level `UNIQUE INDEX` on the `signature` column to neutralize signature replay attacks.
 - **Timestamp Anti-Replay Window**: Validates signed timestamp against server clock within a strict 15-minute window (`900,000ms`).
-- **Daily Quota Enforcement**: Daily limits (3 logs/day) enforced database-side via `get_daily_log_count` RPC.
+- **Daily Quota Enforcement**: Daily limits (3 logs/day) are securely enforced database-side using strict row-level locking on a `daily_quotas` table to prevent race conditions.
 
 ---
 

@@ -597,10 +597,10 @@ async function runProductionTestSuite() {
 
   // Test 3: Builder Level Threshold Alignment
   assert(BUILDER_LEVELS[0].minLogs === 0, 'Level 1 Apprentice threshold is 0 logs')
-  assert(BUILDER_LEVELS[1].minLogs === 7, 'Level 2 Craftsman threshold is 7 logs')
-  assert(BUILDER_LEVELS[2].minLogs === 30, 'Level 3 Architect threshold is 30 logs')
-  assert(BUILDER_LEVELS[3].minLogs === 100, 'Level 4 Master threshold is 100 logs')
-  assert(BUILDER_LEVELS[4].minLogs === 365, 'Level 5 Grand Legend threshold is 365 logs')
+  assert(BUILDER_LEVELS[1].minLogs === 7, 'Level 2 Attested Craftsman threshold is 7 logs')
+  assert(BUILDER_LEVELS[2].minLogs === 30, 'Level 3 Senior Builder threshold is 30 logs')
+  assert(BUILDER_LEVELS[3].minLogs === 100, 'Level 4 Protocol Builder threshold is 100 logs')
+  assert(BUILDER_LEVELS[4].minLogs === 365, 'Level 5 Attested Legend threshold is 365 logs')
 
   assert(getBuilderLevel(0).level === 1, '0 logs resolves to Level 1')
   assert(getBuilderLevel(7).level === 2, '7 logs resolves to Level 2')
@@ -1047,7 +1047,64 @@ async function runProductionTestSuite() {
   assert(linkMsg.includes('Action: Link GitHub Identity'), 'Identity link canonical message includes correct action')
   assert(linkMsg.includes(testV2Challenge), 'Identity link canonical message includes challenge')
 
+
+
+  // --- SUITE 13: Database Integration for Provenance States ---
+  console.log('\n► SUITE 13: Database Integration for Provenance States')
+  
+  if (supabaseUrl && anonKey && isConfiguredSupabaseUrl(supabaseUrl)) {
+    try {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (serviceKey) {
+        const serviceClient = createClient(supabaseUrl, serviceKey)
+        const levels = ['self_attested', 'source_linked', 'source_exists', 'identity_linked', 'source_verified', 'partner_attested']
+        
+        for (const level of levels) {
+          const testNonce = 'DBTEST' + Date.now().toString() + Math.random().toString(36).substring(7)
+          
+          // Insert directly as service role to bypass API and test schema constraints
+          const { error } = await serviceClient.from('logs').insert({
+            content: 'Test content for ' + level,
+            wallet_address: walletAddress,
+            signature: 'fake_sig_' + testNonce,
+            created_at: new Date().toISOString(),
+            nonce: testNonce,
+            domain: 'test.com',
+            evidence_type: 'github_pr',
+            provenance_level: level,
+            source_provider: 'github'
+          })
+          
+          assert(!error, `Database schema successfully accepts provenance level: ${level}`, error?.message)
+        }
+        
+        // Test invalid state
+        const testNonceInvalid = 'DBTEST' + Date.now().toString() + Math.random().toString(36).substring(7)
+        const { error: errInvalid } = await serviceClient.from('logs').insert({
+            content: 'Test content for invalid',
+            wallet_address: walletAddress,
+            signature: 'fake_sig_' + testNonceInvalid,
+            created_at: new Date().toISOString(),
+            nonce: testNonceInvalid,
+            domain: 'test.com',
+            evidence_type: 'github_pr',
+            provenance_level: 'invalid_state',
+            source_provider: 'github'
+        })
+        assert(!!errInvalid, 'Database schema successfully rejects invalid provenance level: invalid_state')
+
+      } else {
+         console.log('  ℹ️ Skipping Suite 13 DB Integration Test: No SUPABASE_SERVICE_ROLE_KEY available')
+      }
+    } catch (e) {
+      console.error('Test error:', e)
+    }
+  } else {
+    console.log('  ℹ️ Offline Protocol Test Mode: Skipping live DB integration test')
+  }
+
   // --- SUMMARY ---
+
   console.log('\n===================================================================')
   console.log(`   PRODUCTION SUITE COMPLETE: ${passed} PASSED, ${failed} FAILED`)
   if (failedTests.length > 0) {

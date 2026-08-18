@@ -245,14 +245,16 @@ export interface CanonicalIdentityLinkParams {
   walletAddress: string
   challenge: string
   timestamp: string
+  action?: 'Link' | 'Relink' | 'Unlink'
 }
 
 export function buildCanonicalIdentityLinkMessage(params: CanonicalIdentityLinkParams): string {
+  const actionName = params.action || 'Link'
   return `${params.domain} wants you to sign in with your Solana account:
 ${params.walletAddress}
 
 PROVN Protocol Version: 2
-Action: Link GitHub Identity
+Action: ${actionName} GitHub Identity
 Challenge: ${params.challenge}
 Timestamp: ${params.timestamp}`
 }

@@ -26,10 +26,10 @@ export interface BuilderLevel {
 
 export const BUILDER_LEVELS: BuilderLevel[] = [
   { level: 1, title: 'Apprentice Builder', emoji: '🔧', color: '#888888', minLogs: 0,   glow: 'rgba(136,136,136,0.15)' },
-  { level: 2, title: 'Verified Craftsman', emoji: '⚒️',  color: '#00e5ff', minLogs: 7,   glow: 'rgba(0,229,255,0.15)' },
-  { level: 3, title: 'Senior Architect',   emoji: '🏗️',  color: '#ffb800', minLogs: 30,  glow: 'rgba(255,184,0,0.15)' },
-  { level: 4, title: 'Protocol Master',    emoji: '💎', color: '#ff00ff', minLogs: 100, glow: 'rgba(255,0,255,0.15)' },
-  { level: 5, title: 'Grand Legend',        emoji: '👑', color: '#ff4400', minLogs: 365, glow: 'rgba(255,68,0,0.2)' },
+  { level: 2, title: 'Attested Craftsman', emoji: '⚒️',  color: '#00e5ff', minLogs: 7,   glow: 'rgba(0,229,255,0.15)' },
+  { level: 3, title: 'Senior Builder',   emoji: '🏗️',  color: '#ffb800', minLogs: 30,  glow: 'rgba(255,184,0,0.15)' },
+  { level: 4, title: 'Protocol Builder',    emoji: '💎', color: '#ff00ff', minLogs: 100, glow: 'rgba(255,0,255,0.15)' },
+  { level: 5, title: 'Attested Legend',        emoji: '👑', color: '#ff4400', minLogs: 365, glow: 'rgba(255,68,0,0.2)' },
 ]
 
 export function getBuilderLevel(totalLogs: number): BuilderLevel {

@@ -96,7 +96,7 @@ PROVN gives developers a single, permanent cryptographic record of their daily s
 | **Export Studio** | 🧪 **Labs** | Multi-format export: Markdown (`.md`), Verifiable JSON, CSV, and Printable A4 certificate. |
 | **Card Material Customizer** | 🧪 **Labs** | Data-driven metallic UI customizer and SVG card generator (`/api/passport-card/[wallet]`). |
 | **GitHub Readme Badge** | 🧪 **Labs** | Dynamic SVG builder summary badge for GitHub profile READMEs (`/api/badge/[wallet].svg`). |
-| **TypeScript SDK (`@provn/sdk`)** | 🧪 **Labs** | Client library, local offline verifier, and policy checker in [`sdk/index.ts`](sdk/index.ts). |
+| **TypeScript SDK (`@provn/sdk` - Experimental Internal Package)** | 🧪 **Labs** | The SDK provides a typed interface for retrieving and validating PROVN proof packets. Note: This is currently an internal experimental workspace package that directly consumes the Next.js application core; it is not yet published to npm. |
 | **CLI Utility** | 🧪 **Labs** | Terminal utility for passports, proofs, packets, and policy evaluation in [`cli/provn.mjs`](cli/provn.mjs). |
 | **Bounty Policy Demo** | 🧪 **Labs** | Interactive reference demo illustrating programmatic policy gating (`/demo/bounty`). |
 | **GitHub OAuth & Identity Binding** | ✅ **Shipped** | Strict cryptographic binding of GitHub accounts to wallets via SIWS OAuth with `source_verified` provenance. |
@@ -112,8 +112,8 @@ Every proof submission requires the wallet to sign a human-readable, tamper-evid
 provn-sol.vercel.app wants you to sign in with your Solana account:
 <WALLET_ADDRESS>
 
-SIWS Schema Version: 1
-Nonce: <RANDOM_BASE58_NONCE>
+PROVN Protocol Version: 2
+Challenge: <SERVER_ISSUED_CHALLENGE>
 Timestamp: <ISO_8601_TIMESTAMP>
 Content: <WORK_DESCRIPTION>
 GitHub URL: <NORMALIZED_GITHUB_URL_OR_NONE>

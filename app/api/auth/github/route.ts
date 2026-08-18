@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const { walletAddress, challenge, signature, timestamp } = body
+    const { walletAddress, challenge, signature, timestamp, action = 'Link' } = body
 
     if (!walletAddress || typeof walletAddress !== 'string') {
       return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 })
@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
     }
     if (!timestamp || typeof timestamp !== 'string') {
       return NextResponse.json({ error: 'timestamp is required' }, { status: 400 })
+    }
+    if (action !== 'Link' && action !== 'Relink') {
+      return NextResponse.json({ error: 'invalid action' }, { status: 400 })
     }
 
     // 1. Verify Timestamp freshness (+/- 15 minutes)
@@ -64,6 +67,7 @@ export async function POST(req: NextRequest) {
       walletAddress,
       challenge,
       timestamp,
+      action
     })
 
     try {
@@ -95,7 +99,8 @@ export async function POST(req: NextRequest) {
       .from('oauth_states')
       .insert({
         wallet_address: walletAddress,
-        expires_at: stateExpiresAt
+        expires_at: stateExpiresAt,
+        action
       })
       .select('state_id')
       .single()

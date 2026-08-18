@@ -18,11 +18,12 @@ export async function GET(req: NextRequest) {
   }
 
   let wallet: string
+  let action: string
   try {
     // Look up the state in oauth_states table
     const { data: stateRecord } = await supabase
       .from('oauth_states')
-      .select('wallet_address, expires_at')
+      .select('wallet_address, expires_at, action')
       .eq('state_id', stateBase64)
       .single()
 
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
     }
 
     wallet = stateRecord.wallet_address
+    action = stateRecord.action || 'Link'
 
     // Cleanup used state
     await supabase.from('oauth_states').delete().eq('state_id', stateBase64)
@@ -97,7 +99,18 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Store Identity in Supabase
-    // Upsert the identity. If the wallet already has an identity, overwrite it.
+    // Check if identity already exists to enforce explicit Relink
+    const { data: existingIdentity } = await supabase
+      .from('wallet_identities')
+      .select('github_id')
+      .eq('wallet_address', wallet)
+      .maybeSingle()
+
+    if (existingIdentity && action !== 'Relink') {
+      throw new Error('Identity already exists. Explicit Relink action required.')
+    }
+
+    // Upsert the identity.
     const { error: upsertError } = await supabase
       .from('wallet_identities')
       .upsert(

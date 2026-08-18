@@ -37,6 +37,12 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid challenge' }, { status: 400 })
     }
 
+    const requestTime = new Date(timestamp).getTime()
+    const now = Date.now()
+    if (isNaN(requestTime) || Math.abs(now - requestTime) > 900000) {
+      return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
+    }
+
     const { data: challengeData, error: challengeError } = await supabase
       .from('signing_challenges')
       .update({ consumed_at: new Date().toISOString() })

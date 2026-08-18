@@ -34,6 +34,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid challenge' }, { status: 400 })
     }
 
+    const requestTime = new Date(timestamp).getTime()
+    const now = Date.now()
+    if (isNaN(requestTime) || Math.abs(now - requestTime) > 900000) {
+      return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
+    }
+
     // Atomically consume signing challenge
     const { data: challengeData, error: challengeError } = await supabase
       .from('signing_challenges')
@@ -115,7 +121,17 @@ export async function POST(req: NextRequest) {
       logSignature: log.signature,
       evidenceUrl: log.evidence_url,
       githubUrl: log.github_url,
-      category: log.category
+      category: log.category,
+      evidenceType: log.evidence_type,
+      provenanceLevel: log.provenance_level,
+      sourceProvider: log.source_provider,
+      sourceMetadata: log.source_metadata,
+      sourceVerificationStatus: log.source_verification_status,
+      sourceVerifiedAt: log.source_verified_at,
+      skills: log.skills,
+      protocols: log.protocols,
+      visibility: log.visibility,
+      protocolVersion: log.protocol_version
     }, null, 2)
 
     const tags = [
