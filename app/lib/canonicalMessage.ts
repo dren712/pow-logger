@@ -240,6 +240,23 @@ Challenge: ${params.challenge}
 Timestamp: ${params.timestamp}`
 }
 
+export interface CanonicalIdentityLinkParams {
+  domain: string
+  walletAddress: string
+  challenge: string
+  timestamp: string
+}
+
+export function buildCanonicalIdentityLinkMessage(params: CanonicalIdentityLinkParams): string {
+  return `${params.domain} wants you to sign in with your Solana account:
+${params.walletAddress}
+
+PROVN Protocol Version: 2
+Action: Link GitHub Identity
+Challenge: ${params.challenge}
+Timestamp: ${params.timestamp}`
+}
+
 /**
  * The single canonical cryptographic verification function across the PROVN protocol.
  * Reconstructs the canonical SIWS-inspired proof message and executes TweetNaCl Ed25519

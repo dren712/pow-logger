@@ -64,7 +64,7 @@ export function parseGithubUrl(url: string): ParsedGithubUrl | null {
     }
 
     return null
-  } catch (_e) {
+  } catch {
     return null
   }
 }
@@ -135,13 +135,15 @@ export async function verifyGithubSource(url: string, walletAddress?: string): P
     const now = new Date().toISOString()
 
     let snapshot: SourceSnapshot
+    let githubAuthorId: string | null = null
 
     if (parsed.type === 'pull') {
+      githubAuthorId = data.user?.id ? String(data.user.id) : null
       snapshot = {
         provider: 'github',
         sourceType: 'github_pr',
         sourceUrl: data.html_url || url,
-        author: data.user?.login || null,
+        author: data.user?.login || null, // Keep login for display
         state: data.state || null, // 'open', 'closed'
         mergeStatus: data.merged ? 'merged' : 'unmerged',
         sourceTimestamp: data.created_at || null,
@@ -154,14 +156,17 @@ export async function verifyGithubSource(url: string, walletAddress?: string): P
           merged_at: data.merged_at,
           state: data.state,
           author: data.user?.login,
+          author_id: githubAuthorId,
           repo: `${parsed.owner}/${parsed.repo}`,
         }
       }
     } else {
+      githubAuthorId = data.author?.id ? String(data.author.id) : null
       snapshot = {
         provider: 'github',
         sourceType: 'github_commit',
         sourceUrl: data.html_url || url,
+        // Only use the linked GitHub account for the identity check, fallback to raw git name for display if necessary
         author: data.author?.login || data.commit?.author?.name || null,
         state: 'committed',
         mergeStatus: null,
@@ -171,6 +176,7 @@ export async function verifyGithubSource(url: string, walletAddress?: string): P
           sha: data.sha,
           message: data.commit?.message,
           author: data.author?.login || data.commit?.author?.name,
+          author_id: githubAuthorId,
           date: data.commit?.author?.date,
           verified: data.commit?.verification?.verified,
           repo: `${parsed.owner}/${parsed.repo}`,
@@ -179,19 +185,26 @@ export async function verifyGithubSource(url: string, walletAddress?: string): P
     }
 
     let finalStatus: SourceVerificationStatus = 'verified_source_exists'
-    let finalProvenance: ProvenanceLevel = 'source_linked'
+    let finalProvenance: ProvenanceLevel = 'source_exists' // Upgraded from source_linked because we confirmed it via API
 
     // If walletAddress is provided, check if it's cryptographically linked to the GitHub author
-    if (walletAddress && snapshot.author) {
+    if (walletAddress) {
       const { data: identity } = await supabase
         .from('wallet_identities')
-        .select('github_username')
+        .select('github_id')
         .eq('wallet_address', walletAddress)
         .single()
 
-      if (identity && identity.github_username.toLowerCase() === snapshot.author.toLowerCase()) {
-        finalStatus = 'verified'
-        finalProvenance = 'source_verified'
+      if (identity) {
+        // The wallet has a linked GitHub identity
+        finalProvenance = 'identity_linked'
+        
+        // If the GitHub API provided a stable numeric author ID for this commit/PR,
+        // and it matches the one linked to this wallet, we have source_verified attribution.
+        if (githubAuthorId && identity.github_id === githubAuthorId) {
+          finalStatus = 'verified'
+          finalProvenance = 'source_verified'
+        }
       }
     }
 

@@ -139,7 +139,7 @@ export default function TerminalStudio({
           alert('GitHub URL must be a valid github.com PR or Commit URL.')
           return
         }
-      } catch (_e) {
+      } catch {
         alert('Invalid GitHub URL format.')
         return
       }
@@ -337,6 +337,18 @@ export default function TerminalStudio({
               boxSizing: 'border-box',
             }}
           />
+          {connected && walletAddress && (
+            <div style={{ marginTop: '6px', textAlign: 'right' }}>
+              <a 
+                href={`/u/${walletAddress}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontSize: '10px', color: '#00e5ff', textDecoration: 'underline' }}
+              >
+                Link your GitHub account in your Profile →
+              </a>
+            </div>
+          )}
         </div>
 
         <div>

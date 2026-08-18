@@ -959,7 +959,7 @@ async function runProductionTestSuite() {
         ok: true,
         json: async () => ({ id: 12345, html_url: maliciousGitHubUrl }),
         status: 200
-      } as any
+      } as unknown as Response
     }
     return originalFetch(url)
   }
@@ -967,8 +967,8 @@ async function runProductionTestSuite() {
   try {
     const verificationResult = await verifyGithubSource(maliciousGitHubUrl)
     assert(
-      verificationResult.status === 'verified_source_exists' && verificationResult.provenanceLevel === 'source_linked',
-      'Adversarial Attribution Defense: Existing GitHub URL only achieves source_linked without identity'
+      verificationResult.status === 'verified_source_exists' && verificationResult.provenanceLevel === 'source_exists',
+      'Adversarial Attribution Defense: Existing GitHub URL only achieves source_exists without identity'
     )
 
     // Option B: Successful Identity Linking Test
@@ -997,6 +997,17 @@ async function runProductionTestSuite() {
   })
   assert(visMsg.includes('Action: Set Visibility'), 'Visibility canonical message includes correct action')
   assert(visMsg.includes('Visibility: public'), 'Visibility canonical message includes visibility value')
+
+  // Test buildCanonicalIdentityLinkMessage
+  const { buildCanonicalIdentityLinkMessage } = await import('../app/lib/canonicalMessage')
+  const linkMsg = buildCanonicalIdentityLinkMessage({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: testV2Wallet,
+    challenge: testV2Challenge,
+    timestamp: testV2Timestamp,
+  })
+  assert(linkMsg.includes('Action: Link GitHub Identity'), 'Identity link canonical message includes correct action')
+  assert(linkMsg.includes(testV2Challenge), 'Identity link canonical message includes challenge')
 
   // --- SUMMARY ---
   console.log('\n===================================================================')

@@ -12,6 +12,9 @@ import { CARD_THEMES, CardTheme, getCardTheme } from '@/app/lib/cardThemes'
 import { Achievement, WalletLog } from '@/app/lib/types'
 import { calculateReputation } from '@/app/lib/reputationEngine'
 import { useQRCode } from '@/app/lib/qrcode'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { buildCanonicalIdentityLinkMessage } from '@/app/lib/canonicalMessage'
+import bs58 from 'bs58'
 
 export type LogItem = WalletLog
 
@@ -21,6 +24,7 @@ interface ProfileClientProps {
 }
 
 export default function ProfileClient({ wallet, initialLogs }: ProfileClientProps) {
+  const { publicKey, signMessage } = useWallet()
   const [logs, setLogs] = useState<LogItem[]>(initialLogs)
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -65,6 +69,71 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
       }
     }
   }, [])
+
+  const handleLinkGithub = async () => {
+    if (!publicKey || publicKey.toBase58() !== wallet) {
+      setIdentityLinkStatus('error')
+      // Custom error message for wallet mismatch handled implicitly, but let's just alert
+      alert('Please connect the wallet for this profile to link GitHub.')
+      return
+    }
+    if (!signMessage) {
+      alert('Your wallet does not support message signing.')
+      return
+    }
+
+    try {
+      // 1. Fetch Challenge
+      const challengeRes = await fetch('/api/challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: wallet })
+      })
+      if (!challengeRes.ok) throw new Error('Failed to fetch signing challenge')
+      const { challenge } = await challengeRes.json()
+
+      // 2. Sign canonical message
+      const timestamp = new Date().toISOString()
+      const clientDomain = window.location.host.split(':')[0]
+      const canonicalMsg = buildCanonicalIdentityLinkMessage({
+        domain: clientDomain,
+        walletAddress: wallet,
+        challenge,
+        timestamp
+      })
+
+      const messageBytes = new TextEncoder().encode(canonicalMsg)
+      const rawSigResult = await signMessage(messageBytes)
+      
+      // Support Uint8Array or Buffer returns
+      const signatureBytes = rawSigResult instanceof Uint8Array ? rawSigResult : new Uint8Array((rawSigResult as { data?: number[] }).data || Object.values(rawSigResult))
+      const signature = bs58.encode(signatureBytes)
+
+      // 3. Initiate OAuth securely
+      const authRes = await fetch('/api/auth/github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: wallet,
+          challenge,
+          signature,
+          timestamp
+        })
+      })
+
+      if (!authRes.ok) {
+        const err = await authRes.json()
+        throw new Error(err.error || 'Failed to initiate OAuth')
+      }
+
+      const { url } = await authRes.json()
+      window.location.href = url
+    } catch (err: unknown) {
+      console.error(err)
+      setIdentityLinkStatus('error')
+      alert(err instanceof Error ? err.message : 'Authentication failed')
+    }
+  }
 
   // Filter & Search States
   const [searchQuery, setSearchQuery] = useState('')
@@ -187,19 +256,21 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           >
             📦 Proof Packet
           </button>
-          <button
-            onClick={() => window.location.href = `/api/auth/github?wallet=${wallet}`}
-            className="btn-primary"
-            style={{
-              padding: '6px 12px',
-              fontSize: '11px',
-              background: '#0d111a',
-              border: '1px solid #1e2638',
-              color: '#ffffff',
-            }}
-          >
-            🐙 Link GitHub
-          </button>
+          {publicKey && publicKey.toBase58() === wallet && (
+            <button
+              onClick={handleLinkGithub}
+              className="btn-primary"
+              style={{
+                padding: '6px 12px',
+                fontSize: '11px',
+                background: '#0d111a',
+                border: '1px solid #1e2638',
+                color: '#ffffff',
+              }}
+            >
+              🐙 Link GitHub
+            </button>
+          )}
           <button
             onClick={() => setIsCustomizerOpen(true)}
             className="btn-primary"

@@ -138,8 +138,11 @@ export default function BountyDemoPage() {
               {activePolicy.requiredSkills && (
                 <li>• Required Technical Skills: {activePolicy.requiredSkills.join(', ')} 🛠️</li>
               )}
-              {activePolicy.requireGithubEvidence && (
+              {activePolicy.requireGithubSource && (
                 <li>• Public GitHub Evidence Attached (PR / Commit) 🐙</li>
+              )}
+              {activePolicy.requireVerifiedGithubAttribution && (
+                <li>• Verified GitHub Author Attribution 🛡️</li>
               )}
               {activePolicy.requireArchivedProof && (
                 <li>• Confirmed Arweave L1 Permanent Provenance 📦</li>

@@ -19,11 +19,28 @@ export async function GET(req: NextRequest) {
 
   let wallet: string
   try {
-    const stateObj = JSON.parse(Buffer.from(stateBase64, 'base64').toString('utf8'))
-    wallet = stateObj.wallet
-    if (!wallet) throw new Error('No wallet in state')
-  } catch {
-    return NextResponse.json({ error: 'Invalid state parameter' }, { status: 400 })
+    // Look up the state in oauth_states table
+    const { data: stateRecord } = await supabase
+      .from('oauth_states')
+      .select('wallet_address, expires_at')
+      .eq('state_id', stateBase64)
+      .single()
+
+    if (!stateRecord) {
+      return NextResponse.json({ error: 'Invalid or missing state parameter' }, { status: 400 })
+    }
+
+    if (new Date(stateRecord.expires_at) < new Date()) {
+      return NextResponse.json({ error: 'OAuth session expired' }, { status: 400 })
+    }
+
+    wallet = stateRecord.wallet_address
+
+    // Cleanup used state
+    await supabase.from('oauth_states').delete().eq('state_id', stateBase64)
+  } catch (err) {
+    console.error('State validation error', err)
+    return NextResponse.json({ error: 'Failed to validate state' }, { status: 500 })
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID

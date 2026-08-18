@@ -7,7 +7,7 @@ export type ArchivalState = 'not_requested' | 'pending' | 'receipt_obtained' | '
 export type LogVerificationState = 'VERIFIED' | 'LEGACY' | 'UNVERIFIED'
 
 export type EvidenceType = 'self_attested' | 'github_pr' | 'github_commit' | 'github_release' | 'public_url'
-export type ProvenanceLevel = 'self_attested' | 'source_linked' | 'source_verified' | 'partner_attested'
+export type ProvenanceLevel = 'self_attested' | 'source_linked' | 'source_exists' | 'identity_linked' | 'author_attributed' | 'source_verified' | 'partner_attested'
 export type SourceVerificationStatus = 'not_verified' | 'verified_source_exists' | 'verified' | 'failed' | 'unavailable'
 
 export interface WalletLog {
@@ -158,7 +158,8 @@ export interface EvidencePolicy {
   minStreak?: number
   requiredProtocols?: string[]
   requiredSkills?: string[]
-  requireGithubEvidence?: boolean
+  requireGithubSource?: boolean
+  requireVerifiedGithubAttribution?: boolean
   requireArchivedProof?: boolean
 }
 

@@ -16,7 +16,7 @@ export const STANDARD_POLICY_PRESETS: Record<string, EvidencePolicy> = {
     minRecentProofs: 1,
     minStreak: 3,
     requiredProtocols: ['Solana'],
-    requireGithubEvidence: true,
+    requireGithubSource: true,
   },
   GRANT_EVALUATION: {
     name: 'Solana Foundation / Ecosystem Grant Review',
@@ -24,7 +24,7 @@ export const STANDARD_POLICY_PRESETS: Record<string, EvidencePolicy> = {
     minRecentProofs: 2,
     minStreak: 7,
     requiredProtocols: ['Solana'],
-    requireGithubEvidence: true,
+    requireVerifiedGithubAttribution: true,
     requireArchivedProof: true,
   },
   CORE_ENGINEERING: {
@@ -32,7 +32,7 @@ export const STANDARD_POLICY_PRESETS: Record<string, EvidencePolicy> = {
     minVerifiedProofs: 10,
     minRecentProofs: 3,
     requiredSkills: ['Rust', 'Solana'],
-    requireGithubEvidence: true,
+    requireVerifiedGithubAttribution: true,
     requireArchivedProof: true,
   },
   LIGHTWEIGHT_BUILDER: {
@@ -136,16 +136,29 @@ export function evaluateEligibility(
     })
   }
 
-  // 6. GitHub Evidence Requirement
-  if (policy.requireGithubEvidence) {
+  // 6A. GitHub Source Requirement (Weak Policy)
+  if (policy.requireGithubSource) {
     const passed = reputation.proofsWithGithubEvidence >= 1
     checks.push({
-      id: 'require_github_evidence',
-      label: 'GitHub Evidence Attached',
+      id: 'require_github_source',
+      label: 'GitHub Evidence Linked',
       required: 'At least 1 GitHub PR/commit link',
       actual: `${reputation.proofsWithGithubEvidence} proofs with GitHub links`,
       passed,
-      description: 'Requires at least one proof linked to a verified, existing public GitHub PR or commit. Identity attribution is enforced for wallets with linked GitHub accounts.',
+      description: 'Requires at least one proof linked to a verified, existing public GitHub PR or commit.',
+    })
+  }
+
+  // 6B. Verified GitHub Attribution Requirement (Strong Policy)
+  if (policy.requireVerifiedGithubAttribution) {
+    const passed = reputation.sourceVerifiedProofs >= 1
+    checks.push({
+      id: 'require_verified_github_attribution',
+      label: 'Verified GitHub Attribution',
+      required: 'At least 1 author-attributed GitHub proof',
+      actual: `${reputation.sourceVerifiedProofs} proofs with verified identity attribution`,
+      passed,
+      description: 'Requires at least one proof where the GitHub contribution is cryptographically attributed to the linked GitHub identity of this wallet.',
     })
   }
 
