@@ -32,10 +32,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://dummy-test.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
-        run: |
-          npx tsc --skipLibCheck tests/protocol.test.ts --outDir .dist-test --module commonjs --target es2020 --moduleResolution node --esModuleInterop --noEmit false
-          node .dist-test/tests/protocol.test.js
-          rm -rf .dist-test
+        run: npm test
 
       - name: Next.js Production Build
         env:
