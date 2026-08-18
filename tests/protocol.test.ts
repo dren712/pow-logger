@@ -979,7 +979,7 @@ async function runProductionTestSuite() {
     const testWalletC = 'TestWalletC123456789012345678901' // No linked identity
     
     const originalFetchInner = global.fetch;
-    global.fetch = async (url: any, options?: any) => {
+    global.fetch = async (url: string | URL | Request, options?: RequestInit) => {
       const urlStr = url.toString()
       
       // Mock Supabase REST API for wallet_identities
