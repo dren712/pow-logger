@@ -32,7 +32,8 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://dummy-test.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
-        run: npm test
+        run: |
+          npm test 2>&1 | tee test-output.log || (echo "### Test Failures" >> $GITHUB_STEP_SUMMARY && cat test-output.log >> $GITHUB_STEP_SUMMARY && exit 1)
 
       - name: Next.js Production Build
         env:

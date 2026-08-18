@@ -65,6 +65,7 @@ async function runProductionTestSuite() {
 
   let passed = 0
   let failed = 0
+  const failedTests: string[] = []
 
   function assert(condition: boolean, testName: string, detail?: string) {
     if (condition) {
@@ -72,6 +73,7 @@ async function runProductionTestSuite() {
       passed++
     } else {
       console.error(`  ❌ [FAIL] ${testName}${detail ? ` (${detail})` : ''}`)
+      failedTests.push(`${testName}${detail ? ` (${detail})` : ''}`)
       failed++
     }
   }
@@ -1005,6 +1007,10 @@ async function runProductionTestSuite() {
   // --- SUMMARY ---
   console.log('\n===================================================================')
   console.log(`   PRODUCTION SUITE COMPLETE: ${passed} PASSED, ${failed} FAILED`)
+  if (failedTests.length > 0) {
+    console.error('\n🚨 FAILED TESTS:')
+    failedTests.forEach(t => console.error(`  - ${t}`))
+  }
   console.log('===================================================================')
 
   if (failed > 0) {
