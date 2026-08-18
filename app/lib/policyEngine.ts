@@ -145,7 +145,7 @@ export function evaluateEligibility(
       required: 'At least 1 GitHub PR/commit link',
       actual: `${reputation.proofsWithGithubEvidence} proofs with GitHub links`,
       passed,
-      description: 'Requires at least one proof linked to a verified, existing public GitHub PR or commit (Note: Identity attribution not yet enforced).',
+      description: 'Requires at least one proof linked to a verified, existing public GitHub PR or commit. Identity attribution is enforced for wallets with linked GitHub accounts.',
     })
   }
 

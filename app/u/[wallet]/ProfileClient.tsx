@@ -32,6 +32,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [activeTheme, setActiveTheme] = useState<CardTheme>(CARD_THEMES.steel)
   const [copied, setCopied] = useState(false)
   const [achievementFilter, setAchievementFilter] = useState<'all' | 'unlocked' | 'locked'>('all')
+  const [identityLinkStatus, setIdentityLinkStatus] = useState<'success' | 'error' | null>(null)
 
   // Initialize theme or packet from URL if present
   useEffect(() => {
@@ -43,6 +44,24 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
       }
       if (params.get('packet') === 'true') {
         setIsProofPacketOpen(true)
+      }
+      // GitHub OAuth identity linking feedback
+      const identityLinked = params.get('identity_linked')
+      if (identityLinked === 'true') {
+        setIdentityLinkStatus('success')
+        // Clean up URL params
+        const cleanUrl = new URL(window.location.href)
+        cleanUrl.searchParams.delete('identity_linked')
+        window.history.replaceState({}, '', cleanUrl.toString())
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => setIdentityLinkStatus(null), 5000)
+      } else if (identityLinked === 'false') {
+        setIdentityLinkStatus('error')
+        const cleanUrl = new URL(window.location.href)
+        cleanUrl.searchParams.delete('identity_linked')
+        cleanUrl.searchParams.delete('error')
+        window.history.replaceState({}, '', cleanUrl.toString())
+        setTimeout(() => setIdentityLinkStatus(null), 8000)
       }
     }
   }, [])
@@ -248,6 +267,58 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           </button>
         </div>
       </div>
+
+      {/* GitHub Identity Link Feedback Toast */}
+      {identityLinkStatus === 'success' && (
+        <div
+          style={{
+            background: 'rgba(0, 255, 136, 0.08)',
+            border: '1px solid rgba(0, 255, 136, 0.3)',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            fontSize: '12px',
+            color: '#00ff88',
+            lineHeight: '1.45',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>✅ <strong>GitHub account linked successfully!</strong> Your future proof submissions will be identity-verified against your GitHub profile.</span>
+          <button
+            onClick={() => setIdentityLinkStatus(null)}
+            style={{ background: 'none', border: 'none', color: '#00ff88', cursor: 'pointer', fontSize: '14px' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      {identityLinkStatus === 'error' && (
+        <div
+          style={{
+            background: 'rgba(255, 68, 68, 0.08)',
+            border: '1px solid rgba(255, 68, 68, 0.3)',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            fontSize: '12px',
+            color: '#ff4444',
+            lineHeight: '1.45',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>⚠️ <strong>GitHub linking failed.</strong> Please try again. If the problem persists, check that your GitHub OAuth app is configured correctly.</span>
+          <button
+            onClick={() => setIdentityLinkStatus(null)}
+            style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '14px' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Legacy Context Banner (if applicable) */}
       {reputation.legacyRecords > 0 && (
