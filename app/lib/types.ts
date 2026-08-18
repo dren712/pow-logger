@@ -159,6 +159,7 @@ export interface EvidencePolicy {
   requiredProtocols?: string[]
   requiredSkills?: string[]
   requireGithubSource?: boolean
+  requireGithubEvidence?: boolean
   requireVerifiedGithubAttribution?: boolean
   requireArchivedProof?: boolean
 }

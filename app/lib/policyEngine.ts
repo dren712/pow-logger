@@ -136,8 +136,8 @@ export function evaluateEligibility(
     })
   }
 
-  // 6A. GitHub Source Requirement (Weak Policy)
-  if (policy.requireGithubSource) {
+  // 6A. GitHub Source Requirement (Weak Policy / Legacy alias)
+  if (policy.requireGithubSource || policy.requireGithubEvidence) {
     const passed = reputation.proofsWithGithubEvidence >= 1
     checks.push({
       id: 'require_github_source',
