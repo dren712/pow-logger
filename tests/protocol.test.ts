@@ -32,7 +32,7 @@ import {
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
-import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE } from '../app/lib/milestones'
+import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE, BUILDER_LEVELS, getBuilderLevel } from '../app/lib/milestones'
 import { calculateReputation } from '../app/lib/reputationEngine'
 import { evaluateAchievements } from '../app/lib/achievements'
 import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } from '../app/lib/cnftEligibility'
@@ -594,7 +594,6 @@ async function runProductionTestSuite() {
   assert(sanitized.includes('&lt;script&gt;') && sanitized.includes('&amp;foo='), 'XML/SVG entity sanitizer produces valid XML entities')
 
   // Test 3: Builder Level Threshold Alignment
-  const { BUILDER_LEVELS, getBuilderLevel } = await import('../app/lib/milestones')
   assert(BUILDER_LEVELS[0].minLogs === 0, 'Level 1 Apprentice threshold is 0 logs')
   assert(BUILDER_LEVELS[1].minLogs === 7, 'Level 2 Craftsman threshold is 7 logs')
   assert(BUILDER_LEVELS[2].minLogs === 30, 'Level 3 Architect threshold is 30 logs')
@@ -1015,4 +1014,7 @@ async function runProductionTestSuite() {
   }
 }
 
-runProductionTestSuite()
+runProductionTestSuite().catch((err) => {
+  console.error('UNCAUGHT TEST RUNNER ERROR:', err)
+  process.exit(1)
+})
