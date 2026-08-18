@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let logs: { created_at: string }[] | null = null
   if (isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
-      logs = await fetchAllWalletLogs(supabase, wallet)
+      logs = await fetchAllWalletLogs(supabase, wallet, { requirePublic: true })
     } catch {
       logs = []
     }
@@ -66,7 +66,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (isConfiguredSupabaseUrl(supabaseUrl)) {
     try {
-      const fetchedLogs = await fetchAllWalletLogs(supabase, wallet)
+      const fetchedLogs = await fetchAllWalletLogs(supabase, wallet, { requirePublic: true })
       logs = fetchedLogs || []
     } catch (e) {
       console.warn('Could not fetch wallet logs from Supabase, rendering empty state:', e)

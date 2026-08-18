@@ -114,8 +114,8 @@ export function evaluateEligibility(
       actual: reputation.protocols.map((p) => p.name),
       passed,
       description: passed
-        ? 'Verified experience with all declared ecosystem protocols.'
-        : `Missing verified proofs for: ${missingProtos.join(', ')}`,
+        ? 'Declared Protocol Experience matches requirements.'
+        : `Missing declared proofs for: ${missingProtos.join(', ')}`,
     })
   }
 
@@ -131,8 +131,8 @@ export function evaluateEligibility(
       actual: reputation.skills.map((s) => s.name),
       passed,
       description: passed
-        ? 'Verified experience with all declared skills.'
-        : `Missing verified proofs for: ${missingSkills.join(', ')}`,
+        ? 'Declared Skills match requirements.'
+        : `Missing declared proofs for: ${missingSkills.join(', ')}`,
     })
   }
 

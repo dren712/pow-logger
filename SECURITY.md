@@ -15,14 +15,14 @@ When a log is successfully submitted and verified, PROVN cryptographically guara
 
 PROVN provides the *cryptographic wrapper* around a claim, but the claim itself may be false. Reviewers MUST independently verify the claims.
 * **Work Quality / Truthfulness:** PROVN does NOT prove that the builder actually performed the work they claim to have done in the text content.
-* **External Ownership:** PROVN does NOT automatically prove that the wallet owner owns the linked GitHub account or repository. (External OAuth identity linking is planned for Phase 2).
+* **Identity & Attribution:** The integration establishes a strict cryptographic binding: `Wallet -> SIWS Challenge -> Server OAuth State -> Immutable GitHub ID -> Commit Author ID`. PROVN proves that the commit author matches the linked GitHub account, but it does NOT prove the user holds access to the original repository beyond that specific contribution.
 * **Anti-Gaming:** There is currently no algorithmic prevention against a user submitting low-effort or nonsensical logs purely to inflate their daily streak. The system enforces a strict maximum quota of 3 logs per day per wallet, but relies on human reviewers (DAOs, grant committees) to assess the quality of those logs.
 
 ## 3. Rate Limiter Caveats
 
 The pre-verification rate limiter (which protects the `/api/log-submit` endpoint from spam) uses an **in-memory implementation**.
 * **Limitation:** In serverless environments like Vercel, this in-memory state resets upon cold starts and is not shared across Lambda instances.
-* **Impact:** This exists purely as a first-line UX protection. Authoritative anti-spam, replay defense, and daily quota limits (max 3 logs/day) are strictly and atomically enforced inside the PostgreSQL database using Row-Level Security and transactional RPC functions.
+* **Impact:** This exists purely as a first-line UX protection. Authoritative anti-spam, replay defense, and daily quota limits (max 3 logs/day) are strictly and atomically enforced inside the PostgreSQL database using a transactional `INSERT ... ON CONFLICT` strategy against a dedicated `daily_quotas` table.
 
 ## 4. Responsible Disclosure
 

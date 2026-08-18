@@ -147,7 +147,7 @@ export type { WalletLog }
  * Guarantees a fail-closed contract: throws on any query failure rather than returning partial results.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: string): Promise<WalletLog[]> {
+export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: string, options?: { requirePublic?: boolean }): Promise<WalletLog[]> {
   const PAGE_SIZE = 1000
   let allLogs: WalletLog[] = []
   let from = 0
@@ -155,10 +155,16 @@ export async function fetchAllWalletLogs(supabaseClient: any, walletAddress: str
   let fetchMore = true
 
   while (fetchMore) {
-    const { data, error } = await supabaseClient
+    let query = supabaseClient
       .from('logs')
       .select('*')
       .eq('wallet_address', walletAddress)
+
+    if (options?.requirePublic) {
+      query = query.eq('visibility', 'public')
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .range(from, to)

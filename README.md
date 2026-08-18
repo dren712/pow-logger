@@ -45,7 +45,7 @@ PROVN gives developers a single, permanent cryptographic record of their daily s
 | **Timestamp Boundedness** | ✅ **Guaranteed** — Submissions are strictly verified against server clock within a ±15 minute window (`900,000ms`). |
 | **Replay Defense** | ✅ **Guaranteed** — Database-level `UNIQUE INDEX` on signatures prevents re-submitting previously signed messages. |
 | **Data Permanence** | ✅ **Guaranteed when archived** — Immutable Arweave storage via Irys receipts. |
-| **GitHub Ownership** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth. Logs receive a `source_verified` provenance level. |
+| **GitHub Identity & Contribution Attribution** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth. Logs receive a `source_verified` provenance level. |
 | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 
 ---
