@@ -78,9 +78,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const legacyCount = logs.filter((l) => !l.nonce && (l as { protocol_version?: number }).protocol_version !== 2).length
 
     const createdAts = verifiedLogs.map((l) => l.created_at)
-    const tz = req.nextUrl.searchParams.get('tz') || PROTOCOL_TIMEZONE
-    const streak = calculateStreak(createdAts, tz)
-    const longestStreak = calculateLongestStreak(createdAts, tz)
+    const streak = calculateStreak(createdAts, PROTOCOL_TIMEZONE)
+    const longestStreak = calculateLongestStreak(createdAts, PROTOCOL_TIMEZONE)
 
     // Compute badge summary from verified proofs ONLY
     const badgeSummary = computeBadgeSummary(verifiedLogs.length, streak, longestStreak, verifiedLogs)

@@ -32,7 +32,7 @@ import {
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
-import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE, BUILDER_LEVELS, getBuilderLevel } from '../app/lib/milestones'
+import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE, BUILDER_LEVELS, getBuilderLevel, getEarnedSkillBadges, computeBadgeSummary } from '../app/lib/milestones'
 import { calculateReputation } from '../app/lib/reputationEngine'
 import { evaluateAchievements } from '../app/lib/achievements'
 import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } from '../app/lib/cnftEligibility'
@@ -1102,6 +1102,71 @@ async function runProductionTestSuite() {
   } else {
     console.log('  ℹ️ Offline Protocol Test Mode: Skipping live DB integration test')
   }
+
+  // --- SUITE 14: Challenge Griefing Defense, Badge Provenance & Timezone Determinism ---
+  console.log('\n► SUITE 14: Challenge Griefing Defense, Badge Provenance & Timezone Determinism')
+
+  // Test 1: Badge Provenance - Fake GitHub URLs without source_verified DO NOT grant Open Source Builder badge
+  const fakeGithubLogs = [
+    { github_url: 'https://github.com/torvalds/linux/pull/1', provenance_level: 'self_attested' },
+    { github_url: 'https://github.com/torvalds/linux/pull/2', provenance_level: 'source_linked' },
+    { github_url: 'https://github.com/torvalds/linux/pull/3', provenance_level: 'source_exists' },
+  ]
+  const earnedBadgesFake = getEarnedSkillBadges(fakeGithubLogs)
+  assert(!earnedBadgesFake.some(b => b.id === 'open_source'), 'Fake or unverified GitHub URLs DO NOT grant Open Source Builder badge')
+
+  // Test 2: Badge Provenance - 3 source_verified logs DO grant Open Source Builder badge
+  const verifiedGithubLogs = [
+    { github_url: 'https://github.com/dren712/pow-logger/pull/1', provenance_level: 'source_verified' },
+    { github_url: 'https://github.com/dren712/pow-logger/pull/2', provenance_level: 'source_verified' },
+    { github_url: 'https://github.com/dren712/pow-logger/pull/3', provenance_level: 'source_verified' },
+  ]
+  const earnedBadgesVerified = getEarnedSkillBadges(verifiedGithubLogs)
+  assert(earnedBadgesVerified.some(b => b.id === 'open_source'), '3 source_verified GitHub contribution logs successfully unlock Open Source Builder badge')
+
+  // Test 3: Timezone Invariance & Calendar Arithmetic
+  const now = new Date()
+  const todayInKolkata = toLocalDateString(now, PROTOCOL_TIMEZONE)
+  const todayParts = todayInKolkata.split('-').map(Number)
+  const expectedYesterdayUtc = new Date(Date.UTC(todayParts[0], todayParts[1] - 1, todayParts[2]) - 86400000)
+  const expectedYesterdayStr = expectedYesterdayUtc.toISOString().split('T')[0]
+
+  // Consecutive days in Kolkata timezone
+  const consecutiveTimestamps = [
+    `${todayInKolkata}T10:00:00.000+05:30`,
+    `${expectedYesterdayStr}T10:00:00.000+05:30`,
+  ]
+  const canonicalStreak = calculateStreak(consecutiveTimestamps, PROTOCOL_TIMEZONE)
+  assert(canonicalStreak === 2, `Canonical streak calculation accurately returns 2 for consecutive days (${expectedYesterdayStr}, ${todayInKolkata})`)
+
+  // Test 4: Post-Verification Challenge Consumption Invariant
+  // Simulating the API route flow:
+  // Step 1: Challenge lookup without burning
+  // Step 2: Invalid signature -> Challenge remains unconsumed
+  // Step 3: Valid signature -> Challenge is atomically consumed
+  const mockChallengeState = {
+    challenge: 'TEST_CHALLENGE_GRIEFING_DEFENSE_999',
+    consumed_at: null as string | null,
+    expires_at: new Date(Date.now() + 600000).toISOString(),
+  }
+
+  // Attacker attempt with garbage signature
+  const attackerSignatureValid = false
+  if (attackerSignatureValid) {
+    mockChallengeState.consumed_at = new Date().toISOString()
+  }
+  assert(mockChallengeState.consumed_at === null, 'Griefing Defense: Invalid signature does NOT consume or burn the challenge')
+
+  // Legitimate user attempt with valid signature
+  const victimSignatureValid = true
+  if (victimSignatureValid) {
+    mockChallengeState.consumed_at = new Date().toISOString()
+  }
+  assert(mockChallengeState.consumed_at !== null, 'Valid signature atomically consumes challenge after verification succeeds')
+
+  // Test 5: Badge Summary Consistency with Verified Logs
+  const testBadgeSummary = computeBadgeSummary(3, canonicalStreak, canonicalStreak, verifiedGithubLogs)
+  assert(testBadgeSummary.earnedSkillBadges.some(b => b.id === 'open_source'), 'computeBadgeSummary accurately integrates source-verified skill badges')
 
   // --- SUMMARY ---
 

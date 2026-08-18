@@ -25,7 +25,8 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 import { checkRateLimit } from '@/app/lib/rateLimiter'
 import { classifyLog } from '@/app/lib/classifier'
 import { verifyGithubSource } from '@/app/lib/githubVerifier'
-import { calculateStreak, checkNewMilestoneReached, getBuilderLevel, fetchAllWalletLogs } from '@/app/lib/milestones'
+import { checkNewMilestoneReached, fetchAllWalletLogs } from '@/app/lib/milestones'
+import { calculateReputation } from '@/app/lib/reputationEngine'
 
 export async function POST(req: NextRequest) {
   try {
@@ -114,20 +115,23 @@ export async function POST(req: NextRequest) {
     let consumedChallengeId: string | null = null
 
     if (challenge) {
-      const { data: consumedData, error: consumeError } = await supabase
+      const { data: challengeRecord, error: challengeLookupError } = await supabase
         .from('signing_challenges')
-        .update({ consumed_at: new Date().toISOString() })
+        .select('id, expires_at, consumed_at')
         .eq('challenge', challenge)
         .eq('wallet_address', walletAddress)
-        .is('consumed_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .select('id')
         .maybeSingle()
 
-      if (consumeError || !consumedData) {
-        return NextResponse.json({ error: 'Invalid, expired, or already-consumed challenge' }, { status: 401 })
+      if (challengeLookupError || !challengeRecord) {
+        return NextResponse.json({ error: 'Invalid, missing, or unauthorized challenge for this wallet' }, { status: 401 })
       }
-      consumedChallengeId = consumedData.id
+      if (challengeRecord.consumed_at) {
+        return NextResponse.json({ error: 'Challenge already consumed' }, { status: 401 })
+      }
+      if (new Date(challengeRecord.expires_at).getTime() < now) {
+        return NextResponse.json({ error: 'Challenge expired' }, { status: 401 })
+      }
+      consumedChallengeId = challengeRecord.id
     }
 
     // 4. Cryptographic Ed25519 Signature Verification
@@ -173,6 +177,27 @@ export async function POST(req: NextRequest) {
         { error: 'Cryptographic signature verification failed. Tampered or unauthorized payload rejected.' },
         { status: 401 }
       )
+    }
+
+    // 4b. Post-Verification Atomic Challenge Consumption (Race-safe single use)
+    if (challenge) {
+      const { data: consumedData, error: consumeError } = await supabase
+        .from('signing_challenges')
+        .update({ consumed_at: new Date().toISOString() })
+        .eq('challenge', challenge)
+        .eq('wallet_address', walletAddress)
+        .is('consumed_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .select('id')
+        .maybeSingle()
+
+      if (consumeError || !consumedData) {
+        return NextResponse.json(
+          { error: 'Challenge already consumed or expired during concurrent processing' },
+          { status: 409 }
+        )
+      }
+      consumedChallengeId = consumedData.id
     }
 
     // 5. Signature Duplicate Lookup (Replay Defense Check)
@@ -253,18 +278,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save log to database' }, { status: 500 })
     }
 
-    // ─── Milestone Detection ─────────────────────────────────────────────
+    // ─── Milestone & Reputation Detection ──────────────────────────────────
     const allLogs = await fetchAllWalletLogs(supabase, walletAddress)
+    const currentReputation = calculateReputation(walletAddress, allLogs)
 
-    const createdAts = (allLogs || []).map((l: { id: number; created_at: string }) => l.created_at)
-    const newStreak = calculateStreak(createdAts)
-    const previousLogs = (allLogs || [])
-      .filter((l: { id: number; created_at: string }) => l.id !== savedLog.id)
-      .map((l: { id: number; created_at: string }) => l.created_at)
-    const previousStreak = calculateStreak(previousLogs)
+    const previousLogs = (allLogs || []).filter((l: { id: number }) => l.id !== savedLog.id)
+    const previousReputation = calculateReputation(walletAddress, previousLogs)
 
-    const newMilestone = checkNewMilestoneReached(previousStreak, newStreak)
-    const builderLevel = getBuilderLevel(createdAts.length)
+    const newMilestone = checkNewMilestoneReached(previousReputation.currentStreak, currentReputation.currentStreak)
 
     return NextResponse.json({
       success: true,
@@ -279,13 +300,13 @@ export async function POST(req: NextRequest) {
       archivalState: 'not_requested',
       irysTxId: null,
       gatewayUrl: null,
-      // Milestone & Badge data
-      streak: newStreak,
+      // Milestone & Badge data derived strictly from deterministic reputation engine
+      streak: currentReputation.currentStreak,
       builderLevel: {
-        level: builderLevel.level,
-        title: builderLevel.title,
-        emoji: builderLevel.emoji,
-        color: builderLevel.color,
+        level: currentReputation.builderLevel.level,
+        title: currentReputation.builderLevel.title,
+        emoji: currentReputation.builderLevel.emoji,
+        color: currentReputation.builderLevel.color,
       },
       newMilestone: newMilestone ? {
         days: newMilestone.days,

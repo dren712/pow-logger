@@ -46,7 +46,7 @@
 - [x] **TypeScript Client SDK**: Programmatic passport querying and local offline signature verifier in [`sdk/index.ts`](sdk/index.ts).
 - [x] **CLI Prototype**: Terminal utility for inspecting builder reputation in [`cli/provn.mjs`](cli/provn.mjs).
 - [x] **Bounty Gating Demo**: Prototype verification flow evaluating builder streak and proof criteria for bounty eligibility (`/demo/bounty`).
-- [ ] **GitHub OAuth & Commit Oracle**: Automated verification linking Solana wallet to GitHub username and commit history.
+- [x] **GitHub OAuth & Identity Binding**: Strict cryptographic binding of GitHub accounts to Solana wallets via SIWS OAuth with `source_verified` provenance.
 - [ ] **Published npm Package**: Publishing `@provn/sdk` to npm registry with zero external runtime dependencies.
 
 ---

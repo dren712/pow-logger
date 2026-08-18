@@ -22,14 +22,14 @@ PROVN is a portable, cryptographically verifiable builder evidence protocol for 
 
 > [!IMPORTANT]
 > **What PROVN Proves vs. What it Doesn't**
-> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + nonce + optional links) at a specific time, and that statement is durably archived on Arweave. It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
+> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + challenge + optional links) at a specific time, and that statement is durably archived on Arweave. It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
 > 
 > **Note on GitHub Identity**: PROVN *does* enforce strict cryptographic binding between a `github_id` and a `wallet_address` via SIWS (Sign-In-With-Solana) OAuth, granting logs a `source_verified` provenance level when the author matches the repository owner.
 
 In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and social posts. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
 
 PROVN gives developers a single, permanent cryptographic record of their daily self-attested contributions:
-1. **Sign**: The builder signs a canonical message containing their work summary, evidence links, timestamp, and unique nonce with their Solana wallet.
+1. **Sign**: The builder signs a canonical message containing their work summary, evidence links, timestamp, and server-issued challenge with their Solana wallet.
 2. **Verify**: The server cryptographically validates the Ed25519 signature, checks the 15-minute anti-replay window, and indexes the attestation.
 3. **Archive**: The signed envelope is permanently stored on Arweave via the Irys L1 gateway.
 4. **Inspect**: Anyone can verify any proof record with cryptographic independence using the public verification API or on-page verifier inspector.
@@ -62,7 +62,7 @@ PROVN gives developers a single, permanent cryptographic record of their daily s
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        2. Server Verification Engine                        │
 │   • TweetNaCl Ed25519 Detached Signature Verification                       │
-│   • Replay Protection (Anti-replay nonce & 15-min timestamp window)         │
+│   • Replay Protection (Anti-replay server challenge & 15-min timestamp)     │
 │   • Domain-Binding & HTTPS URL Normalization                                │
 │   • Deterministic Heuristic Classifier (Skills, Protocols, Categories)      │
 │   • Indian Standard Time (Asia/Kolkata) Canonical Streak Engine             │
@@ -71,7 +71,7 @@ PROVN gives developers a single, permanent cryptographic record of their daily s
                        ▼                              ▼
 ┌──────────────────────────────┐ ┌────────────────────────────────────────────┐
 │ 3. Supabase PostgreSQL       │ │ 4. Arweave Permanent Archival              │
-│ • Canonical `logs` table     │ │ • Standardized JSON Proof Envelope         │
+│ • Canonical `logs` table     │ │ • Standardized JSON Proof Envelope (v2)    │
 │ • Public SELECT read-only    │ │ • Irys Gateway Node #1                     │
 │ • service_role write-only    │ │ • Zero-fee free tier (<100KB)              │
 │ • Unique Signature Index     │ │ • Multi-decade data availability           │
@@ -86,7 +86,7 @@ PROVN gives developers a single, permanent cryptographic record of their daily s
 |---|---|---|
 | **Wallet Proof Signing** | ✅ **Shipped** | Browser-native Ed25519 signing of canonical proof payloads with Draft-Review-Sign preview modal. |
 | **Proof Templates** | ✅ **Shipped** | 8 preconfigured contribution templates (Shipped Code, Bug Fix, RFC, OSS, Release, Hackathon, etc.). |
-| **Server Verification** | ✅ **Shipped** | TweetNaCl verification with exact domain and Base58 nonce validation (`/api/log-submit`). |
+| **Server Verification** | ✅ **Shipped** | TweetNaCl verification with exact domain and server-issued challenge validation (`/api/log-submit`). |
 | **Public Proof Verifier** | ✅ **Shipped** | Standalone cryptographic verification inspector (`/proof/[id]`, `/api/verify/[wallet]`). |
 | **Arweave Archival** | ✅ **Shipped** | Permanent decentralized storage via Irys gateway. |
 | **Builder Passport** | ✅ **Shipped** | Evidence-first verifiable builder profile (`/u/[wallet]`, `/api/passport/[wallet]`). |
@@ -120,7 +120,7 @@ GitHub URL: <NORMALIZED_GITHUB_URL_OR_NONE>
 Evidence URL: <NORMALIZED_EVIDENCE_URL_OR_NONE>
 ```
 
-Modifying any character in the content, links, timestamp, or nonce breaks the Ed25519 signature, preventing client tampering or unauthorized modification.
+Modifying any character in the content, links, timestamp, or challenge breaks the Ed25519 signature, preventing client tampering or unauthorized modification.
 
 ---
 

@@ -59,7 +59,7 @@ GitHub URL: <normalized_github_url_or_none>
 Evidence URL: <normalized_evidence_url_or_none>
 ```
 
-Any modification to the content string, evidence URLs, timestamp, or nonce breaks the Ed25519 signature payload, preventing tampering or unauthorized modification.
+Any modification to the content string, evidence URLs, timestamp, or challenge breaks the Ed25519 signature payload, preventing tampering or unauthorized modification.
 
 ### 2.2 Server-Side Verification Engine
 The backend server (`/api/log-submit`) re-derives the exact canonical message from the request parameters and verifies the signature against the public key using `verifyLogCryptographically()`. No client-submitted claims are indexed without cryptographic verification.
@@ -69,7 +69,7 @@ The backend server (`/api/log-submit`) re-derives the exact canonical message fr
 ## 3. Storage Economics & Decentralized Archival
 
 Cryptographically authenticated log envelopes are formatted into standardized JSON metadata structures containing:
-- Protocol metadata (`app: PROVN`, `version: 1`)
+- Protocol metadata (`app: PROVN`, `version: 2`)
 - Cryptographic signature & Base58 public key
 - Classified skills, protocols, and work categories
 - Canonical timestamp & normalized proof links

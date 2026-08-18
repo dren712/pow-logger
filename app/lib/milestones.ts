@@ -234,10 +234,12 @@ export function calculateStreak(
 
   if (uniqueDays.length === 0) return 0
 
-  const todayStr = toLocalDateString(new Date(), tz)
-  const yesterdayDate = new Date()
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-  const yesterdayStr = toLocalDateString(yesterdayDate, tz)
+  const now = new Date()
+  const todayStr = toLocalDateString(now, tz)
+  const todayParts = todayStr.split('-').map(Number)
+  const todayUtcMidnight = new Date(Date.UTC(todayParts[0], todayParts[1] - 1, todayParts[2]))
+  const yesterdayUtcMidnight = new Date(todayUtcMidnight.getTime() - 86400000)
+  const yesterdayStr = yesterdayUtcMidnight.toISOString().split('T')[0]
 
   const mostRecent = uniqueDays[0]
   if (mostRecent !== todayStr && mostRecent !== yesterdayStr) {
@@ -317,7 +319,7 @@ export interface SkillBadge {
   color: string
   category: 'skill' | 'quality' | 'volume'
   description: string
-  checkUnlocked: (logs: Array<{ skills?: string[]; protocols?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>) => boolean
+  checkUnlocked: (logs: Array<{ skills?: string[]; protocols?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null; provenance_level?: string }>) => boolean
 }
 
 export const SKILL_BADGES: SkillBadge[] = [
@@ -354,8 +356,9 @@ export const SKILL_BADGES: SkillBadge[] = [
     emoji: '🐙',
     color: '#ab9ff2',
     category: 'quality',
-    description: 'Attached 3+ GitHub-linked proof repository/PR URLs',
-    checkUnlocked: (logs) => logs.filter((l) => l.github_url && l.github_url.includes('github.com')).length >= 3,
+    description: 'Attached 3+ source-verified GitHub repository/PR contribution proofs',
+    checkUnlocked: (logs) =>
+      logs.filter((l) => Boolean(l.github_url && l.github_url.includes('github.com')) && l.provenance_level === 'source_verified').length >= 3,
   },
   {
     id: 'permanent_archivist',
@@ -385,7 +388,7 @@ export const SKILL_BADGES: SkillBadge[] = [
 ]
 
 export function getEarnedSkillBadges(
-  logs: Array<{ skills?: string[]; protocols?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }>
+  logs: Array<{ skills?: string[]; protocols?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null; provenance_level?: string }>
 ): SkillBadge[] {
   if (!logs || !Array.isArray(logs)) return []
   return SKILL_BADGES.filter((b) => b.checkUnlocked(logs))
@@ -409,7 +412,7 @@ export function computeBadgeSummary(
   totalLogs: number,
   currentStreak: number,
   longestStreak: number,
-  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null }> = []
+  logs: Array<{ skills?: string[]; category?: string; evidence_url?: string | null; github_url?: string | null; irys_tx_id?: string | null; provenance_level?: string }> = []
 ): BadgeSummary {
   return {
     level: getBuilderLevel(totalLogs),

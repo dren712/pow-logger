@@ -40,19 +40,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
     }
 
-    // Atomically consume signing challenge
-    const { data: challengeData, error: challengeError } = await supabase
+    // Verify signing challenge existence and validity (without consuming yet)
+    const { data: challengeRecord, error: challengeLookupError } = await supabase
       .from('signing_challenges')
-      .update({ consumed_at: new Date().toISOString() })
+      .select('id, expires_at, consumed_at')
       .eq('wallet_address', walletAddress)
       .eq('challenge', challenge)
-      .is('consumed_at', null)
-      .gte('expires_at', new Date().toISOString())
-      .select()
-      .single()
+      .maybeSingle()
 
-    if (challengeError || !challengeData) {
-      return NextResponse.json({ error: 'Invalid or expired challenge' }, { status: 401 })
+    if (challengeLookupError || !challengeRecord) {
+      return NextResponse.json({ error: 'Invalid or missing challenge for this wallet' }, { status: 401 })
+    }
+
+    if (challengeRecord.consumed_at) {
+      return NextResponse.json({ error: 'Challenge already consumed' }, { status: 401 })
+    }
+
+    if (new Date(challengeRecord.expires_at).getTime() < now) {
+      return NextResponse.json({ error: 'Challenge expired' }, { status: 401 })
     }
 
     const domain = getVerifiedDomain(req.headers.get('host'))
@@ -79,6 +84,21 @@ export async function POST(req: NextRequest) {
     const isSignatureValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes)
     if (!isSignatureValid) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+
+    // Post-Verification Atomic Challenge Consumption (Race-safe single use)
+    const { data: challengeData, error: challengeError } = await supabase
+      .from('signing_challenges')
+      .update({ consumed_at: new Date().toISOString() })
+      .eq('wallet_address', walletAddress)
+      .eq('challenge', challenge)
+      .is('consumed_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .select('id')
+      .maybeSingle()
+
+    if (challengeError || !challengeData) {
+      return NextResponse.json({ error: 'Challenge already consumed or expired during processing' }, { status: 409 })
     }
 
     // Fetch log
