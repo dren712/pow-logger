@@ -22,6 +22,7 @@ import {
   buildCanonicalRetryMessageV2,
   buildCanonicalArchiveMessage,
   buildCanonicalVisibilityMessage,
+  buildCanonicalIdentityLinkMessage,
   CURRENT_PROTOCOL_VERSION,
   validateAndNormalizeUrl,
   getVerifiedDomain,
@@ -38,7 +39,8 @@ import { checkCNFTEligibility, generateAchievementMetadata, LocalTestMinter } fr
 import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
 import { WalletLog, BuilderReputation } from '../app/lib/types'
-import { parseGithubUrl } from '../app/lib/githubVerifier'
+import { parseGithubUrl, verifyGithubSource } from '../app/lib/githubVerifier'
+import { evaluateEligibility, STANDARD_POLICY_PRESETS } from '../app/lib/policyEngine'
 
 import fs from 'fs'
 import path from 'path'
@@ -697,8 +699,6 @@ async function runProductionTestSuite() {
   assert(pureReputation.skills.length === 2 && pureReputation.skills.some((s) => s.name === 'Rust'), 'Reputation skills include authentic skills')
   // --- SUITE 10: Policy Evaluation Engine & Proof Packet Generation ---
   console.log('\n► SUITE 10: Policy Evaluation Engine & Proof Packet Generation')
-  
-  const { evaluateEligibility, STANDARD_POLICY_PRESETS } = await import('../app/lib/policyEngine')
 
   // Check 1: Categorization Invariants
   assert(pureReputation.totalRecords === 3, 'Reputation engine tracks total database records (3)')
@@ -948,7 +948,6 @@ async function runProductionTestSuite() {
   assert(archiveMsg.includes(`Challenge: ${testV2Challenge}`), 'Archive canonical message includes challenge')
 
   // Test P0-7: Adversarial Identity Attribution Downgrade (Option A)
-  const { verifyGithubSource } = await import('../app/lib/githubVerifier')
   const maliciousGitHubUrl = 'https://github.com/dren712/pow-logger/pull/42' // Assuming this URL exists
   
   // We mock fetch for the githubVerifier to simulate a 200 OK response from GitHub API
@@ -995,7 +994,6 @@ async function runProductionTestSuite() {
   assert(visMsg.includes('Visibility: public'), 'Visibility canonical message includes visibility value')
 
   // Test buildCanonicalIdentityLinkMessage
-  const { buildCanonicalIdentityLinkMessage } = await import('../app/lib/canonicalMessage')
   const linkMsg = buildCanonicalIdentityLinkMessage({
     domain: 'provn-sol.vercel.app',
     walletAddress: testV2Wallet,
