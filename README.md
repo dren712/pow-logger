@@ -6,7 +6,7 @@ PROVN is a portable, cryptographically verifiable builder evidence protocol for 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Tests-102%2F102%20Passed-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Tests-139%2F139%20Passed-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
@@ -22,7 +22,9 @@ PROVN is a portable, cryptographically verifiable builder evidence protocol for 
 
 > [!IMPORTANT]
 > **What PROVN Proves vs. What it Doesn't**
-> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + nonce + optional links) at a specific time, and that statement is durably archived on Arweave. It **does NOT** independently prove that the underlying work was actually performed, that a linked GitHub URL is genuinely authored by the wallet holder, or anything about work quality. It is a tamper-evident cryptographic wrapper around a self-attested claim.
+> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + nonce + optional links) at a specific time, and that statement is durably archived on Arweave. It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
+> 
+> **Note on GitHub Identity**: PROVN *does* enforce strict cryptographic binding between a `github_id` and a `wallet_address` via SIWS (Sign-In-With-Solana) OAuth, granting logs a `source_verified` provenance level when the author matches the repository owner.
 
 In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and social posts. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
 
@@ -43,8 +45,8 @@ PROVN gives developers a single, permanent cryptographic record of their daily s
 | **Timestamp Boundedness** | ✅ **Guaranteed** — Submissions are strictly verified against server clock within a ±15 minute window (`900,000ms`). |
 | **Replay Defense** | ✅ **Guaranteed** — Database-level `UNIQUE INDEX` on signatures prevents re-submitting previously signed messages. |
 | **Data Permanence** | ✅ **Guaranteed when archived** — Immutable Arweave storage via Irys receipts. |
+| **GitHub Ownership** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth. Logs receive a `source_verified` provenance level. |
 | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
-| **GitHub Ownership** | 🔮 **Roadmap** — Self-attested PR/commit links; external OAuth/Oracle identity linking is planned for Phase 2. |
 
 ---
 
@@ -97,8 +99,8 @@ PROVN gives developers a single, permanent cryptographic record of their daily s
 | **TypeScript SDK (`@provn/sdk`)** | 🧪 **Labs** | Client library, local offline verifier, and policy checker in [`sdk/index.ts`](sdk/index.ts). |
 | **CLI Utility** | 🧪 **Labs** | Terminal utility for passports, proofs, packets, and policy evaluation in [`cli/provn.mjs`](cli/provn.mjs). |
 | **Bounty Policy Demo** | 🧪 **Labs** | Interactive reference demo illustrating programmatic policy gating (`/demo/bounty`). |
+| **GitHub OAuth & Identity Binding** | ✅ **Shipped** | Strict cryptographic binding of GitHub accounts to wallets via SIWS OAuth with `source_verified` provenance. |
 | **On-Chain Compressed NFTs** | 🔮 **Roadmap** | Metaplex Bubblegum Merkle tree minting for earned achievements (Phase 3). |
-| **GitHub OAuth / Commit Oracle**| 🔮 **Roadmap** | Automated repository ownership verification and commit attestation (Phase 2). |
 
 ---
 
@@ -138,7 +140,7 @@ cd pow-logger
 # Install dependencies
 npm install
 
-# Run protocol verification test suite (90 assertions)
+# Run protocol verification test suite (139 passing assertions)
 npm test
 
 # Start local Next.js dev server
