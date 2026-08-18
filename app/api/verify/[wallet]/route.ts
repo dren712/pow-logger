@@ -119,12 +119,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       (l) => l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') && (l.archival_state === 'receipt_obtained' || l.archival_state === 'finalized')
     )
 
+    // Compute detailed counts for transparency
+    const unverifiedCount = logs.length - verifiedLogsCount - legacyCount
+    const sourceVerifiedCount = verifiedLogs.filter((l) => l.provenance_level === 'source_verified').length
+
     return NextResponse.json(
       {
         profile_found: true,
-        verified: verifiedLogsCount > 0,
-        verified_logs_count: verifiedLogsCount,
-        legacy_unindexed_count: legacyCount,
+        verified_proofs: verifiedLogsCount,
+        unverified_proofs: unverifiedCount,
+        legacy_proofs: legacyCount,
+        source_verified_proofs: sourceVerifiedCount,
         wallet: walletShort,
         wallet_full: wallet,
         streak,

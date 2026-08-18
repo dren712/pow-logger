@@ -8,7 +8,7 @@ export type LogVerificationState = 'VERIFIED' | 'LEGACY' | 'UNVERIFIED'
 
 export type EvidenceType = 'self_attested' | 'github_pr' | 'github_commit' | 'github_release' | 'public_url'
 export type ProvenanceLevel = 'self_attested' | 'source_linked' | 'source_verified' | 'partner_attested'
-export type SourceVerificationStatus = 'not_verified' | 'verified' | 'failed' | 'unavailable'
+export type SourceVerificationStatus = 'not_verified' | 'verified_source_exists' | 'verified' | 'failed' | 'unavailable'
 
 export interface WalletLog {
   id: number
@@ -114,6 +114,11 @@ export interface ProofDetail {
     domainVerified: boolean
     timestampIso: string
   }
+  evidenceType?: EvidenceType
+  provenanceLevel?: ProvenanceLevel
+  sourceProvider?: string | null
+  sourceVerificationStatus?: SourceVerificationStatus
+  sourceVerifiedAt?: string | null
 }
 
 export interface PassportExport {

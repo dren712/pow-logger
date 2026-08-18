@@ -57,6 +57,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         archivalState: l.archival_state || 'not_requested',
         isCryptographicallyVerified: isValid,
         verificationState,
+        evidenceType: l.evidence_type,
+        provenanceLevel: l.provenance_level,
+        sourceProvider: l.source_provider,
+        sourceVerificationStatus: l.source_verification_status,
+        sourceVerifiedAt: l.source_verified_at,
       }
     })
 

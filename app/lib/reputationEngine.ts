@@ -49,7 +49,9 @@ export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderR
   }).length
 
   // Evidence density
-  const proofsWithGithubEvidence = verifiedLogs.filter((l) => Boolean(l.github_url && l.github_url.trim())).length
+  const proofsWithGithubEvidence = verifiedLogs.filter(
+    (l) => Boolean(l.github_url && l.github_url.trim()) && (l.provenance_level === 'source_linked' || l.provenance_level === 'source_verified')
+  ).length
   const sourceVerifiedProofs = verifiedLogs.filter((l) => l.provenance_level === 'source_verified').length
   const proofsWithOtherEvidence = verifiedLogs.filter((l) => Boolean(l.evidence_url && l.evidence_url.trim())).length
 

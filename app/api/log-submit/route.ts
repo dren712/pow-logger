@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
     let sourceVerifiedAt: string | null = null
 
     if (cleanGithubUrl) {
-      const verification = await verifyGithubSource(cleanGithubUrl)
+      const verification = await verifyGithubSource(cleanGithubUrl, walletAddress)
       evidenceType = verification.evidenceType
       provenanceLevel = verification.provenanceLevel
       sourceVerificationStatus = verification.status

@@ -1,4 +1,10 @@
 import { EvidenceType, ProvenanceLevel, SourceVerificationStatus } from './types'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+)
 
 export interface ParsedGithubUrl {
   owner: string
@@ -66,7 +72,7 @@ export function parseGithubUrl(url: string): ParsedGithubUrl | null {
 /**
  * Verifies a GitHub URL by fetching its metadata from the GitHub REST API.
  */
-export async function verifyGithubSource(url: string): Promise<VerificationResult> {
+export async function verifyGithubSource(url: string, walletAddress?: string): Promise<VerificationResult> {
   const parsed = parseGithubUrl(url)
   
   if (!parsed) {
@@ -172,9 +178,26 @@ export async function verifyGithubSource(url: string): Promise<VerificationResul
       }
     }
 
+    let finalStatus: SourceVerificationStatus = 'verified_source_exists'
+    let finalProvenance: ProvenanceLevel = 'source_linked'
+
+    // If walletAddress is provided, check if it's cryptographically linked to the GitHub author
+    if (walletAddress && snapshot.author) {
+      const { data: identity } = await supabase
+        .from('wallet_identities')
+        .select('github_username')
+        .eq('wallet_address', walletAddress)
+        .single()
+
+      if (identity && identity.github_username.toLowerCase() === snapshot.author.toLowerCase()) {
+        finalStatus = 'verified'
+        finalProvenance = 'source_verified'
+      }
+    }
+
     return {
-      status: 'verified',
-      provenanceLevel: 'source_verified',
+      status: finalStatus,
+      provenanceLevel: finalProvenance,
       evidenceType,
       snapshot,
     }

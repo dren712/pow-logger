@@ -58,8 +58,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         canonicalMessageReconstructed,
         signatureValid,
         domainVerified,
-        timestampIso: rawLog.created_at,
+        timestampIso: new Date(rawLog.created_at).toISOString(),
       },
+      evidenceType: rawLog.evidence_type,
+      provenanceLevel: rawLog.provenance_level,
+      sourceProvider: rawLog.source_provider,
+      sourceVerificationStatus: rawLog.source_verification_status,
+      sourceVerifiedAt: rawLog.source_verified_at,
     }
 
     return NextResponse.json(proofDetail, {

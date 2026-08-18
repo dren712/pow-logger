@@ -169,6 +169,19 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             📦 Proof Packet
           </button>
           <button
+            onClick={() => window.location.href = `/api/auth/github?wallet=${wallet}`}
+            className="btn-primary"
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: '#0d111a',
+              border: '1px solid #1e2638',
+              color: '#ffffff',
+            }}
+          >
+            🐙 Link GitHub
+          </button>
+          <button
             onClick={() => setIsCustomizerOpen(true)}
             className="btn-primary"
             style={{
