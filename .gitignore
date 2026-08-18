@@ -47,3 +47,7 @@ tests/**/*.js.map
 *.tsbuildinfo
 next-env.d.ts
 app/lib/canonicalMessage.js
+
+# scratch
+scratch/
+
