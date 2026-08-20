@@ -1236,6 +1236,8 @@ async function runProductionTestSuite() {
   assert(legitimateReport.protocolVerified === true, 'Legitimate proof satisfies complete protocol validity checks with signed receipt')
   assert(legitimateReport.proofStatus.signature === 'VERIFIED', '4-Layer status: signature === VERIFIED')
   assert(legitimateReport.proofStatus.protocol === 'VERIFIED', '4-Layer status: protocol === VERIFIED')
+  assert(legitimateReport.proofStatus.source === 'CLAIMED', '4-Layer status: source === CLAIMED for offline verification')
+  assert(legitimateReport.proofStatus.archive === 'CLAIMED', '4-Layer status: archive === CLAIMED for offline verification')
 
   // Offline metadata limits for layer 3 & 4
   assert(legitimateReport.sourceVerified === false, 'Local verifier correctly flags sourceVerified=false since it is offline metadata')
@@ -1294,6 +1296,38 @@ async function runProductionTestSuite() {
     protocol_version: 2,
   })
   assert(oldTimestampReport.protocolVerified === false, 'Protocol validity strictly REJECTS old timestamps outside observation window')
+
+  // Test 3.5: Expired Challenge Rejection
+  const expiredChallengePayload = JSON.stringify({
+    id: crypto.randomUUID(),
+    wallet: testWallet,
+    iat: new Date(serverTime - 10 * 60 * 1000).toISOString(),
+    exp: new Date(serverTime - 5 * 60 * 1000).toISOString(),
+    iss: 'PROVN',
+    kid: 'provn-server-2026-08'
+  })
+  const expiredPayloadBytes = new TextEncoder().encode(expiredChallengePayload)
+  const expiredChallengeSig = signServerReceipt(expiredPayloadBytes)
+  const expiredChallenge = `${bs58.encode(expiredPayloadBytes)}.${bs58.encode(expiredChallengeSig)}`
+
+  const expiredCanonical = buildCanonicalSubmitMessageV2({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: testWallet,
+    content: 'Expired challenge proof',
+    timestamp: validIso,
+    challenge: expiredChallenge,
+  })
+  const expiredSig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(expiredCanonical), testKeypair.secretKey))
+  const expiredReport = evaluateProofValidity({
+    wallet_address: testWallet,
+    signature: expiredSig,
+    content: 'Expired challenge proof',
+    created_at: validIso,
+    challenge: expiredChallenge,
+    domain: 'provn-sol.vercel.app',
+    protocol_version: 2,
+  })
+  assert(expiredReport.protocolVerified === false, 'Protocol validity strictly REJECTS expired challenges')
 
   // Test 4: Wrong Domain Rejection
   const wrongDomainReport = evaluateProofValidity({

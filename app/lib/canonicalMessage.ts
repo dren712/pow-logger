@@ -394,11 +394,15 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
           const sigBytes = decodeBase58(parts[1])
           if (verifyServerReceipt(payloadBytes, sigBytes)) {
             const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
-            if (payload.wallet === log.wallet_address) {
+            if (payload.wallet === log.wallet_address && payload.iss === 'PROVN') {
               challengeValid = true
-              const issueTime = new Date(payload.exp).getTime() - 5 * 60 * 1000
+              
+              const iat = payload.iat ? new Date(payload.iat).getTime() : (new Date(payload.exp).getTime() - 5 * 60 * 1000)
+              const exp = new Date(payload.exp).getTime()
               const d = new Date(log.created_at).getTime()
-              if (!isNaN(d) && Math.abs(d - issueTime) <= 15 * 60 * 1000) {
+              
+              // Timestamp is strictly bounded by challenge validity window
+              if (!isNaN(d) && d >= iat && d <= exp) {
                 timestampValid = true
               }
             }
@@ -424,8 +428,8 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   const sourceVerificationMode = 'LOCAL_METADATA'
 
   if (provLevel === 'source_verified') {
-    sourceStatus = 'VERIFIED'
     // In local mode, we trust the DB claim for status, but it is NOT independently cryptographically verified
+    sourceStatus = 'CLAIMED'
     isSourceVerified = false
   } else if (provLevel === 'author_attributed' || provLevel === 'identity_linked') {
     sourceStatus = 'ATTRIBUTED'
@@ -445,7 +449,7 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
 
   if (archState === 'finalized' || archState === 'receipt_obtained') {
     if (log.irys_tx_id && !log.irys_tx_id.startsWith('powl_')) {
-      archiveStatus = 'VERIFIED'
+      archiveStatus = 'CLAIMED'
       // In local mode, we don't query Irys, so it's not cryptographically independently verified
       isArchiveVerified = false
     } else {

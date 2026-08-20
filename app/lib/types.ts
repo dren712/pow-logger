@@ -8,8 +8,8 @@ export type LogVerificationState = 'VERIFIED' | 'LEGACY' | 'UNVERIFIED'
 
 export type ProofSignatureStatus = 'VERIFIED' | 'FAILED' | 'UNVERIFIED'
 export type ProofProtocolStatus = 'VERIFIED' | 'UNVERIFIED' | 'FAILED'
-export type ProofSourceStatus = 'VERIFIED' | 'ATTRIBUTED' | 'EXISTS' | 'LINKED' | 'SELF_ATTESTED' | 'FAILED'
-export type ProofArchiveStatus = 'VERIFIED' | 'RECEIPT_OBTAINED' | 'PENDING' | 'NOT_REQUESTED' | 'FAILED'
+export type ProofSourceStatus = 'VERIFIED' | 'CLAIMED' | 'ATTRIBUTED' | 'EXISTS' | 'LINKED' | 'SELF_ATTESTED' | 'FAILED'
+export type ProofArchiveStatus = 'VERIFIED' | 'CLAIMED' | 'RECEIPT_OBTAINED' | 'PENDING' | 'NOT_REQUESTED' | 'FAILED'
 
 export interface ProofStatusLayers {
   signature: ProofSignatureStatus

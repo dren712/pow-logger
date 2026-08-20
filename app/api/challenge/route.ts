@@ -66,15 +66,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate challenge receipt
+    const iatIso = new Date().toISOString()
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
     const { encodeBase58 } = await import('@/app/lib/canonicalMessage')
-    const { signServerReceipt } = await import('@/app/lib/serverKeypair')
+    const { signServerReceipt, PROVN_KID } = await import('@/app/lib/serverKeypair')
 
     const challengePayload = JSON.stringify({
       id: crypto.randomUUID(),
       wallet: walletAddress,
+      iat: iatIso,
       exp: expiresAt,
-      iss: 'PROVN'
+      iss: 'PROVN',
+      kid: PROVN_KID
     })
     
     const payloadBytes = new TextEncoder().encode(challengePayload)
