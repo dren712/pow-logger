@@ -65,9 +65,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Rate limit exceeded for IP address' }, { status: 429 })
     }
 
-    // Generate challenge
-    const challenge = crypto.randomUUID() + '-' + crypto.randomBytes(16).toString('hex')
+    // Generate challenge receipt
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+    const { encodeBase58 } = await import('@/app/lib/canonicalMessage')
+    const { signServerReceipt } = await import('@/app/lib/serverKeypair')
+
+    const challengePayload = JSON.stringify({
+      id: crypto.randomUUID(),
+      wallet: walletAddress,
+      exp: expiresAt,
+      iss: 'PROVN'
+    })
+    
+    const payloadBytes = new TextEncoder().encode(challengePayload)
+    const sig = signServerReceipt(payloadBytes)
+    const challenge = `${encodeBase58(payloadBytes)}.${encodeBase58(sig)}`
 
     const { error: insertError } = await supabase
       .from('signing_challenges')

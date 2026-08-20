@@ -1188,12 +1188,26 @@ async function runProductionTestSuite() {
   // --- SUITE 15: Adversarial Protocol Verification & Layered Proof Analysis ---
   console.log('\n► SUITE 15: Adversarial Protocol Verification & Layered Proof Analysis')
 
-  // Test 1: Signature-Valid vs Protocol-Valid Distinction
+  // Import for challenge receipt generation
+  const { signServerReceipt } = require('../app/lib/serverKeypair')
+
   const testKeypair = nacl.sign.keyPair()
   const testWallet = bs58.encode(testKeypair.publicKey)
-  const validIso = new Date().toISOString()
-  const serverChallenge = 'CHALLENGE_LEGITIMATE_SERVER_ISSUED_UUID_9999'
+  const serverTime = Date.now()
+  const validIso = new Date(serverTime).toISOString()
 
+  // Generate a legitimate signed server challenge receipt
+  const challengePayload = JSON.stringify({
+    id: crypto.randomUUID(),
+    wallet: testWallet,
+    exp: new Date(serverTime + 5 * 60 * 1000).toISOString(),
+    iss: 'PROVN'
+  })
+  const payloadBytes = new TextEncoder().encode(challengePayload)
+  const challengeSig = signServerReceipt(payloadBytes)
+  const serverChallenge = `${bs58.encode(payloadBytes)}.${bs58.encode(challengeSig)}`
+
+  // Test 1: Signature-Valid vs Protocol-Valid Distinction (Legitimate)
   const legitimateCanonical = buildCanonicalSubmitMessageV2({
     domain: 'provn-sol.vercel.app',
     walletAddress: testWallet,
@@ -1219,20 +1233,32 @@ async function runProductionTestSuite() {
   })
 
   assert(legitimateReport.signatureVerified === true, 'Authentic proof signature verified as cryptographically valid')
-  assert(legitimateReport.protocolVerified === true, 'Legitimate proof satisfies complete protocol validity checks')
+  assert(legitimateReport.protocolVerified === true, 'Legitimate proof satisfies complete protocol validity checks with signed receipt')
   assert(legitimateReport.proofStatus.signature === 'VERIFIED', '4-Layer status: signature === VERIFIED')
   assert(legitimateReport.proofStatus.protocol === 'VERIFIED', '4-Layer status: protocol === VERIFIED')
-  assert(legitimateReport.proofStatus.source === 'VERIFIED', '4-Layer status: source === VERIFIED for source_verified provenance')
-  assert(legitimateReport.proofStatus.archive === 'VERIFIED', '4-Layer status: archive === VERIFIED for receipt_obtained with Irys TX ID')
 
-  // Test 2: Forged Challenge Rejection (Signature valid, Protocol invalid)
-  const shortChallenge = '123'
+  // Offline metadata limits for layer 3 & 4
+  assert(legitimateReport.sourceVerified === false, 'Local verifier correctly flags sourceVerified=false since it is offline metadata')
+  assert(legitimateReport.archiveVerified === false, 'Local verifier correctly flags archiveVerified=false since it is offline metadata')
+
+  // Test 2: Forged Challenge Rejection - Fake-but-valid-looking UUID (Signature valid, Protocol invalid)
+  const fakeChallengePayload = JSON.stringify({
+    id: crypto.randomUUID(),
+    wallet: testWallet,
+    exp: new Date(serverTime + 5 * 60 * 1000).toISOString(),
+    iss: 'PROVN'
+  })
+  // We encode it but don't sign it with the PROVN server key, we sign it with the user key instead to spoof it
+  const fakePayloadBytes = new TextEncoder().encode(fakeChallengePayload)
+  const fakeChallengeSig = nacl.sign.detached(fakePayloadBytes, testKeypair.secretKey)
+  const forgedChallenge = `${bs58.encode(fakePayloadBytes)}.${bs58.encode(fakeChallengeSig)}`
+
   const forgedChallengeCanonical = buildCanonicalSubmitMessageV2({
     domain: 'provn-sol.vercel.app',
     walletAddress: testWallet,
     content: 'Forged challenge proof',
     timestamp: validIso,
-    challenge: shortChallenge,
+    challenge: forgedChallenge,
   })
   const forgedSig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(forgedChallengeCanonical), testKeypair.secretKey))
 
@@ -1241,15 +1267,47 @@ async function runProductionTestSuite() {
     signature: forgedSig,
     content: 'Forged challenge proof',
     created_at: validIso,
-    challenge: shortChallenge,
+    challenge: forgedChallenge,
     domain: 'provn-sol.vercel.app',
     protocol_version: 2,
   })
   assert(forgedReport.signatureVerified === true, 'Signature itself is cryptographically valid from keypair holder')
-  assert(forgedReport.protocolVerified === false, 'Protocol validity strictly REJECTS forged / malformed challenge')
-  assert(forgedReport.proofStatus.protocol === 'UNVERIFIED', '4-Layer status: protocol marks UNVERIFIED for non-protocol challenge')
+  assert(forgedReport.protocolVerified === false, 'Protocol validity strictly REJECTS forged challenge not signed by server')
 
-  // Test 3: Atomic OAuth State Single-Use Replay Defense
+  // Test 3: Old Timestamp Rejection outside observation window
+  const oldIso = new Date(serverTime - 16 * 60 * 1000).toISOString() // 16 mins ago
+  const oldTimestampCanonical = buildCanonicalSubmitMessageV2({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: testWallet,
+    content: 'Old timestamp proof',
+    timestamp: oldIso,
+    challenge: serverChallenge,
+  })
+  const oldSig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(oldTimestampCanonical), testKeypair.secretKey))
+  const oldTimestampReport = evaluateProofValidity({
+    wallet_address: testWallet,
+    signature: oldSig,
+    content: 'Old timestamp proof',
+    created_at: oldIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    protocol_version: 2,
+  })
+  assert(oldTimestampReport.protocolVerified === false, 'Protocol validity strictly REJECTS old timestamps outside observation window')
+
+  // Test 4: Wrong Domain Rejection
+  const wrongDomainReport = evaluateProofValidity({
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'evil.com',
+    protocol_version: 2,
+  })
+  assert(wrongDomainReport.protocolVerified === false, 'Protocol validity strictly REJECTS untrusted domain')
+
+  // Test 5: Atomic OAuth State Single-Use Replay Defense
   const mockOAuthState = {
     state_id: 'oauth-state-uuid-1234',
     wallet_address: testWallet,
@@ -1271,24 +1329,7 @@ async function runProductionTestSuite() {
   const replayOAuthConsumption = consumeOAuthState(mockOAuthState)
   assert(replayOAuthConsumption === null, 'Adversarial Replay: Re-using consumed OAuth state is strictly rejected')
 
-  // Test 4: Server-Bounded Timestamp Anti-Replay Boundary (±15 min / 900,000ms window)
-  const serverTime = Date.now()
-  const windowMs = 15 * 60 * 1000 // 900,000ms
-
-  function isTimestampInWindow(clientTimestampIso: string, observationTime: number): boolean {
-    const clientTime = new Date(clientTimestampIso).getTime()
-    return Math.abs(observationTime - clientTime) <= windowMs
-  }
-
-  const past16Min = new Date(serverTime - 16 * 60 * 1000).toISOString()
-  const future16Min = new Date(serverTime + 16 * 60 * 1000).toISOString()
-  const valid5Min = new Date(serverTime - 5 * 60 * 1000).toISOString()
-
-  assert(isTimestampInWindow(past16Min, serverTime) === false, 'Timestamp 16 minutes in the past strictly rejected outside ±15m window')
-  assert(isTimestampInWindow(future16Min, serverTime) === false, 'Timestamp 16 minutes in the future strictly rejected outside ±15m window')
-  assert(isTimestampInWindow(valid5Min, serverTime) === true, 'Timestamp within 5 minutes of server observation time accepted')
-
-  // Test 5: GitHub Identity & Attribution Mismatch Adversarial Defense
+  // Test 6: GitHub Identity & Attribution Mismatch Adversarial Defense
   const mismatchProvenance = evaluateProofValidity({
     wallet_address: testWallet,
     signature: legitSig,

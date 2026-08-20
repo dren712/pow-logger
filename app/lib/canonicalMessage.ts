@@ -9,6 +9,7 @@
 import bs58 from 'bs58'
 import nacl from 'tweetnacl'
 import { ProofStatusLayers, ProofValidityReport } from './types'
+import { verifyServerReceipt } from './serverKeypair'
 
 export interface VerifiableLog {
   wallet_address: string
@@ -377,22 +378,41 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
 
   const protocolVersion = log.protocol_version || (log.nonce && !log.challenge ? 1 : 2)
   const domain = log.domain || 'provn-sol.vercel.app'
-  const isDomainValid = domain === 'localhost' || domain.includes('vercel.app') || domain.includes('provn') || domain.length > 0
+  const ALLOWED_DOMAINS = ['provn-sol.vercel.app', 'localhost']
+  const isDomainValid = ALLOWED_DOMAINS.includes(domain)
 
   let challengeValid = false
+  let timestampValid = false
+
   if (protocolVersion === 2) {
     const challengeStr = log.challenge || log.nonce
-    challengeValid = typeof challengeStr === 'string' && challengeStr.trim().length >= 16
+    if (typeof challengeStr === 'string') {
+      const parts = challengeStr.split('.')
+      if (parts.length === 2) {
+        try {
+          const payloadBytes = decodeBase58(parts[0])
+          const sigBytes = decodeBase58(parts[1])
+          if (verifyServerReceipt(payloadBytes, sigBytes)) {
+            const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
+            if (payload.wallet === log.wallet_address) {
+              challengeValid = true
+              const issueTime = new Date(payload.exp).getTime() - 5 * 60 * 1000
+              const d = new Date(log.created_at).getTime()
+              if (!isNaN(d) && Math.abs(d - issueTime) <= 15 * 60 * 1000) {
+                timestampValid = true
+              }
+            }
+          }
+        } catch { }
+      }
+    }
   } else {
+    // V1 legacy
     challengeValid = typeof log.nonce === 'string' && log.nonce.trim().length >= 8
-  }
-
-  let timestampValid = false
-  try {
-    const d = new Date(log.created_at)
-    timestampValid = !isNaN(d.getTime())
-  } catch {
-    timestampValid = false
+    try {
+      const d = new Date(log.created_at)
+      timestampValid = !isNaN(d.getTime())
+    } catch { }
   }
 
   const isProtocolValid = isSigValid && isDomainValid && challengeValid && timestampValid
@@ -401,10 +421,12 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   const provLevel = (log.provenance_level || 'self_attested').toLowerCase()
   let sourceStatus: ProofStatusLayers['source'] = 'SELF_ATTESTED'
   let isSourceVerified = false
+  const sourceVerificationMode = 'LOCAL_METADATA'
 
   if (provLevel === 'source_verified') {
     sourceStatus = 'VERIFIED'
-    isSourceVerified = true
+    // In local mode, we trust the DB claim for status, but it is NOT independently cryptographically verified
+    isSourceVerified = false
   } else if (provLevel === 'author_attributed' || provLevel === 'identity_linked') {
     sourceStatus = 'ATTRIBUTED'
   } else if (provLevel === 'source_exists') {
@@ -419,14 +441,16 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   const archState = (log.archival_state || 'not_requested').toLowerCase()
   let archiveStatus: ProofStatusLayers['archive'] = 'NOT_REQUESTED'
   let isArchiveVerified = false
+  const archiveVerificationMode = 'LOCAL_METADATA'
 
   if (archState === 'finalized' || archState === 'receipt_obtained') {
     if (log.irys_tx_id && !log.irys_tx_id.startsWith('powl_')) {
       archiveStatus = 'VERIFIED'
-      isArchiveVerified = true
+      // In local mode, we don't query Irys, so it's not cryptographically independently verified
+      isArchiveVerified = false
     } else {
       archiveStatus = 'RECEIPT_OBTAINED'
-      isArchiveVerified = true
+      isArchiveVerified = false
     }
   } else if (archState === 'pending') {
     archiveStatus = 'PENDING'
@@ -441,6 +465,8 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
     protocolVerified: isProtocolValid,
     sourceVerified: isSourceVerified,
     archiveVerified: isArchiveVerified,
+    sourceVerificationMode,
+    archiveVerificationMode,
     proofStatus: {
       signature: isSigValid ? 'VERIFIED' : 'FAILED',
       protocol: isProtocolValid ? 'VERIFIED' : (isSigValid ? 'UNVERIFIED' : 'FAILED'),

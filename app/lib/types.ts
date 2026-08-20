@@ -23,6 +23,8 @@ export interface ProofValidityReport {
   protocolVerified: boolean
   sourceVerified: boolean
   archiveVerified: boolean
+  sourceVerificationMode: 'LOCAL_METADATA' | 'REMOTE_RECHECK' | 'CRYPTOGRAPHIC'
+  archiveVerificationMode: 'LOCAL_METADATA' | 'REMOTE_RECHECK' | 'CRYPTOGRAPHIC'
   proofStatus: ProofStatusLayers
   details: {
     protocolVersion: number
