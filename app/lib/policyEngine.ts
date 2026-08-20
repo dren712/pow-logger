@@ -11,7 +11,7 @@ import { BuilderReputation, EvidencePolicy, EligibilityEvaluation, PolicyCheckRe
 
 export const STANDARD_POLICY_PRESETS: Record<string, EvidencePolicy> = {
   SUPERTEAM_BOUNTY: {
-    name: 'Superteam Bounty Contributor Gating',
+    name: 'Superteam Bounty Contributor Gating (Illustrative Policy)',
     minVerifiedProofs: 3,
     minRecentProofs: 1,
     minStreak: 3,
@@ -19,7 +19,7 @@ export const STANDARD_POLICY_PRESETS: Record<string, EvidencePolicy> = {
     requireGithubSource: true,
   },
   GRANT_EVALUATION: {
-    name: 'Solana Foundation / Ecosystem Grant Review',
+    name: 'Ecosystem Grant Review (Illustrative Policy)',
     minVerifiedProofs: 7,
     minRecentProofs: 2,
     minStreak: 7,
@@ -28,7 +28,7 @@ export const STANDARD_POLICY_PRESETS: Record<string, EvidencePolicy> = {
     requireArchivedProof: true,
   },
   CORE_ENGINEERING: {
-    name: 'Protocol Engineering Attestation',
+    name: 'Protocol Engineering Attestation (Illustrative Policy)',
     minVerifiedProofs: 10,
     minRecentProofs: 3,
     requiredSkills: ['Rust', 'Solana'],
@@ -36,7 +36,7 @@ export const STANDARD_POLICY_PRESETS: Record<string, EvidencePolicy> = {
     requireArchivedProof: true,
   },
   LIGHTWEIGHT_BUILDER: {
-    name: 'Active Ecosystem Contributor',
+    name: 'Active Ecosystem Contributor (Illustrative Policy)',
     minVerifiedProofs: 1,
     minRecentProofs: 1,
   },

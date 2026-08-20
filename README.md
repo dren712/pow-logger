@@ -6,7 +6,7 @@ PROVN is a portable, cryptographically verifiable builder evidence protocol for 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Tests-139%2F139%20Passed-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-150%2B%20Passing-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
@@ -140,7 +140,7 @@ cd pow-logger
 # Install dependencies
 npm install
 
-# Run protocol verification test suite (139 passing assertions)
+# Run protocol verification test suite
 npm test
 
 # Start local Next.js dev server

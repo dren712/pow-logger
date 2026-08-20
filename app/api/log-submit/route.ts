@@ -179,27 +179,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 4b. Post-Verification Atomic Challenge Consumption (Race-safe single use)
-    if (challenge) {
-      const { data: consumedData, error: consumeError } = await supabase
-        .from('signing_challenges')
-        .update({ consumed_at: new Date().toISOString() })
-        .eq('challenge', challenge)
-        .eq('wallet_address', walletAddress)
-        .is('consumed_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .select('id')
-        .maybeSingle()
-
-      if (consumeError || !consumedData) {
-        return NextResponse.json(
-          { error: 'Challenge already consumed or expired during concurrent processing' },
-          { status: 409 }
-        )
-      }
-      consumedChallengeId = consumedData.id
-    }
-
     // 5. Signature Duplicate Lookup (Replay Defense Check)
     const { data: existingSig, error: sigCheckError } = await supabase
       .from('logs')
@@ -243,6 +222,7 @@ export async function POST(req: NextRequest) {
 
     const classification = classifyLog(content.trim())
 
+    // 7. Transactional Atomic Insertion, Quota Increment & Challenge Consumption
     const { data: savedLog, error: insertResError } = await supabase.rpc('atomic_insert_log', {
       p_content: content.trim(),
       p_wallet: walletAddress,
@@ -264,14 +244,21 @@ export async function POST(req: NextRequest) {
       p_source_provider: sourceProvider,
       p_source_metadata: sourceMetadata,
       p_source_verification_status: sourceVerificationStatus,
-      p_source_verified_at: sourceVerifiedAt
+      p_source_verified_at: sourceVerifiedAt,
+      p_challenge: challenge || null
     })
 
     if (insertResError) {
-      if (insertResError.message === 'DAILY_QUOTA_EXCEEDED') {
+      if (insertResError.message.includes('DAILY_QUOTA_EXCEEDED')) {
         return NextResponse.json(
           { error: 'Daily log quota reached (3/3 logs submitted today). Come back tomorrow 🗿' },
           { status: 429 }
+        )
+      }
+      if (insertResError.message.includes('CHALLENGE_INVALID_OR_CONSUMED')) {
+        return NextResponse.json(
+          { error: 'Challenge already consumed or expired during concurrent processing' },
+          { status: 409 }
         )
       }
       console.error('Supabase atomic_insert_log error:', insertResError)

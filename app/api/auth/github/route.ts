@@ -86,21 +86,26 @@ export async function POST(req: NextRequest) {
     // 4. Delete the used challenge
     await supabase.from('signing_challenges').delete().eq('challenge', challenge)
 
-    // 5. Generate secure OAuth state
+    // 5. Generate secure OAuth state with PKCE
     const clientId = process.env.GITHUB_CLIENT_ID
     if (!clientId) {
       console.error('GITHUB_CLIENT_ID is not configured')
       return NextResponse.json({ error: 'OAuth configuration error' }, { status: 500 })
     }
 
-    // Insert state into DB with 10-minute expiry
+    const crypto = await import('crypto')
+    const codeVerifier = crypto.randomBytes(32).toString('base64url')
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url')
+
+    // Insert state into DB with 10-minute expiry and PKCE verifier
     const stateExpiresAt = new Date(now.getTime() + 10 * 60 * 1000).toISOString()
     const { data: stateRecord, error: stateError } = await supabase
       .from('oauth_states')
       .insert({
         wallet_address: walletAddress,
         expires_at: stateExpiresAt,
-        action
+        action,
+        code_verifier: codeVerifier
       })
       .select('state_id')
       .single()
@@ -116,6 +121,8 @@ export async function POST(req: NextRequest) {
     githubAuthUrl.searchParams.append('client_id', clientId)
     githubAuthUrl.searchParams.append('state', state)
     githubAuthUrl.searchParams.append('scope', 'read:user')
+    githubAuthUrl.searchParams.append('code_challenge', codeChallenge)
+    githubAuthUrl.searchParams.append('code_challenge_method', 'S256')
 
     return NextResponse.json({ url: githubAuthUrl.toString() }, { status: 200 })
   } catch (err: unknown) {

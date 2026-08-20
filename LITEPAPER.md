@@ -78,7 +78,46 @@ The payload is stored permanently on **Arweave** via **Irys Node #1**. Because l
 
 ---
 
+## 4. Evidence Hierarchy & Provenance State Machine
 
+PROVN establishes a strict, non-fungible progression of evidence strength:
+
+```text
+┌──────────────────┐
+│  SELF_ATTESTED   │  Wallet-signed claim with cryptographic author authenticity.
+└────────┬─────────┘
+         │ + External Evidence URL
+         ▼
+┌──────────────────┐
+│  SOURCE_LINKED   │  Claim links to public third-party resource (docs, explorer, etc.).
+└────────┬─────────┘
+         │ + Public GitHub PR / Commit URL
+         ▼
+┌──────────────────┐
+│  SOURCE_EXISTS   │  GitHub API independently corroborates that the PR/commit exists.
+└────────┬─────────┘
+         │ + SIWS GitHub OAuth Binding
+         ▼
+┌──────────────────┐
+│ IDENTITY_LINKED  │  Builder wallet is bound to a verified GitHub ID (author mismatch).
+└────────┬─────────┘
+         │ + Commit Author ID matches Wallet GitHub ID
+         ▼
+┌──────────────────┐
+│ SOURCE_VERIFIED  │  Cryptographically authenticated work matching verified identity.
+└────────┬─────────┘
+         │ + Permanent Archival
+         ▼
+┌──────────────────┐
+│ ARCHIVED_PROVEN  │  Immutable, multi-decade Arweave L1 data receipt via Irys gateway.
+└──────────────────┘
+```
+
+### Invariant Guarantee
+- **Calendar-Based Streak Progression**: Streaks operate on calendar date boundaries in canonical `Asia/Kolkata` (IST) timezone rather than elapsed 24-hour windows.
+- **Strict Provenance Isolation**: Policy engines and badges (e.g. `Open Source Builder`) evaluate strictly on `SOURCE_VERIFIED` proofs, completely preventing semantic inflation from unverified URLs.
+
+---
 
 ## 5. Live GitHub SVG Embed Engine (`/api/badge/[wallet].svg`)
 

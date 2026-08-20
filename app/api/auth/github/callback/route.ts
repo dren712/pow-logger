@@ -19,11 +19,12 @@ export async function GET(req: NextRequest) {
 
   let wallet: string
   let action: string
+  let codeVerifier: string | undefined
   try {
     // Look up the state in oauth_states table
     const { data: stateRecord } = await supabase
       .from('oauth_states')
-      .select('wallet_address, expires_at, action')
+      .select('wallet_address, expires_at, action, code_verifier')
       .eq('state_id', stateBase64)
       .single()
 
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
 
     wallet = stateRecord.wallet_address
     action = stateRecord.action || 'Link'
+    codeVerifier = stateRecord.code_verifier || undefined
 
     // Cleanup used state
     await supabase.from('oauth_states').delete().eq('state_id', stateBase64)
@@ -53,18 +55,23 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 1. Exchange code for access token
+    // 1. Exchange code for access token with PKCE
+    const tokenRequestBody: Record<string, string> = {
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+    }
+    if (codeVerifier) {
+      tokenRequestBody.code_verifier = codeVerifier
+    }
+
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-      }),
+      body: JSON.stringify(tokenRequestBody),
     })
 
     if (!tokenRes.ok) {

@@ -37,9 +37,11 @@ export async function POST(req: NextRequest) {
       .delete()
       .lt('expires_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
 
-    // Rate limit check
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+
+    // Rate limit checks (10 per wallet / 15m, 30 per IP / 15m)
     const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-    const { count, error: countError } = await supabase
+    const { count: walletCount, error: countError } = await supabase
       .from('signing_challenges')
       .select('*', { count: 'exact', head: true })
       .eq('wallet_address', walletAddress)
@@ -49,14 +51,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
-    if (count !== null && count >= 10) {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    if (walletCount !== null && walletCount >= 10) {
+      return NextResponse.json({ error: 'Rate limit exceeded for wallet address' }, { status: 429 })
+    }
+
+    const { count: ipCount, error: ipCountError } = await supabase
+      .from('signing_challenges')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', ipAddress)
+      .gte('issued_at', fifteenMinsAgo)
+
+    if (!ipCountError && ipCount !== null && ipCount >= 30) {
+      return NextResponse.json({ error: 'Rate limit exceeded for IP address' }, { status: 429 })
     }
 
     // Generate challenge
     const challenge = crypto.randomUUID() + '-' + crypto.randomBytes(16).toString('hex')
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
 
     const { error: insertError } = await supabase
       .from('signing_challenges')
