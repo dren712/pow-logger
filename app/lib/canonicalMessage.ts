@@ -305,8 +305,11 @@ export function reconstructCanonicalSubmitMessage(log: VerifiableLog): string | 
     if (!normalizedEv) return null
   }
 
-  // Exact domain: strictly use the log's persisted domain
-  const domain = log.domain || 'provn-sol.vercel.app'
+  // Strict Domain: For Protocol V2, domain is mandatory and must not silently fallback
+  if (isV2 && (!log.domain || typeof log.domain !== 'string' || log.domain.trim() === '')) {
+    return null
+  }
+  const domain = isV2 ? log.domain! : (log.domain || 'provn-sol.vercel.app')
 
   // Postgres / Supabase transforms "2026-08-17T18:01:50.481Z" into "...+00:00" and may trim trailing ms zeroes.
   // We MUST restore the exact string the client signed (which is standard JS .toISOString() format).
@@ -510,15 +513,15 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
           const canonicalMsg = reconstructCanonicalSubmitMessage(log)
           const canonicalHash = canonicalMsg ? computeCanonicalProofHash(canonicalMsg) : null
           
-          const payloadHashCandidate = subPayload.signed_payload_hash || subPayload.payload_hash
-          signedPayloadHashValid = Boolean(canonicalHash && payloadHashCandidate === canonicalHash)
+          signedPayloadHashValid = Boolean(canonicalHash && subPayload.signed_payload_hash === canonicalHash)
 
           const challengeMatches = subPayload.challenge_id === (log.challenge || log.nonce)
           const walletMatches = subPayload.wallet === log.wallet_address
           const proofIdMatches = !log.id || String(subPayload.proof_id) === String(log.id)
           const typeAndIssMatches = subPayload.type === 'PROVN_SUBMISSION_RECEIPT' && subPayload.iss === 'PROVN'
+          const versionMatches = subPayload.version === 1 && (!subPayload.protocol_version || subPayload.protocol_version === protocolVersion)
 
-          if (typeAndIssMatches && walletMatches && proofIdMatches && challengeMatches && signedPayloadHashValid) {
+          if (typeAndIssMatches && versionMatches && walletMatches && proofIdMatches && challengeMatches && signedPayloadHashValid) {
             submissionReceiptValid = true
             serverObservedAt = subPayload.observed_at || null
           } else {
@@ -536,7 +539,8 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   }
 
   const submissionReceiptVerified = Boolean(submissionReceiptValid)
-  const isProtocolValid = isSigValid && challengeVerified && (log.submission_receipt ? submissionReceiptVerified : true)
+  const isV2 = protocolVersion === 2
+  const isProtocolValid = isSigValid && challengeVerified && (isV2 ? submissionReceiptVerified : true)
 
   return {
     signatureVerified: isSigValid,

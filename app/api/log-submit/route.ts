@@ -277,11 +277,11 @@ export async function POST(req: NextRequest) {
       const submissionPayload = JSON.stringify({
         type: 'PROVN_SUBMISSION_RECEIPT',
         version: 1,
+        protocol_version: challenge ? 2 : 1,
         proof_id: savedLog.id,
         challenge_id: challenge || nonce || 'legacy',
         wallet: walletAddress,
         signed_payload_hash: signedPayloadHash,
-        payload_hash: signedPayloadHash,
         observed_at: observedAt,
         iss: 'PROVN',
         kid: PROVN_KID

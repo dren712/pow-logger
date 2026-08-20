@@ -1220,7 +1220,24 @@ async function runProductionTestSuite() {
   })
   const legitSig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(legitimateCanonical), testKeypair.secretKey))
 
+  const legitimateReceiptPayload = JSON.stringify({
+    type: 'PROVN_SUBMISSION_RECEIPT',
+    version: 1,
+    protocol_version: 2,
+    proof_id: 101,
+    challenge_id: serverChallenge,
+    wallet: testWallet,
+    signed_payload_hash: computeCanonicalProofHash(legitimateCanonical),
+    observed_at: validIso,
+    iss: 'PROVN',
+    kid: 'provn-server-2026-08',
+  })
+  const legitReceiptBytes = new TextEncoder().encode(legitimateReceiptPayload)
+  const legitReceiptSig = signServerReceipt(legitReceiptBytes)
+  const legitimateReceipt = `${bs58.encode(legitReceiptBytes)}.${bs58.encode(legitReceiptSig)}`
+
   const legitimateReport = evaluateProofValidity({
+    id: 101,
     wallet_address: testWallet,
     signature: legitSig,
     content: 'Legitimate protocol proof submission with valid challenge',
@@ -1229,6 +1246,7 @@ async function runProductionTestSuite() {
     domain: 'provn-sol.vercel.app',
     github_url: 'https://github.com/dren712/pow-logger/pull/1',
     protocol_version: 2,
+    submission_receipt: legitimateReceipt,
     provenance_level: 'source_verified',
     archival_state: 'receipt_obtained',
     irys_tx_id: 'irys_receipt_tx_hash_123456789',
@@ -1567,6 +1585,48 @@ async function runProductionTestSuite() {
   assert(proofWithTamperedEvidence.details.signedPayloadHashValid === false, 'Evidence URL tampering breaks canonical payload hash match')
   assert(proofWithTamperedEvidence.signatureVerified === false, 'Evidence URL tampering breaks wallet signature')
   assert(proofWithTamperedEvidence.protocolVerified === false, 'Evidence URL tampering fails protocol verification')
+
+  // Test 14: Exhaustive 12-Point Field Tampering Matrix (Grant-Grade Defense)
+  const baseProof = {
+    id: 101,
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
+    evidence_url: null,
+    protocol_version: 2,
+    submission_receipt: legitimateReceipt,
+  }
+
+  // 1. Mutate Content
+  assert(!evaluateProofValidity({ ...baseProof, content: 'Tampered content string' }).protocolVerified, 'Matrix 1: Tampered content rejected')
+  // 2. Mutate Signer Wallet Address
+  const otherWallet = bs58.encode(nacl.sign.keyPair().publicKey)
+  assert(!evaluateProofValidity({ ...baseProof, wallet_address: otherWallet }).protocolVerified, 'Matrix 2: Tampered wallet rejected')
+  // 3. Mutate Timestamp to out of challenge bound
+  assert(!evaluateProofValidity({ ...baseProof, created_at: new Date(Date.now() - 3600000).toISOString() }).protocolVerified, 'Matrix 3: Tampered timestamp rejected')
+  // 4. Mutate Challenge String
+  assert(!evaluateProofValidity({ ...baseProof, challenge: 'TAMPERED_CHALLENGE_STRING' }).protocolVerified, 'Matrix 4: Tampered challenge rejected')
+  // 5. Mutate Domain to untrusted origin
+  assert(!evaluateProofValidity({ ...baseProof, domain: 'evil-phishing.com' }).protocolVerified, 'Matrix 5: Tampered domain rejected')
+  // 6. Missing Domain in Protocol V2
+  assert(!evaluateProofValidity({ ...baseProof, domain: null }).protocolVerified, 'Matrix 6: Missing domain in V2 rejected')
+  // 7. Mutate GitHub URL
+  assert(!evaluateProofValidity({ ...baseProof, github_url: 'https://github.com/attacker/malicious-repo' }).protocolVerified, 'Matrix 7: Tampered GitHub URL rejected')
+  // 8. Injected Evidence URL
+  assert(!evaluateProofValidity({ ...baseProof, evidence_url: 'https://malicious-site.com/exploit' }).protocolVerified, 'Matrix 8: Injected evidence URL rejected')
+  // 9. Mutate Proof ID
+  assert(!evaluateProofValidity({ ...baseProof, id: 999 }).protocolVerified, 'Matrix 9: Mismatched proof ID rejected')
+  // 10. Missing Submission Receipt in Protocol V2
+  assert(!evaluateProofValidity({ ...baseProof, submission_receipt: null }).protocolVerified, 'Matrix 10: Missing submission receipt in V2 rejected')
+  // 11. Invalid Detached Signature
+  assert(!evaluateProofValidity({ ...baseProof, signature: bs58.encode(new Uint8Array(64)) }).protocolVerified, 'Matrix 11: Invalid signature rejected')
+  // 12. Tampered Server Receipt Signature
+  const badSigReceipt = legitimateReceipt.slice(0, -6) + 'AAAAAA'
+  assert(!evaluateProofValidity({ ...baseProof, submission_receipt: badSigReceipt }).protocolVerified, 'Matrix 12: Tampered server receipt signature rejected')
 
   // --- SUMMARY ---
 

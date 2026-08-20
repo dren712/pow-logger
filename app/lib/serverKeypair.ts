@@ -6,36 +6,32 @@ let serverKeypair: SignKeyPair;
 export const PROVN_KID = 'provn-server-2026-08';
 
 if (process.env.PROVN_SERVER_SECRET) {
-  // Production / Staging
+  // Production / Staging with secret provided
   const secretKey = bs58.decode(process.env.PROVN_SERVER_SECRET);
   serverKeypair = nacl.sign.keyPair.fromSecretKey(secretKey);
 } else if (process.env.NODE_ENV === 'test') {
-  // Deterministic seed for tests to allow offline validation of fixtures if needed
+  // Deterministic seed for tests to allow offline validation of fixtures
   const SERVER_SEED = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
     SERVER_SEED[i] = i; 
   }
   serverKeypair = nacl.sign.keyPair.fromSeed(SERVER_SEED);
 } else {
-  // Development / Unconfigured
+  // Local development or Next.js build-time collection fallback
   serverKeypair = nacl.sign.keyPair();
-  console.warn('WARNING: PROVN_SERVER_SECRET is not set. Using ephemeral server keypair. Receipts will not persist across restarts.');
+  console.warn('WARNING: PROVN_SERVER_SECRET is not set. Using ephemeral server keypair.');
 }
 
 /**
- * Public Key Registry: maps Key IDs (kid) to authorized server public keys.
- * Enables zero-downtime key rotation and validation of historical proofs.
+ * Immutable Public Key Registry: maps Key IDs (kid) to authorized server public keys.
+ * Enables historical validation across key rotation epochs without runtime tampering.
  */
-const PROVN_KEY_REGISTRY: Map<string, Uint8Array> = new Map([
-  [PROVN_KID, serverKeypair.publicKey],
-]);
-
-export function registerServerPublicKey(kid: string, publicKey: Uint8Array): void {
-  PROVN_KEY_REGISTRY.set(kid, publicKey);
-}
+const TRUSTED_KEY_REGISTRY: Readonly<Record<string, Uint8Array>> = Object.freeze({
+  [PROVN_KID]: serverKeypair.publicKey,
+});
 
 export function getServerPublicKey(kid: string = PROVN_KID): Uint8Array | null {
-  return PROVN_KEY_REGISTRY.get(kid) || (kid === PROVN_KID ? serverKeypair.publicKey : null);
+  return TRUSTED_KEY_REGISTRY[kid] || null;
 }
 
 export function signServerReceipt(message: Uint8Array): Uint8Array {
