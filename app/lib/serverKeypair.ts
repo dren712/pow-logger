@@ -3,6 +3,7 @@ import bs58 from 'bs58';
 import trustManifest from '../../protocol/trust-manifest.json';
 
 let serverKeypair: SignKeyPair | null = null;
+let isProductionWithoutSecret = false;
 
 export const PROVN_KID = 'provn-server-2026-08';
 
@@ -33,16 +34,17 @@ if (process.env.PROVN_SERVER_SECRET) {
   if (publishedPubkey && derivedPubkey !== publishedPubkey) {
     throw new Error(`CRITICAL TRUST-ANCHOR MISMATCH: Configured signing secret produces public key ${derivedPubkey}, which disagrees with published registry for ${PROVN_KID} (${publishedPubkey}).`);
   }
+} else if (process.env.NODE_ENV === 'production') {
+  // FAIL CLOSED: Production nodes MUST have an explicit, secret server keypair configured.
+  // Under NO circumstances should production instantiate a publicly derivable seed.
+  isProductionWithoutSecret = true;
 } else {
-  // Deterministic genesis seed for development and testing (matches genesis 'provn-server-2026-08' public key)
-  const SERVER_SEED = new Uint8Array(32);
+  // Deterministic seed STRICTLY for local development and offline test execution
+  const TEST_SIGNER_SEED = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
-    SERVER_SEED[i] = i; 
+    TEST_SIGNER_SEED[i] = i; 
   }
-  serverKeypair = nacl.sign.keyPair.fromSeed(SERVER_SEED);
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('[PROVN] WARNING: PROVN_SERVER_SECRET not explicitly configured in production. Using genesis trust anchor.');
-  }
+  serverKeypair = nacl.sign.keyPair.fromSeed(TEST_SIGNER_SEED);
 }
 
 /**
@@ -50,6 +52,7 @@ if (process.env.PROVN_SERVER_SECRET) {
  * 1. Checks if Key ID exists in published trust manifest.
  * 2. Enforces status permits verification (active or historical, NOT revoked).
  * 3. Enforces temporal epoch bounds: timestamp must be between valid_from and valid_until.
+ * 4. Malformed timestamps strictly fail closed (return null).
  */
 export function resolveTrustedKey(
   kid: string,
@@ -60,25 +63,26 @@ export function resolveTrustedKey(
   const keyMeta = trustManifest.keys.find((k: { kid: string }) => k.kid === kid);
   if (!keyMeta) return null;
 
-  // Revoked keys cannot be used for verification
+  // Revoked keys cannot be used for verification under any circumstances
   if (keyMeta.status === 'revoked') return null;
   if (keyMeta.algorithm !== 'Ed25519') return null;
 
   // Enforce temporal epoch validity window if timestamp is supplied
-  if (timestamp) {
+  if (timestamp !== undefined && timestamp !== null) {
     const t = new Date(timestamp).getTime();
-    if (!isNaN(t)) {
-      if (keyMeta.valid_from) {
-        const from = new Date(keyMeta.valid_from).getTime();
-        if (!isNaN(from) && t < from) {
-          return null; // Key was not yet active at this timestamp
-        }
+    if (Number.isNaN(t)) {
+      return null; // Malformed timestamp strictly fails closed
+    }
+    if (keyMeta.valid_from) {
+      const from = new Date(keyMeta.valid_from).getTime();
+      if (!Number.isNaN(from) && t < from) {
+        return null; // Key was not yet active at this timestamp
       }
-      if (keyMeta.valid_until) {
-        const until = new Date(keyMeta.valid_until).getTime();
-        if (!isNaN(until) && t > until) {
-          return null; // Key was expired/retired at this timestamp
-        }
+    }
+    if (keyMeta.valid_until) {
+      const until = new Date(keyMeta.valid_until).getTime();
+      if (!Number.isNaN(until) && t > until) {
+        return null; // Key was expired/retired at this timestamp
       }
     }
   }
@@ -96,6 +100,9 @@ export function getServerPublicKey(kid: string = PROVN_KID): Uint8Array | null {
 }
 
 export function signServerReceipt(message: Uint8Array): Uint8Array {
+  if (isProductionWithoutSecret) {
+    throw new Error('CRITICAL PROTOCOL ERROR: PROVN_SERVER_SECRET is strictly required in production.');
+  }
   if (!serverKeypair) {
     throw new Error('Signing keypair is not configured on this node');
   }
@@ -110,7 +117,7 @@ export function verifyServerReceipt(
 ): boolean {
   const pubkey = resolveTrustedKey(kid, timestamp);
   if (!pubkey) {
-    return false; // Unknown, expired, or revoked key ID
+    return false; // Unknown, expired, malformed epoch, or revoked key ID
   }
   return nacl.sign.detached.verify(message, signature, pubkey);
 }

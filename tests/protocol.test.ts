@@ -2066,19 +2066,34 @@ async function runProductionTestSuite() {
   const historicalKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-07-15T00:00:00Z')
   assert(historicalKeyBytes !== null && historicalKeyBytes.length === 32, 'Historical key resolves for valid epoch in July 2026')
 
-  // Test 3: Historical Key + Expired/Future Timestamp is Strictly Rejected
-  const expiredKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-09-15T00:00:00Z')
-  assert(expiredKeyBytes === null, 'Historical key rejected after expiry date (valid_until: 2026-08-31)')
+  // Test 3: Historical Key exact valid_until boundary is valid
+  const exactEndKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-08-31T23:59:59.000Z')
+  assert(exactEndKeyBytes !== null && exactEndKeyBytes.length === 32, 'Historical key valid at exact valid_until boundary (2026-08-31T23:59:59.000Z)')
 
-  // Test 4: Key used before valid_from is Strictly Rejected
-  const preActiveKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-05-15T00:00:00Z')
-  assert(preActiveKeyBytes === null, 'Historical key rejected before activation date (valid_from: 2026-06-01)')
+  // Test 4: Historical Key 1 second after valid_until is Strictly Rejected
+  const pastEndKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-09-01T00:00:00.000Z')
+  assert(pastEndKeyBytes === null, 'Historical key rejected 1 second after valid_until (2026-09-01T00:00:00.000Z)')
 
-  // Test 5: Unknown / Revoked Key ID is Strictly Rejected
+  // Test 5: Historical Key exact valid_from boundary is valid
+  const exactStartKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-06-01T00:00:00.000Z')
+  assert(exactStartKeyBytes !== null && exactStartKeyBytes.length === 32, 'Historical key valid at exact valid_from boundary (2026-06-01T00:00:00.000Z)')
+
+  // Test 6: Historical Key 1 millisecond before valid_from is Strictly Rejected
+  const beforeStartKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-05-31T23:59:59.999Z')
+  assert(beforeStartKeyBytes === null, 'Historical key rejected 1ms before valid_from (2026-05-31T23:59:59.999Z)')
+
+  // Test 7: Malformed / Invalid Timestamps Strictly Fail Closed
+  const malformedTimestampBytes = resolveTrustedKey('provn-server-2026-06', 'not-a-valid-iso-date')
+  assert(malformedTimestampBytes === null, 'Malformed string timestamp strictly fails closed (returns null)')
+
+  const nanTimestampBytes = resolveTrustedKey('provn-server-2026-06', NaN)
+  assert(nanTimestampBytes === null, 'NaN timestamp strictly fails closed (returns null)')
+
+  // Test 8: Unknown / Revoked Key ID is Strictly Rejected
   const unknownKeyBytes = resolveTrustedKey('provn-server-invalid-999', '2026-08-21T00:00:00Z')
   assert(unknownKeyBytes === null, 'Unknown key ID strictly rejected')
 
-  // Test 6: Full Protocol Proof Verification Rejects Expired Historical Key Epoch
+  // Test 9: Full Protocol Proof Verification Rejects Expired Historical Key Epoch
   const expiredChalPayload = JSON.stringify({
     id: crypto.randomUUID(),
     wallet: testWallet,

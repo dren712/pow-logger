@@ -1,12 +1,12 @@
 # PROVN — Solana-Native Cryptographic Builder Evidence Protocol 🗿🛡️
 
-PROVN is a portable, cryptographically verifiable provenance protocol for human and autonomous software actions. It turns wallet-authenticated attestations into timestamp-bounded, tamper-evident evidence envelopes with graduated source provenance and permanent Arweave archival ($0/month free-tier architecture).
+PROVN is a portable, cryptographically verifiable provenance protocol for software actions. It turns wallet-authenticated attestations into timestamp-bounded, tamper-evident evidence envelopes with graduated source provenance and decentralized Arweave archival ($0/month free-tier architecture). Designed to extend seamlessly from human developer attestations to autonomous AI-agent execution audit trails.
 
 [![CI Test Suite](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-170%2B%20Passing-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-270%2B%20Passing-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)

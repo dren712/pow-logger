@@ -104,12 +104,12 @@ PROVN establishes a strict, non-fungible progression of evidence strength:
          │ + Commit Author ID matches Wallet GitHub ID
          ▼
 ┌──────────────────┐
-│ SOURCE_VERIFIED  │  Cryptographically authenticated work matching verified identity.
+│ SOURCE_VERIFIED  │  Server-side verified GitHub attribution state matching linked identity.
 └────────┬─────────┘
          │ + Permanent Archival
          ▼
 ┌──────────────────┐
-│ ARCHIVED_PROVEN  │  Immutable, multi-decade Arweave L1 data receipt via Irys gateway.
+│ ARCHIVED_PROVEN  │  Server-recorded archival state backed by confirmed Irys/Arweave receipt.
 └──────────────────┘
 ```
 
@@ -129,6 +129,9 @@ Independent verifiers and API consumers evaluate evidence across four distinct, 
 3. SOURCE ATTRIBUTION       ──► SIWS GitHub OAuth identity match against repository commit/PR author.
 4. ARCHIVAL INTEGRITY       ──► Permanent Arweave L1 data receipt verification via Irys gateway.
 ```
+
+> [!NOTE]
+> **Offline Independent Verification**: Offline proof verification (via `provn verify`) verifies the cryptographic wallet signature, server challenge token, submission receipt, and canonical payload hash. It evaluates external network states (GitHub live API, Arweave node) as `CLAIMED` metadata from the signed record without making unverified assumptions about third-party live servers.
 
 Each proof detail report provides full layer-by-layer transparency:
 ```json

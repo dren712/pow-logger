@@ -350,7 +350,7 @@ export function reconstructCanonicalSubmitMessage(log: VerifiableLog): string | 
  * 1. Exact Domain Sealing: Uses the exact persisted domain without loose fallback guessing.
  * 2. Strict Metadata Integrity: Non-empty URLs must be valid (GitHub on github.com, Evidence on HTTPS).
  * 3. Base58 Nonce Validation: Nonce must be valid Base58 without whitespace tampering.
- * 4. Guaranteed Invariant: Returns true IF AND ONLY IF the exact persisted record is cryptographically authentic.
+ * 4. Guaranteed Invariant: Returns true iff the persisted cryptographic fields reconstruct a message matching the supplied wallet signature.
  */
 export function verifyLogCryptographically(
   log: VerifiableLog

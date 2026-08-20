@@ -56,7 +56,9 @@ Any independent node, auditor, or smart contract can evaluate a PROVN proof offl
 5. VERIFY CANONICAL PROOF HASH BINDING
    expectedHash = SHA256(canonicalMsg)
    assert(subObj.signed_payload_hash == expectedHash)
-   assert(Ed25519.verify(signature: subSig, message: subPayload, publicKey: PROVN_TRUSTED_PUBLIC_KEYS[subObj.kid]) == true)
+   subKey = resolveTrustedKey(subObj.kid, subObj.observed_at)
+   assert(subKey != null)
+   assert(Ed25519.verify(signature: subSig, message: subPayload, publicKey: subKey) == true)
 
 6. EVALUATE SOURCE & ARCHIVE STATUS (Layers 3 & 4)
    sourceVerificationMode = "LOCAL_METADATA"  -> sourceStatus = "CLAIMED"
