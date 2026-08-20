@@ -1694,6 +1694,78 @@ async function runProductionTestSuite() {
   assert(proofWithMissingKidReceipt.details.submissionReceiptValid === false, 'Submission receipt missing KID is strictly rejected')
   assert(proofWithMissingKidReceipt.protocolVerified === false, 'Protocol verification fails when submission receipt KID is omitted')
 
+  // =========================================================================
+  // SUITE 16: Standalone CLI & Portable Proof Envelope Verification
+  // =========================================================================
+  console.log('\n► SUITE 16: Standalone CLI & Portable Proof Envelope Verification')
+
+  // 1. Construct Portable Proof Envelope
+  const portableProofEnvelope = {
+    protocol: 'PROVN',
+    version: 2,
+    proof_id: 101,
+    claim: {
+      wallet: testWallet,
+      content: 'Legitimate protocol proof submission with valid challenge',
+      timestamp: validIso,
+      domain: 'provn-sol.vercel.app',
+      github_url: 'https://github.com/dren712/pow-logger/pull/1',
+      evidence_url: null,
+    },
+    signature: {
+      algorithm: 'Ed25519',
+      value: legitSig,
+    },
+    server_attestations: {
+      challenge: serverChallenge,
+      challenge_kid: 'provn-server-2026-08',
+      submission_receipt: validSubmissionReceipt,
+      submission_kid: 'provn-server-2026-08',
+      signed_payload_hash: computeCanonicalProofHash(legitimateCanonical),
+      observed_at: observedTimestamp,
+    },
+    provenance: {
+      level: 'source_verified',
+      archival_state: 'receipt_obtained',
+      irys_tx_id: 'test_irys_tx_001',
+    },
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { verifyProofPacket } = require('../bin/provn.js')
+
+  // Test 1: Authentic Portable Envelope Verification via CLI Engine
+  const cliReport = verifyProofPacket(portableProofEnvelope)
+  assert(cliReport.valid === true, 'CLI engine: Valid portable proof packet is 100% verified')
+  assert(cliReport.layers.layer1_signature.passed === true, 'CLI engine: Layer 1 wallet signature verified')
+  assert(cliReport.layers.layer2_challenge.passed === true, 'CLI engine: Layer 2 server challenge token verified')
+  assert(cliReport.layers.layer2_5_receipt.passed === true, 'CLI engine: Layer 2.5 server submission receipt verified')
+  assert(cliReport.canonicalHash === computeCanonicalProofHash(legitimateCanonical), 'CLI engine: Exact canonical hash reproduced')
+
+  // Test 2: Adversarial Content Tampering in Portable Envelope Rejection
+  const tamperedEnvelope = {
+    ...portableProofEnvelope,
+    claim: {
+      ...portableProofEnvelope.claim,
+      content: 'Malicious tampered content injected into envelope',
+    },
+  }
+  const tamperedReport = verifyProofPacket(tamperedEnvelope)
+  assert(tamperedReport.valid === false, 'CLI engine: Tampered content strictly fails verification')
+  assert(tamperedReport.layers.layer1_signature.passed === false, 'CLI engine: Wallet signature fails on tampered content')
+
+  // Test 3: Forged Submission Receipt in Portable Envelope Rejection
+  const forgedReceiptEnvelope = {
+    ...portableProofEnvelope,
+    server_attestations: {
+      ...portableProofEnvelope.server_attestations,
+      submission_receipt: forgedSubmissionReceipt,
+    },
+  }
+  const forgedReceiptReport = verifyProofPacket(forgedReceiptEnvelope)
+  assert(forgedReceiptReport.valid === false, 'CLI engine: Forged submission receipt strictly fails verification')
+  assert(forgedReceiptReport.layers.layer2_5_receipt.passed === false, 'CLI engine: Layer 2.5 fails on forged receipt')
+
   // --- SUMMARY ---
 
   console.log('\n===================================================================')

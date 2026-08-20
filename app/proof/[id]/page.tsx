@@ -335,28 +335,93 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         )}
       </div>
 
-      {/* Independent Verification Instructions */}
-      <div className="terminal-card" style={{ padding: '20px' }}>
-        <h3 style={{ color: '#00e5ff', fontSize: '12px', margin: '0 0 8px 0', textTransform: 'uppercase' }}>
-          💻 Independent Verification CLI
-        </h3>
-        <p style={{ color: '#888', fontSize: '11px', margin: '0 0 12px 0', lineHeight: '1.4' }}>
-          You do not need to trust the PROVN web server. You can independently verify this proof using our open-source CLI:
-        </p>
-        <pre
-          style={{
-            background: '#060709',
-            border: '1px solid #161c28',
-            padding: '10px 14px',
-            borderRadius: '6px',
-            color: '#00ff88',
-            fontSize: '11px',
-            overflowX: 'auto',
-            margin: 0,
-          }}
-        >
-          {`npx provn verify ${proof.id}`}
-        </pre>
+      {/* Independent Verification & Export Section */}
+      <div className="terminal-card" style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+          <div>
+            <h3 style={{ color: '#00e5ff', fontSize: '13px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
+              💻 Independent Verification & Portable Envelope
+            </h3>
+            <p style={{ color: '#888', fontSize: '11px', margin: 0 }}>
+              Verify this proof offline without trusting the PROVN web server or database.
+            </p>
+          </div>
+          <a
+            href={`/api/proof/${proof.id}/export?download=true`}
+            download={`provn-proof-${proof.id}.json`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(0, 229, 255, 0.1)',
+              border: '1px solid #00e5ff',
+              color: '#00e5ff',
+              padding: '8px 14px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            📥 Download Proof Envelope (.json)
+          </a>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginTop: '16px' }}>
+          <div>
+            <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>
+              1. Verify via Standalone CLI:
+            </div>
+            <pre
+              style={{
+                background: '#060709',
+                border: '1px solid #161c28',
+                padding: '10px 14px',
+                borderRadius: '6px',
+                color: '#00ff88',
+                fontSize: '11px',
+                overflowX: 'auto',
+                margin: 0,
+              }}
+            >
+              {`npx provn verify ${proof.id}`}
+            </pre>
+          </div>
+          <div>
+            <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>
+              2. Offline Verification via Downloaded File:
+            </div>
+            <pre
+              style={{
+                background: '#060709',
+                border: '1px solid #161c28',
+                padding: '10px 14px',
+                borderRadius: '6px',
+                color: '#00e5ff',
+                fontSize: '11px',
+                overflowX: 'auto',
+                margin: 0,
+              }}
+            >
+              {`npx provn verify provn-proof-${proof.id}.json`}
+            </pre>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #161c28', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '11px' }}>
+          <span style={{ color: '#666' }}>
+            Trust Anchors & Key Manifest:
+          </span>
+          <a
+            href="/.well-known/provn-keys.json"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: '#ab9ff2', textDecoration: 'none' }}
+          >
+            /.well-known/provn-keys.json ↗
+          </a>
+        </div>
       </div>
     </main>
   )
