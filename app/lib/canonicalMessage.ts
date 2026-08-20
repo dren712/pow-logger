@@ -10,7 +10,7 @@ import bs58 from 'bs58'
 import nacl from 'tweetnacl'
 import crypto from 'crypto'
 import { ProofStatusLayers, ProofValidityReport } from './types'
-import { verifyServerReceipt } from './serverKeypair'
+import { verifyServerReceipt, PROVN_ALLOWED_DOMAINS } from './serverKeypair'
 
 export interface VerifiableLog {
   id?: number | string | null
@@ -128,13 +128,7 @@ export function getVerifiedDomain(reqHost: string | null): string {
 
   const cleanHost = reqHost.trim().toLowerCase().split(':')[0]
 
-  const isVercel = cleanHost === 'provn-sol.vercel.app' || cleanHost.endsWith('.vercel.app')
-  const isLocalhost = cleanHost === 'localhost' || cleanHost === '127.0.0.1'
-  const isWhitelisted = process.env.ALLOWED_DOMAINS
-    ? process.env.ALLOWED_DOMAINS.split(',').map((d) => d.trim().toLowerCase()).includes(cleanHost)
-    : false
-
-  if (isVercel || isLocalhost || isWhitelisted) {
+  if (PROVN_ALLOWED_DOMAINS.includes(cleanHost)) {
     return cleanHost
   }
 
@@ -409,8 +403,7 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
 
   const protocolVersion = log.protocol_version || (log.nonce && !log.challenge ? 1 : 2)
   const domain = log.domain || 'provn-sol.vercel.app'
-  const ALLOWED_DOMAINS = ['provn-sol.vercel.app', 'localhost']
-  const isDomainValid = ALLOWED_DOMAINS.includes(domain)
+  const isDomainValid = PROVN_ALLOWED_DOMAINS.includes(domain)
 
   let challengeValid = false
   let timestampValid = false
@@ -426,7 +419,7 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
           const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
           const challengeKid = typeof payload.kid === 'string' && payload.kid.trim() !== '' ? payload.kid : null
           
-          if (challengeKid && verifyServerReceipt(payloadBytes, sigBytes, challengeKid)) {
+          if (challengeKid && verifyServerReceipt(payloadBytes, sigBytes, challengeKid, payload.iat || payload.exp)) {
             if (payload.wallet === log.wallet_address && payload.iss === 'PROVN') {
               challengeValid = true
               
@@ -511,7 +504,7 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
         const subPayload = JSON.parse(new TextDecoder().decode(subPayloadBytes))
         const kid = typeof subPayload.kid === 'string' && subPayload.kid.trim() !== '' ? subPayload.kid : null
 
-        if (kid && verifyServerReceipt(subPayloadBytes, subSigBytes, kid)) {
+        if (kid && verifyServerReceipt(subPayloadBytes, subSigBytes, kid, subPayload.observed_at)) {
           const canonicalMsg = reconstructCanonicalSubmitMessage(log)
           const canonicalHash = canonicalMsg ? computeCanonicalProofHash(canonicalMsg) : null
           

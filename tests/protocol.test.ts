@@ -43,7 +43,7 @@ import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
 import { WalletLog, BuilderReputation } from '../app/lib/types'
 import { parseGithubUrl, verifyGithubSource } from '../app/lib/githubVerifier'
-import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS } from '../app/lib/serverKeypair'
+import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS, resolveTrustedKey } from '../app/lib/serverKeypair'
 import { evaluateEligibility, STANDARD_POLICY_PRESETS } from '../app/lib/policyEngine'
 
 import fs from 'fs'
@@ -2052,6 +2052,52 @@ async function runProductionTestSuite() {
       `Differential Equivalence: Server and CLI agree identically on ${scenario.name}`
     )
   }
+
+  // =========================================================================
+  // SUITE 18: Key Epoch & Temporal Validity Enforcement
+  // =========================================================================
+  console.log('\n► SUITE 18: Key Epoch & Temporal Validity Enforcement')
+
+  // Test 1: Active Key + Current Observation Timestamp resolves valid public key
+  const activeKeyBytes = resolveTrustedKey('provn-server-2026-08', '2026-08-21T00:00:00Z')
+  assert(activeKeyBytes !== null && activeKeyBytes.length === 32, 'Active genesis key resolves for current epoch')
+
+  // Test 2: Historical Key + Valid Historical Epoch Timestamp resolves valid public key
+  const historicalKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-07-15T00:00:00Z')
+  assert(historicalKeyBytes !== null && historicalKeyBytes.length === 32, 'Historical key resolves for valid epoch in July 2026')
+
+  // Test 3: Historical Key + Expired/Future Timestamp is Strictly Rejected
+  const expiredKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-09-15T00:00:00Z')
+  assert(expiredKeyBytes === null, 'Historical key rejected after expiry date (valid_until: 2026-08-31)')
+
+  // Test 4: Key used before valid_from is Strictly Rejected
+  const preActiveKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-05-15T00:00:00Z')
+  assert(preActiveKeyBytes === null, 'Historical key rejected before activation date (valid_from: 2026-06-01)')
+
+  // Test 5: Unknown / Revoked Key ID is Strictly Rejected
+  const unknownKeyBytes = resolveTrustedKey('provn-server-invalid-999', '2026-08-21T00:00:00Z')
+  assert(unknownKeyBytes === null, 'Unknown key ID strictly rejected')
+
+  // Test 6: Full Protocol Proof Verification Rejects Expired Historical Key Epoch
+  const expiredChalPayload = JSON.stringify({
+    id: crypto.randomUUID(),
+    wallet: testWallet,
+    iat: '2026-09-15T00:00:00.000Z',
+    exp: '2026-09-15T00:05:00.000Z',
+    iss: 'PROVN',
+    kid: 'provn-server-2026-06', // Expired on 2026-08-31
+  })
+  const expBytes = new TextEncoder().encode(expiredChalPayload)
+  const expSig = signServerReceipt(expBytes)
+  const expChallenge = `${bs58.encode(expBytes)}.${bs58.encode(expSig)}`
+
+  const proofWithExpiredKeyChal = evaluateProofValidity({
+    ...baseProof,
+    challenge: expChallenge,
+    created_at: '2026-09-15T00:01:00.000Z',
+  })
+  assert(proofWithExpiredKeyChal.challengeVerified === false, 'Protocol strictly rejects challenge signed with expired key epoch')
+  assert(proofWithExpiredKeyChal.protocolVerified === false, 'Protocol verification fails when key epoch has expired')
 
   // --- SUMMARY ---
 

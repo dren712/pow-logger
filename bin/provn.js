@@ -25,23 +25,16 @@ let trustManifest = null
 try {
   trustManifest = require(path.join(__dirname, '../protocol/trust-manifest.json'))
 } catch {
-  // Static fallback if installed as standalone script
-  trustManifest = {
-    protocol: 'PROVN',
-    version: 2,
-    keys: [
-      { kid: 'provn-server-2026-08', public_key: 'FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF', status: 'active' },
-      { kid: 'provn-server-2026-06', public_key: '3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG', status: 'historical' },
-    ],
-  }
+  // If run in packaged environment, fail fast if manifest is missing
+  throw new Error('CRITICAL PROTOCOL ERROR: protocol/trust-manifest.json could not be loaded.')
 }
+
+const ALLOWED_DOMAINS = trustManifest.allowed_domains || ['provn-sol.vercel.app', 'localhost']
 
 const PROVN_TRUSTED_KEYS = {}
 for (const k of trustManifest.keys) {
   PROVN_TRUSTED_KEYS[k.kid] = k.public_key
 }
-
-const ALLOWED_DOMAINS = ['provn-sol.vercel.app', 'localhost']
 
 // Decode helper supporting multiple bs58 export styles
 function decodeBase58(str) {
@@ -49,6 +42,46 @@ function decodeBase58(str) {
   if (typeof bs58.decode === 'function') return bs58.decode(str)
   if (bs58.default && typeof bs58.default.decode === 'function') return bs58.default.decode(str)
   throw new Error('Base58 decoding library not available')
+}
+
+/**
+ * Resolves trusted public key bytes with strict temporal validity and status enforcement.
+ */
+function resolveTrustedKey(kid, timestamp) {
+  if (!kid || typeof kid !== 'string') return null
+
+  const keyMeta = trustManifest.keys.find(k => k.kid === kid)
+  if (!keyMeta) return null
+
+  // Revoked keys cannot be used for verification
+  if (keyMeta.status === 'revoked') return null
+  if (keyMeta.algorithm !== 'Ed25519') return null
+
+  // Enforce temporal epoch validity window if timestamp is supplied
+  if (timestamp) {
+    const t = new Date(timestamp).getTime()
+    if (!isNaN(t)) {
+      if (keyMeta.valid_from) {
+        const from = new Date(keyMeta.valid_from).getTime()
+        if (!isNaN(from) && t < from) {
+          return null // Key was not yet active
+        }
+      }
+      if (keyMeta.valid_until) {
+        const until = new Date(keyMeta.valid_until).getTime()
+        if (!isNaN(until) && t > until) {
+          return null // Key was expired/retired
+        }
+      }
+    }
+  }
+
+  try {
+    const pub = decodeBase58(keyMeta.public_key)
+    return pub.length === 32 ? pub : null
+  } catch {
+    return null
+  }
 }
 
 // ─── Protocol Canonicalization Standard ─────────────────────────────────────
@@ -224,14 +257,16 @@ function verifyProofPacket(packet) {
         const chalObj = JSON.parse(new TextDecoder().decode(chalPayloadBytes))
 
         const kid = typeof chalObj.kid === 'string' && chalObj.kid.trim() !== '' ? chalObj.kid : null
+        const chalTimestamp = chalObj.iat || chalObj.exp
+        const serverPubkey = resolveTrustedKey(kid, chalTimestamp)
+
         if (!kid) {
           results.layers.layer2_challenge.message = 'Challenge missing required Key ID (kid)'
           results.errors.push('Challenge token does not specify Key ID')
-        } else if (!PROVN_TRUSTED_KEYS[kid]) {
-          results.layers.layer2_challenge.message = `Unknown/untrusted challenge Key ID: ${kid}`
-          results.errors.push(`Challenge Key ID ${kid} not found in public trust registry`)
+        } else if (!serverPubkey) {
+          results.layers.layer2_challenge.message = `Unknown, expired, or untrusted challenge Key ID: ${kid}`
+          results.errors.push(`Challenge Key ID ${kid} not valid in public trust registry for epoch ${chalTimestamp}`)
         } else {
-          const serverPubkey = decodeBase58(PROVN_TRUSTED_KEYS[kid])
           const isChalValid = nacl.sign.detached.verify(chalPayloadBytes, chalSigBytes, serverPubkey)
 
           if (isChalValid && chalObj.iss === 'PROVN' && chalObj.wallet === claim.wallet) {
@@ -283,14 +318,16 @@ function verifyProofPacket(packet) {
         const subObj = JSON.parse(new TextDecoder().decode(subPayloadBytes))
 
         const kid = typeof subObj.kid === 'string' && subObj.kid.trim() !== '' ? subObj.kid : null
+        const subTimestamp = subObj.observed_at
+        const serverPubkey = resolveTrustedKey(kid, subTimestamp)
+
         if (!kid) {
           results.layers.layer2_5_receipt.message = 'Submission receipt missing required Key ID (kid)'
           results.errors.push('Submission receipt does not specify Key ID')
-        } else if (!PROVN_TRUSTED_KEYS[kid]) {
-          results.layers.layer2_5_receipt.message = `Unknown/untrusted submission receipt Key ID: ${kid}`
-          results.errors.push(`Receipt Key ID ${kid} not found in public trust registry`)
+        } else if (!serverPubkey) {
+          results.layers.layer2_5_receipt.message = `Unknown, expired, or untrusted submission receipt Key ID: ${kid}`
+          results.errors.push(`Receipt Key ID ${kid} not valid in public trust registry for epoch ${subTimestamp}`)
         } else {
-          const serverPubkey = decodeBase58(PROVN_TRUSTED_KEYS[kid])
           const isSubValid = nacl.sign.detached.verify(subPayloadBytes, subSigBytes, serverPubkey)
 
           const hashMatches = subObj.signed_payload_hash === results.canonicalHash
@@ -428,6 +465,7 @@ async function main() {
       Public_Key: k.public_key,
       Status: k.status.toUpperCase(),
       Valid_From: k.valid_from,
+      Valid_Until: k.valid_until || 'NO_EXPIRY',
     })))
     process.exit(0)
   }
@@ -499,5 +537,6 @@ module.exports = {
   verifyProofPacket,
   reconstructCanonicalSubmitMessage,
   validateAndNormalizeUrl,
+  resolveTrustedKey,
   PROVN_TRUSTED_KEYS,
 }

@@ -13,12 +13,12 @@ When a log is evaluated by PROVN or an independent third-party auditor, the prot
 
 ## 2. Published Trust Anchors (Public Key Registry)
 
-Independent verifiers and auditors can verify PROVN signatures offline using the published public key registry:
+Independent verifiers and auditors can verify PROVN signatures offline using the published versioned trust manifest (`protocol/trust-manifest.json`):
 
-| Key ID (`kid`) | Algorithm | Published Public Key (Base58) | Epoch Status |
-|---|---|---|---|
-| `provn-server-2026-08` | Ed25519 | `FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF` | Active Genesis |
-| `provn-server-2026-06` | Ed25519 | `3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG` | Historical |
+| Key ID (`kid`) | Algorithm | Published Public Key (Base58) | Epoch Status | Valid From | Valid Until |
+|---|---|---|---|---|---|
+| `provn-server-2026-08` | Ed25519 | `FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF` | Active Genesis | 2026-08-01T00:00:00Z | None (Active) |
+| `provn-server-2026-06` | Ed25519 | `3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG` | Historical | 2026-06-01T00:00:00Z | 2026-08-31T23:59:59Z |
 
 ## 3. Formal Verification Algorithm Specification (Protocol V2)
 
@@ -28,7 +28,7 @@ Any independent node, auditor, or smart contract can evaluate a PROVN proof offl
 1. RECONSTRUCT CANONICAL MESSAGE & VALIDATE DOMAIN
    canonicalMsg = reconstructCanonicalSubmitMessage(log)
    assert(canonicalMsg != null)
-   assert(ALLOWED_DOMAINS.includes(log.domain))
+   assert(PROVN_ALLOWED_DOMAINS.includes(log.domain))
 
 2. VERIFY WALLET SIGNATURE (Layer 1)
    assert(Ed25519.verify(signature: log.signature, message: canonicalMsg, publicKey: log.wallet_address) == true)
@@ -39,7 +39,9 @@ Any independent node, auditor, or smart contract can evaluate a PROVN proof offl
    assert(challengeObj.iss == "PROVN")
    assert(challengeObj.wallet == log.wallet_address)
    assert(challengeObj.iat <= log.created_at <= challengeObj.exp)
-   assert(Ed25519.verify(signature: challengeSig, message: challengePayload, publicKey: PROVN_TRUSTED_PUBLIC_KEYS[challengeObj.kid]) == true)
+   chalKey = resolveTrustedKey(challengeObj.kid, challengeObj.iat)
+   assert(chalKey != null)
+   assert(Ed25519.verify(signature: challengeSig, message: challengePayload, publicKey: chalKey) == true)
 
 4. VERIFY SERVER SUBMISSION RECEIPT (Layer 2.5)
    [subPayload, subSig] = log.submission_receipt.split('.')

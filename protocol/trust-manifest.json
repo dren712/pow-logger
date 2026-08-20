@@ -4,6 +4,10 @@
   "issuer": "PROVN Protocol Trust Registry",
   "manifest_uri": "https://provn-sol.vercel.app/.well-known/provn-keys.json",
   "updated_at": "2026-08-21T00:00:00Z",
+  "allowed_domains": [
+    "provn-sol.vercel.app",
+    "localhost"
+  ],
   "keys": [
     {
       "kid": "provn-server-2026-08",
