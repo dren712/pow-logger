@@ -20,7 +20,30 @@ const crypto = require('crypto')
 const nacl = require('tweetnacl')
 const bs58 = require('bs58')
 
-// Decode helper that supports multiple bs58 export styles
+// ─── Published Static Trust Anchors (Single Source of Truth) ─────────────────
+let trustManifest = null
+try {
+  trustManifest = require(path.join(__dirname, '../protocol/trust-manifest.json'))
+} catch {
+  // Static fallback if installed as standalone script
+  trustManifest = {
+    protocol: 'PROVN',
+    version: 2,
+    keys: [
+      { kid: 'provn-server-2026-08', public_key: 'FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF', status: 'active' },
+      { kid: 'provn-server-2026-06', public_key: '3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG', status: 'historical' },
+    ],
+  }
+}
+
+const PROVN_TRUSTED_KEYS = {}
+for (const k of trustManifest.keys) {
+  PROVN_TRUSTED_KEYS[k.kid] = k.public_key
+}
+
+const ALLOWED_DOMAINS = ['provn-sol.vercel.app', 'localhost']
+
+// Decode helper supporting multiple bs58 export styles
 function decodeBase58(str) {
   if (!str || typeof str !== 'string') return new Uint8Array(0)
   if (typeof bs58.decode === 'function') return bs58.decode(str)
@@ -28,30 +51,23 @@ function decodeBase58(str) {
   throw new Error('Base58 decoding library not available')
 }
 
-function encodeBase58(bytes) {
-  if (typeof bs58.encode === 'function') return bs58.encode(bytes)
-  if (bs58.default && typeof bs58.default.encode === 'function') return bs58.default.encode(bytes)
-  throw new Error('Base58 encoding library not available')
-}
+// ─── Protocol Canonicalization Standard ─────────────────────────────────────
+function validateAndNormalizeUrl(urlInput, type) {
+  if (!urlInput || typeof urlInput !== 'string') return null
+  const trimmed = urlInput.trim()
+  if (!trimmed || trimmed.length > 300) return null
 
-// ─── Published Static Trust Anchors (No Secret Required) ─────────────────────
-const PROVN_TRUSTED_KEYS = {
-  'provn-server-2026-08': 'FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF',
-  'provn-server-2026-06': '3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG',
-}
-
-const ALLOWED_DOMAINS = ['provn-sol.vercel.app', 'localhost']
-
-function validateAndNormalizeUrl(url, type) {
-  if (!url || typeof url !== 'string' || url.trim() === '') return undefined
-  const clean = url.trim()
   try {
-    const parsed = new URL(clean)
+    const parsed = new URL(trimmed)
     if (parsed.protocol !== 'https:') return null
-    if (type === 'github' && !['github.com', 'www.github.com'].includes(parsed.hostname.toLowerCase())) {
-      return null
+
+    if (type === 'github') {
+      const hostname = parsed.hostname.toLowerCase()
+      if (hostname !== 'github.com' && !hostname.endsWith('.github.com')) {
+        return null
+      }
     }
-    return clean
+    return parsed.toString()
   } catch {
     return null
   }
@@ -113,11 +129,11 @@ function computeSha256(str) {
   return crypto.createHash('sha256').update(new TextEncoder().encode(str)).digest('hex')
 }
 
-// ─── Main Verification Engine ───────────────────────────────────────────────
+// ─── 4-Layer Offline Protocol Verifier ───────────────────────────────────────
 function verifyProofPacket(packet) {
   const results = {
     valid: false,
-    proofId: packet.proof_id || 'N/A',
+    proofId: packet.proof_id || packet.id || 'N/A',
     wallet: null,
     canonicalHash: null,
     layers: {
@@ -130,7 +146,7 @@ function verifyProofPacket(packet) {
     errors: [],
   }
 
-  // Extract fields from flexible envelope formats (export packet or database row)
+  // Support flexible envelope shapes (export packet or database row)
   const isWrapped = Boolean(packet.claim && packet.signature)
   const claim = isWrapped
     ? {
@@ -156,10 +172,14 @@ function verifyProofPacket(packet) {
 
   const sigValue = isWrapped ? (packet.signature?.value || packet.signature) : packet.signature
   const submissionReceipt = isWrapped ? packet.server_attestations?.submission_receipt : packet.submission_receipt
-  const protocolVersion = packet.version || packet.protocol_version || 2
+  const protocolVersion = packet.version || packet.protocol_version || (claim.nonce && !claim.challenge ? 1 : 2)
   results.wallet = claim.wallet
 
-  // 1. Reconstruct Canonical Message
+  // 1. Domain Policy Check (Strict protocol domain verification)
+  const domain = claim.domain || (protocolVersion === 1 ? 'provn-sol.vercel.app' : null)
+  const isDomainValid = Boolean(domain && ALLOWED_DOMAINS.includes(domain.trim().toLowerCase().split(':')[0]))
+
+  // 2. Reconstruct Canonical Message
   const canonicalMsg = reconstructCanonicalSubmitMessage(claim, protocolVersion)
   if (!canonicalMsg) {
     results.layers.layer1_signature.message = 'Failed to reconstruct canonical message (missing required fields)'
@@ -169,7 +189,7 @@ function verifyProofPacket(packet) {
 
   results.canonicalHash = computeSha256(canonicalMsg)
 
-  // 2. Layer 1: Verify Wallet Signature
+  // 3. Layer 1: Verify Wallet Signature
   try {
     const pubkeyBytes = decodeBase58(claim.wallet)
     const sigBytes = decodeBase58(sigValue)
@@ -187,18 +207,24 @@ function verifyProofPacket(packet) {
     results.errors.push('Invalid Base58 encoding on wallet or signature')
   }
 
-  // 3. Layer 2: Verify Server Challenge Token
+  // 4. Layer 2: Verify Server Challenge Token & Temporal Bounds
   const challengeStr = claim.challenge || claim.nonce
+  let challengeValid = false
+  let timestampValid = false
+
   if (protocolVersion === 2) {
-    if (challengeStr && challengeStr.includes('.')) {
+    if (!isDomainValid) {
+      results.layers.layer2_challenge.message = 'Untrusted or missing domain for Protocol V2 proof'
+      results.errors.push('Protocol V2 requires trusted domain in canonical message')
+    } else if (challengeStr && typeof challengeStr === 'string' && challengeStr.includes('.')) {
       try {
         const [chalPayloadB58, chalSigB58] = challengeStr.split('.')
         const chalPayloadBytes = decodeBase58(chalPayloadB58)
         const chalSigBytes = decodeBase58(chalSigB58)
         const chalObj = JSON.parse(new TextDecoder().decode(chalPayloadBytes))
 
-        const kid = chalObj.kid
-        if (!kid || typeof kid !== 'string') {
+        const kid = typeof chalObj.kid === 'string' && chalObj.kid.trim() !== '' ? chalObj.kid : null
+        if (!kid) {
           results.layers.layer2_challenge.message = 'Challenge missing required Key ID (kid)'
           results.errors.push('Challenge token does not specify Key ID')
         } else if (!PROVN_TRUSTED_KEYS[kid]) {
@@ -209,11 +235,13 @@ function verifyProofPacket(packet) {
           const isChalValid = nacl.sign.detached.verify(chalPayloadBytes, chalSigBytes, serverPubkey)
 
           if (isChalValid && chalObj.iss === 'PROVN' && chalObj.wallet === claim.wallet) {
+            challengeValid = true
             const iat = chalObj.iat ? new Date(chalObj.iat).getTime() : (new Date(chalObj.exp).getTime() - 5 * 60 * 1000)
             const exp = new Date(chalObj.exp).getTime()
             const claimTime = new Date(claim.timestamp).getTime()
 
             if (!isNaN(claimTime) && claimTime >= iat && claimTime <= exp) {
+              timestampValid = true
               results.layers.layer2_challenge.passed = true
               results.layers.layer2_challenge.message = `Authentic server challenge issued by PROVN (${kid}) within temporal bounds`
             } else {
@@ -231,25 +259,31 @@ function verifyProofPacket(packet) {
       }
     } else {
       results.layers.layer2_challenge.message = 'Missing server challenge token for Protocol V2 proof'
-      results.errors.push('Protocol V2 requires server challenge token')
+      results.errors.push('Protocol V2 requires signed server challenge token')
     }
   } else {
     // V1 legacy
-    results.layers.layer2_challenge.passed = Boolean(claim.nonce && claim.nonce.length >= 8)
+    challengeValid = typeof claim.nonce === 'string' && claim.nonce.trim().length >= 8
+    try {
+      const d = new Date(claim.timestamp)
+      timestampValid = !isNaN(d.getTime())
+    } catch { }
+    results.layers.layer2_challenge.passed = isDomainValid && challengeValid && timestampValid
     results.layers.layer2_challenge.message = 'Legacy V1 Nonce (pre-challenge era)'
   }
 
-  // 4. Layer 2.5: Verify Submission Receipt & Exact Canonical Hash
+  // 5. Layer 2.5: Verify Submission Receipt & Exact Canonical Hash
+  let submissionReceiptValid = false
   if (protocolVersion === 2) {
-    if (submissionReceipt && submissionReceipt.includes('.')) {
+    if (submissionReceipt && typeof submissionReceipt === 'string' && submissionReceipt.includes('.')) {
       try {
         const [subPayloadB58, subSigB58] = submissionReceipt.split('.')
         const subPayloadBytes = decodeBase58(subPayloadB58)
         const subSigBytes = decodeBase58(subSigB58)
         const subObj = JSON.parse(new TextDecoder().decode(subPayloadBytes))
 
-        const kid = subObj.kid
-        if (!kid || typeof kid !== 'string') {
+        const kid = typeof subObj.kid === 'string' && subObj.kid.trim() !== '' ? subObj.kid : null
+        if (!kid) {
           results.layers.layer2_5_receipt.message = 'Submission receipt missing required Key ID (kid)'
           results.errors.push('Submission receipt does not specify Key ID')
         } else if (!PROVN_TRUSTED_KEYS[kid]) {
@@ -262,9 +296,12 @@ function verifyProofPacket(packet) {
           const hashMatches = subObj.signed_payload_hash === results.canonicalHash
           const walletMatches = subObj.wallet === claim.wallet
           const challengeMatches = subObj.challenge_id === challengeStr
-          const idMatches = !packet.proof_id && !packet.id || String(subObj.proof_id) === String(packet.proof_id || packet.id)
+          const idMatches = (!packet.proof_id && !packet.id) || String(subObj.proof_id) === String(packet.proof_id || packet.id)
+          const typeAndIssMatches = subObj.type === 'PROVN_SUBMISSION_RECEIPT' && subObj.iss === 'PROVN'
+          const versionMatches = subObj.version === 1 && (!subObj.protocol_version || subObj.protocol_version === protocolVersion)
 
-          if (isSubValid && hashMatches && walletMatches && challengeMatches && idMatches && subObj.iss === 'PROVN') {
+          if (isSubValid && hashMatches && walletMatches && challengeMatches && idMatches && typeAndIssMatches && versionMatches) {
+            submissionReceiptValid = true
             results.layers.layer2_5_receipt.passed = true
             results.layers.layer2_5_receipt.message = `Cryptographically seals SHA-256 canonical hash (${subObj.signed_payload_hash.slice(0, 12)}...) observed at ${subObj.observed_at}`
           } else {
@@ -281,11 +318,12 @@ function verifyProofPacket(packet) {
       results.errors.push('Protocol V2 requires signed PROVN_SUBMISSION_RECEIPT')
     }
   } else {
+    submissionReceiptValid = true
     results.layers.layer2_5_receipt.passed = true
     results.layers.layer2_5_receipt.message = 'V1 Legacy (pre-submission receipt)'
   }
 
-  // 5. Layer 3 & 4: Status Attribution
+  // 6. Layers 3 & 4: Status Attribution
   const provLevel = (packet.provenance?.level || packet.provenance_level || 'self_attested').toLowerCase()
   if (provLevel === 'source_verified') {
     results.layers.layer3_source.status = 'CLAIMED_API_VERIFIED'
@@ -302,7 +340,7 @@ function verifyProofPacket(packet) {
   results.layers.layer4_archive.status = archState.toUpperCase()
   results.layers.layer4_archive.message = packet.provenance?.irys_tx_id || packet.irys_tx_id || 'Storage metadata'
 
-  // Final Overall Decision
+  // Final Protocol Validity Decision (Matches server evaluateProofValidity strictly)
   results.valid = results.layers.layer1_signature.passed &&
                   results.layers.layer2_challenge.passed &&
                   results.layers.layer2_5_receipt.passed
@@ -311,7 +349,7 @@ function verifyProofPacket(packet) {
 }
 
 // ─── CLI Terminal Output Formatter ──────────────────────────────────────────
-function formatTerminalReport(report) {
+function formatTerminalReport(report, isRemote = false) {
   const c = {
     reset: '\x1b[0m',
     bold: '\x1b[1m',
@@ -329,7 +367,7 @@ function formatTerminalReport(report) {
   console.log(`\n${c.bold}Proof Record:${c.reset}        #${report.proofId}`)
   console.log(`${c.bold}Signer Wallet:${c.reset}       ${report.wallet || 'N/A'}`)
   console.log(`${c.bold}Canonical Proof Hash:${c.reset} ${report.canonicalHash || 'N/A'}`)
-  console.log(`${c.bold}Verification Mode:${c.reset}   100% Offline (Published Key Registry Trust Anchor)\n`)
+  console.log(`${c.bold}Verification Mode:${c.reset}   ${isRemote ? 'Remote Fetch + Local Offline Cryptographic Verification' : '100% Offline (Local File & Published Trust Registry)'}\n`)
 
   console.log(c.bold + '─── 4-LAYER PROTOCOL VERIFICATION ──────────────────────────────────────' + c.reset)
 
@@ -364,8 +402,8 @@ function formatTerminalReport(report) {
   console.log('\n' + c.bold + '────────────────────────────────────────────────────────────────────────' + c.reset)
 
   if (report.valid) {
-    console.log(`\n${c.bold}${c.green}✅ VERDICT: PROOF IS 100% CRYPTOGRAPHICALLY AUTHENTIC & VALID${c.reset}`)
-    console.log(`${c.dim}The proof envelope seals the exact author, payload hash, and temporal bounds.${c.reset}\n`)
+    console.log(`\n${c.bold}${c.green}✅ VERDICT: PROVN PROOF CRYPTOGRAPHICALLY VERIFIED${c.reset}`)
+    console.log(`${c.dim}This verifies the wallet signature, challenge token, submission receipt, and canonical payload hash. It does not establish the truthfulness of the underlying claim.${c.reset}\n`)
   } else {
     console.log(`\n${c.bold}${c.red}❌ VERDICT: PROOF FAILED CRYPTOGRAPHIC VERIFICATION${c.reset}`)
     if (report.errors.length > 0) {
@@ -383,12 +421,13 @@ async function main() {
   const target = args[1]
 
   if (command === 'keys' || command === 'manifest') {
-    console.log('\nPROVN Protocol Published Trust Anchors (Public Key Registry):')
-    console.table(Object.entries(PROVN_TRUSTED_KEYS).map(([kid, key]) => ({
-      Key_ID: kid,
-      Algorithm: 'Ed25519',
-      Public_Key: key,
-      Epoch_Status: kid.includes('2026-08') ? 'ACTIVE_GENESIS' : 'HISTORICAL',
+    console.log('\nPROVN Protocol Published Trust Anchors (Single Source of Truth):')
+    console.table(trustManifest.keys.map((k) => ({
+      Key_ID: k.kid,
+      Algorithm: k.algorithm,
+      Public_Key: k.public_key,
+      Status: k.status.toUpperCase(),
+      Valid_From: k.valid_from,
     })))
     process.exit(0)
   }
@@ -401,6 +440,7 @@ async function main() {
     }
 
     let packetData = null
+    let isRemote = false
 
     // Check if target is a local file
     if (fs.existsSync(target)) {
@@ -412,7 +452,8 @@ async function main() {
         process.exit(1)
       }
     } else if (!isNaN(parseInt(target, 10))) {
-      // Target is a proof ID, fetch from public export API
+      // Target is a numeric proof ID, fetch from public export API
+      isRemote = true
       const proofId = parseInt(target, 10)
       console.log(`Fetching portable proof #${proofId} from https://provn-sol.vercel.app/api/proof/${proofId}/export...`)
       try {
@@ -431,7 +472,7 @@ async function main() {
     }
 
     const report = verifyProofPacket(packetData)
-    formatTerminalReport(report)
+    formatTerminalReport(report, isRemote)
     process.exit(report.valid ? 0 : 1)
   }
 
@@ -440,7 +481,7 @@ async function main() {
 PROVN Standalone CLI Verifier 🛡️🗿
 
 Usage:
-  provn verify <proof.json>     Verify a local portable proof envelope offline
+  provn verify <proof.json>     Verify a local portable proof envelope offline (100% air-gapped)
   provn verify <proofId>        Fetch and independently verify proof record by ID
   provn keys                    Display published trust anchors and public key registry
   provn help                    Show this help menu
@@ -457,5 +498,6 @@ if (require.main === module) {
 module.exports = {
   verifyProofPacket,
   reconstructCanonicalSubmitMessage,
+  validateAndNormalizeUrl,
   PROVN_TRUSTED_KEYS,
 }

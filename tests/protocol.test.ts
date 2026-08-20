@@ -1766,6 +1766,293 @@ async function runProductionTestSuite() {
   assert(forgedReceiptReport.valid === false, 'CLI engine: Forged submission receipt strictly fails verification')
   assert(forgedReceiptReport.layers.layer2_5_receipt.passed === false, 'CLI engine: Layer 2.5 fails on forged receipt')
 
+  // =========================================================================
+  // SUITE 17: Server ↔ Standalone CLI Differential Conformance Matrix
+  // =========================================================================
+  console.log('\n► SUITE 17: Server ↔ Standalone CLI Differential Conformance Matrix')
+
+  const conformanceScenarios: Array<{
+    name: string
+    proof: Parameters<typeof evaluateProofValidity>[0]
+    expectedValid: boolean
+  }> = [
+    {
+      name: 'Scenario 1: Authentic Protocol V2 Proof',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: true,
+    },
+    {
+      name: 'Scenario 2: Tampered Content',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Tampered content string',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 3: Tampered Wallet',
+      proof: {
+        id: 101,
+        wallet_address: bs58.encode(nacl.sign.keyPair().publicKey),
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 4: Tampered Timestamp',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: '2026-01-01T00:00:00.000Z',
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 5: Tampered Challenge',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: 'forged.challenge.token',
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 6: Untrusted Domain in V2',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'malicious-phishing-domain.com',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 7: Missing Domain in V2',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: undefined,
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 8: Tampered GitHub URL',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/attacker/exploit/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 9: Injected Evidence URL',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        evidence_url: 'https://irys.xyz/injected_tx',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 10: Mismatched Proof ID in Receipt',
+      proof: {
+        id: 9999, // Mismatched
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 11: Missing Submission Receipt in V2',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: undefined,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 12: Forged Wallet Signature',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: bs58.encode(nacl.sign.detached(new TextEncoder().encode('fake message'), testKeypair.secretKey)),
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 13: Forged Server Submission Receipt',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: forgedSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 14: Unknown Challenge KID',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: unknownKidChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 15: Missing Challenge KID in V2',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: missingKidChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: validSubmissionReceipt,
+      },
+      expectedValid: false,
+    },
+    {
+      name: 'Scenario 16: Missing Receipt KID in V2',
+      proof: {
+        id: 101,
+        wallet_address: testWallet,
+        signature: legitSig,
+        content: 'Legitimate protocol proof submission with valid challenge',
+        created_at: validIso,
+        challenge: serverChallenge,
+        domain: 'provn-sol.vercel.app',
+        github_url: 'https://github.com/dren712/pow-logger/pull/1',
+        protocol_version: 2,
+        submission_receipt: missingKidSubReceipt,
+      },
+      expectedValid: false,
+    },
+  ]
+
+  for (const scenario of conformanceScenarios) {
+    const serverResult = evaluateProofValidity(scenario.proof)
+    const cliResult = verifyProofPacket(scenario.proof)
+
+    assert(
+      serverResult.protocolVerified === scenario.expectedValid,
+      `Server Engine Conformance: ${scenario.name} matches expected (${scenario.expectedValid})`
+    )
+    assert(
+      cliResult.valid === scenario.expectedValid,
+      `CLI Engine Conformance: ${scenario.name} matches expected (${scenario.expectedValid})`
+    )
+    assert(
+      serverResult.protocolVerified === cliResult.valid,
+      `Differential Equivalence: Server and CLI agree identically on ${scenario.name}`
+    )
+  }
+
   // --- SUMMARY ---
 
   console.log('\n===================================================================')

@@ -1,5 +1,6 @@
 import nacl, { SignKeyPair } from 'tweetnacl';
 import bs58 from 'bs58';
+import trustManifest from '../../protocol/trust-manifest.json';
 
 let serverKeypair: SignKeyPair | null = null;
 let isProductionWithoutSecret = false;
@@ -12,12 +13,11 @@ export const PROVN_KID = 'provn-server-2026-08';
  * all historical PROVN receipts and challenges offline using these immutable public keys
  * without requiring access to the server's private signing secrets.
  */
-export const PROVN_TRUSTED_PUBLIC_KEYS: Readonly<Record<string, string>> = Object.freeze({
-  // Epoch 2026-08 (Genesis / Current Protocol Key)
-  'provn-server-2026-08': 'FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF',
-  // Historical Test Epoch for key rotation validation
-  'provn-server-2026-06': '3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG',
-});
+const keyMap: Record<string, string> = {};
+for (const k of trustManifest.keys) {
+  keyMap[k.kid] = k.public_key;
+}
+export const PROVN_TRUSTED_PUBLIC_KEYS: Readonly<Record<string, string>> = Object.freeze(keyMap);
 
 if (process.env.PROVN_SERVER_SECRET) {
   const secretKey = bs58.decode(process.env.PROVN_SERVER_SECRET);
