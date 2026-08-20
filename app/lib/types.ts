@@ -6,6 +6,36 @@ export type ArchivalState = 'not_requested' | 'pending' | 'receipt_obtained' | '
 
 export type LogVerificationState = 'VERIFIED' | 'LEGACY' | 'UNVERIFIED'
 
+export type ProofSignatureStatus = 'VERIFIED' | 'FAILED' | 'UNVERIFIED'
+export type ProofProtocolStatus = 'VERIFIED' | 'UNVERIFIED' | 'FAILED'
+export type ProofSourceStatus = 'VERIFIED' | 'ATTRIBUTED' | 'EXISTS' | 'LINKED' | 'SELF_ATTESTED' | 'FAILED'
+export type ProofArchiveStatus = 'VERIFIED' | 'RECEIPT_OBTAINED' | 'PENDING' | 'NOT_REQUESTED' | 'FAILED'
+
+export interface ProofStatusLayers {
+  signature: ProofSignatureStatus
+  protocol: ProofProtocolStatus
+  source: ProofSourceStatus
+  archive: ProofArchiveStatus
+}
+
+export interface ProofValidityReport {
+  signatureVerified: boolean
+  protocolVerified: boolean
+  sourceVerified: boolean
+  archiveVerified: boolean
+  proofStatus: ProofStatusLayers
+  details: {
+    protocolVersion: number
+    signatureAlgorithm: 'Ed25519'
+    domainVerified: boolean
+    timestampBound: boolean
+    challengeValid: boolean
+    provenanceLevel: string
+    archivalState: string
+    irysReceipt: string | null
+  }
+}
+
 export type EvidenceType = 'self_attested' | 'github_pr' | 'github_commit' | 'github_release' | 'public_url'
 export type ProvenanceLevel = 'self_attested' | 'source_linked' | 'source_exists' | 'identity_linked' | 'author_attributed' | 'source_verified' | 'partner_attested'
 export type SourceVerificationStatus = 'not_verified' | 'verified_source_exists' | 'verified' | 'failed' | 'unavailable'
@@ -108,6 +138,12 @@ export interface ProofDetail {
   archivalState: ArchivalState
   isCryptographicallyVerified: boolean
   verificationState: LogVerificationState
+  signatureVerified?: boolean
+  protocolVerified?: boolean
+  sourceVerified?: boolean
+  archiveVerified?: boolean
+  proofStatus?: ProofStatusLayers
+  validityReport?: ProofValidityReport
   verificationDetails?: {
     canonicalMessageReconstructed: boolean
     signatureValid: boolean

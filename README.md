@@ -1,12 +1,12 @@
 # PROVN — Solana-Native Cryptographic Builder Evidence Protocol 🗿🛡️
 
-PROVN is a portable, cryptographically verifiable builder evidence protocol for Solana developers. It turns wallet-signed work logs into timestamp-bound, tamper-evident attestations permanently archived on Arweave, with programmatic policy evaluation for DAOs, bounties, and grants ($0/month free-tier architecture).
+PROVN is a portable, cryptographically verifiable provenance protocol for human and autonomous software actions. It turns wallet-authenticated attestations into timestamp-bounded, tamper-evident evidence envelopes with graduated source provenance and permanent Arweave archival ($0/month free-tier architecture).
 
 [![CI Test Suite](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-150%2B%20Passing-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-170%2B%20Passing-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
@@ -24,29 +24,30 @@ PROVN is a portable, cryptographically verifiable builder evidence protocol for 
 > **What PROVN Proves vs. What it Doesn't**
 > PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + challenge + optional links) at a specific time, and that statement is durably archived on Arweave. It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
 > 
-> **Note on GitHub Identity**: PROVN *does* enforce strict cryptographic binding between a `github_id` and a `wallet_address` via SIWS (Sign-In-With-Solana) OAuth, granting logs a `source_verified` provenance level when the author matches the repository owner.
+> **Note on Author Identity Verification**: PROVN enforces strict cryptographic binding between a `github_id` and a `wallet_address` via SIWS (Sign-In-With-Solana) OAuth, granting logs a `source_verified` provenance level when the author matches the repository commit author.
 
 In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and social posts. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
 
 PROVN gives developers a single, permanent cryptographic record of their daily self-attested contributions:
 1. **Sign**: The builder signs a canonical message containing their work summary, evidence links, timestamp, and server-issued challenge with their Solana wallet.
-2. **Verify**: The server cryptographically validates the Ed25519 signature, checks the 15-minute anti-replay window, and indexes the attestation.
+2. **Verify**: The server cryptographically validates the Ed25519 signature, checks the 15-minute anti-replay observation window, and indexes the attestation.
 3. **Archive**: The signed envelope is permanently stored on Arweave via the Irys L1 gateway.
-4. **Inspect**: Anyone can verify any proof record with cryptographic independence using the public verification API or on-page verifier inspector.
+4. **Inspect**: Anyone can verify any proof record across 4 independent verification layers using the public verification API or on-page verifier inspector.
 
 ---
 
 ## 2. What Does PROVN Cryptographically Prove?
 
-| Claim | Cryptographic Guarantee |
-|---|---|
-| **Author Authenticity** | ✅ **Guaranteed** — The Ed25519 signature proves that the holder of the Solana private key authored the message. |
-| **Content Integrity** | ✅ **Guaranteed** — Any change to the text, GitHub link, or evidence URL invalidates the signature payload. |
-| **Timestamp Boundedness** | ✅ **Guaranteed** — Submissions are strictly verified against server clock within a ±15 minute window (`900,000ms`). |
-| **Replay Defense** | ✅ **Guaranteed** — Database-level `UNIQUE INDEX` on signatures prevents re-submitting previously signed messages. |
-| **Data Permanence** | ✅ **Guaranteed when archived** — Immutable Arweave storage via Irys receipts. |
-| **GitHub Identity & Contribution Attribution** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth. Logs receive a `source_verified` provenance level. |
-| **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
+PROVN evaluates proof validity across four independent, non-fungible layers:
+
+| Layer | Claim | Cryptographic Guarantee |
+|---|---|---|
+| **Signature** | **Author Authenticity** | ✅ **Guaranteed** — The Ed25519 signature proves that the holder of the Solana private key authored the canonical payload. |
+| **Protocol** | **Server-Bounded Timestamp & Challenge** | ✅ **Guaranteed** — Signed timestamp is bounded within ±15 min observation window (`900,000ms`) of server clock, with single-use transactional challenge consumption. |
+| **Protocol** | **Replay Defense** | ✅ **Guaranteed** — Database-level `UNIQUE INDEX` on signatures prevents re-submitting previously signed messages. |
+| **Source** | **Author Identity Verification** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth, verifying commit author identity matches wallet owner. |
+| **Archive** | **Permanent Data Availability** | ✅ **Guaranteed when archived** — Immutable Arweave storage via confirmed Irys receipts. |
+| **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 
 ---
 

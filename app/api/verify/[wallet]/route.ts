@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifyLogCryptographically, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { verifyLogCryptographically, evaluateProofValidity, decodeBase58 } from '@/app/lib/canonicalMessage'
 import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs, PROTOCOL_TIMEZONE } from '@/app/lib/milestones'
 
 const supabase = createClient(
@@ -49,11 +49,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     const allProcessedLogs = logs.map((l) => {
       let isCryptoVerified = false
       let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
+      const validity = evaluateProofValidity(l)
 
       if (!l.nonce && (l as { protocol_version?: number }).protocol_version !== 2) {
         status = 'legacy_unindexed'
       } else {
-        isCryptoVerified = verifyLogCryptographically(l)
+        isCryptoVerified = validity.signatureVerified
         status = isCryptoVerified ? 'verified' : 'unverified'
       }
 
@@ -68,6 +69,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         github_url: l.github_url || null,
         irys_url: l.irys_tx_id && !l.irys_tx_id.startsWith('powl_') ? `https://gateway.irys.xyz/${l.irys_tx_id}` : null,
         cryptographically_verified: isCryptoVerified,
+        signature_verified: validity.signatureVerified,
+        protocol_verified: validity.protocolVerified,
+        source_verified: validity.sourceVerified,
+        archive_verified: validity.archiveVerified,
+        proof_status: validity.proofStatus,
         verification_status: status,
       }
     })

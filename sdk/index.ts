@@ -5,7 +5,7 @@
  * for PROVN Proof-of-Work Protocol on Solana.
  */
 
-import { verifyLogCryptographically } from '../app/lib/canonicalMessage'
+import { verifyLogCryptographically, evaluateProofValidity } from '../app/lib/canonicalMessage'
 import { evaluateEligibility } from '../app/lib/policyEngine'
 import {
   BuilderReputation,
@@ -14,6 +14,7 @@ import {
   ProofPacket,
   EvidencePolicy,
   EligibilityEvaluation,
+  ProofValidityReport,
 } from '../app/lib/types'
 
 export interface ProvnClientOptions {
@@ -144,6 +145,41 @@ export class ProvnClient {
       content: proof.content,
       github_url: proof.githubUrl,
       evidence_url: proof.evidenceUrl,
+    })
+  }
+
+  /**
+   * Evaluates the complete 4-layer proof verification breakdown locally.
+   */
+  static evaluateProofValidityLocally(proof: {
+    walletAddress: string
+    signature?: string | null
+    nonce?: string | null
+    challenge?: string | null
+    timestamp: string
+    content: string
+    domain?: string | null
+    githubUrl?: string | null
+    evidenceUrl?: string | null
+    protocolVersion?: number
+    provenanceLevel?: string | null
+    archivalState?: string | null
+    irysTxId?: string | null
+  }): ProofValidityReport {
+    return evaluateProofValidity({
+      wallet_address: proof.walletAddress,
+      signature: proof.signature,
+      nonce: proof.nonce,
+      challenge: proof.challenge,
+      domain: proof.domain,
+      created_at: proof.timestamp,
+      content: proof.content,
+      github_url: proof.githubUrl,
+      evidence_url: proof.evidenceUrl,
+      protocol_version: proof.protocolVersion,
+      provenance_level: proof.provenanceLevel,
+      archival_state: proof.archivalState,
+      irys_tx_id: proof.irysTxId,
     })
   }
 }

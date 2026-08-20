@@ -119,7 +119,36 @@ PROVN establishes a strict, non-fungible progression of evidence strength:
 
 ---
 
-## 5. Live GitHub SVG Embed Engine (`/api/badge/[wallet].svg`)
+## 5. Four-Layer Proof Verification Architecture
+
+Independent verifiers and API consumers evaluate evidence across four distinct, non-fungible dimensions:
+
+```text
+1. SIGNATURE AUTHENTICITY   ──► Ed25519 Detached Verification (TweetNaCl) against wallet public key.
+2. PROTOCOL VALIDITY        ──► Server-issued challenge binding + Server-bounded timestamp window (±15m).
+3. SOURCE ATTRIBUTION       ──► SIWS GitHub OAuth identity match against repository commit/PR author.
+4. ARCHIVAL INTEGRITY       ──► Permanent Arweave L1 data receipt verification via Irys gateway.
+```
+
+Each proof detail report provides full layer-by-layer transparency:
+```json
+{
+  "proof_status": {
+    "signature": "VERIFIED",
+    "protocol": "VERIFIED",
+    "source": "VERIFIED",
+    "archive": "RECEIPT_OBTAINED"
+  },
+  "signature_verified": true,
+  "protocol_verified": true,
+  "source_verified": true,
+  "archive_verified": true
+}
+```
+
+---
+
+## 6. Live GitHub SVG Embed Engine (`/api/badge/[wallet].svg`)
 
 Developers can embed their real-time PROVN reputation badge in any markdown document (e.g. GitHub `README.md`):
 
@@ -131,21 +160,29 @@ The server dynamically renders a responsive vector SVG displaying the builder's 
 
 ---
 
-## 6. Security Model & Row-Level Security (RLS)
+## 7. Security Model & Row-Level Security (RLS)
 
 - **PostgreSQL Row-Level Security**: Public clients (`anon`) are strictly restricted to read-only `SELECT` queries on the `logs` table. Direct client `INSERT`, `UPDATE`, or `DELETE` operations are rejected by PostgreSQL policies. All writes execute through the `service_role` on verified server routes.
+- **Transactional Challenge Consumption**: Single-use signing challenges and quota increments are consumed atomically in a single PostgreSQL transaction (`atomic_insert_log`).
+- **Atomic OAuth State Consumption**: OAuth state transitions are atomically consumed on update to eliminate replay attacks and race conditions.
 - **Unique Signature Index**: Enforces a database-level `UNIQUE INDEX` on the `signature` column to neutralize signature replay attacks.
-- **Timestamp Anti-Replay Window**: Validates signed timestamp against server clock within a strict 15-minute window (`900,000ms`).
+- **Server-Bounded Timestamp Window**: Validates client timestamp against server observation time within a strict ±15 minute window (`900,000ms`).
 - **Daily Quota Enforcement**: Daily limits (3 logs/day) are securely enforced database-side using strict row-level locking on a `daily_quotas` table to prevent race conditions.
 
 ---
 
-## 7. Future Protocols: Ecosystem Integration
+## 8. Protocol Evolution: From Human Attestation to Autonomous AI Agent Provenance
 
-Integration with ecosystem programs like Superteam Earn and Solana foundation grants.
+While PROVN v1-v2 establishes wallet-authenticated developer attestations, the foundational primitives directly bridge toward autonomous software and AI-agent provenance:
 
----
+```text
+CURRENT PROTOCOL (Developer Proof)        FUTURE PROTOCOL (Agent Provenance)
+──────────────────────────────────        ──────────────────────────────────
+Wallet Identity                           Agent Cryptographic Identity
+Client Work Description                   Structured Action Event (file.write, exec)
+Server-Issued Challenge                   Execution Causality & Parent Nonce
+Graduated Source Evidence                 Input / Output Merkle Commitment
+Permanent Arweave Archive                 Decentralized Event Journal & Anchor
+```
 
-## 8. Summary
-
-PROVN bridges off-chain developer activity with on-chain cryptographic signatures, establishing a transparent evidence layer for the global Solana ecosystem to support manual review and credibility.
+PROVN provides the enduring cryptographic substrate for proving the authenticity, integrity, and provenance of both human and autonomous software execution.

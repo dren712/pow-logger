@@ -21,27 +21,26 @@ export async function GET(req: NextRequest) {
   let action: string
   let codeVerifier: string | undefined
   try {
-    // Look up the state in oauth_states table
-    const { data: stateRecord } = await supabase
+    // Look up and atomically consume the state in oauth_states table (Single-use atomic consumption)
+    const { data: stateRecord, error: stateError } = await supabase
       .from('oauth_states')
-      .select('wallet_address, expires_at, action, code_verifier')
+      .update({ consumed_at: new Date().toISOString() })
       .eq('state_id', stateBase64)
-      .single()
+      .is('consumed_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .select('wallet_address, action, code_verifier')
+      .maybeSingle()
 
-    if (!stateRecord) {
-      return NextResponse.json({ error: 'Invalid or missing state parameter' }, { status: 400 })
-    }
-
-    if (new Date(stateRecord.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'OAuth session expired' }, { status: 400 })
+    if (stateError || !stateRecord) {
+      return NextResponse.json(
+        { error: 'Invalid, expired, or already consumed OAuth state parameter' },
+        { status: 400 }
+      )
     }
 
     wallet = stateRecord.wallet_address
     action = stateRecord.action || 'Link'
     codeVerifier = stateRecord.code_verifier || undefined
-
-    // Cleanup used state
-    await supabase.from('oauth_states').delete().eq('state_id', stateBase64)
   } catch (err) {
     console.error('State validation error', err)
     return NextResponse.json({ error: 'Failed to validate state' }, { status: 500 })

@@ -287,6 +287,16 @@ export async function POST(req: NextRequest) {
       archivalState: 'not_requested',
       irysTxId: null,
       gatewayUrl: null,
+      proof_status: {
+        signature: 'VERIFIED',
+        protocol: 'VERIFIED',
+        source: provenanceLevel === 'source_verified' ? 'VERIFIED' : (provenanceLevel === 'identity_linked' ? 'ATTRIBUTED' : (provenanceLevel === 'source_exists' ? 'EXISTS' : (cleanEvidenceUrl ? 'LINKED' : 'SELF_ATTESTED'))),
+        archive: 'NOT_REQUESTED',
+      },
+      signature_verified: true,
+      protocol_verified: true,
+      source_verified: provenanceLevel === 'source_verified',
+      archive_verified: false,
       // Milestone & Badge data derived strictly from deterministic reputation engine
       streak: currentReputation.currentStreak,
       builderLevel: {

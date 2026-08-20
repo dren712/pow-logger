@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifyLogCryptographically } from '@/app/lib/canonicalMessage'
+import { verifyLogCryptographically, evaluateProofValidity } from '@/app/lib/canonicalMessage'
 import { ProofDetail, WalletLog } from '@/app/lib/types'
 
 const supabase = createClient(
@@ -32,6 +32,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 
     const rawLog = log as WalletLog
     const signatureValid = verifyLogCryptographically(rawLog)
+    const validityReport = evaluateProofValidity(rawLog)
     const canonicalMessageReconstructed = Boolean((rawLog.nonce || rawLog.protocol_version === 2) && rawLog.wallet_address)
     const domainVerified = signatureValid
 
@@ -54,6 +55,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       archivalState: rawLog.archival_state || 'not_requested',
       isCryptographicallyVerified: signatureValid,
       verificationState,
+      signatureVerified: validityReport.signatureVerified,
+      protocolVerified: validityReport.protocolVerified,
+      sourceVerified: validityReport.sourceVerified,
+      archiveVerified: validityReport.archiveVerified,
+      proofStatus: validityReport.proofStatus,
+      validityReport,
       verificationDetails: {
         canonicalMessageReconstructed,
         signatureValid,

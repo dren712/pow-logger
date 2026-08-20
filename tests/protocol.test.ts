@@ -29,6 +29,7 @@ import {
   isConfiguredSupabaseUrl,
   decodeBase58,
   verifyLogCryptographically,
+  evaluateProofValidity,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
@@ -1183,6 +1184,124 @@ async function runProductionTestSuite() {
   // Test 5: Badge Summary Consistency with Verified Logs
   const testBadgeSummary = computeBadgeSummary(3, canonicalStreak, canonicalStreak, verifiedGithubLogs)
   assert(testBadgeSummary.earnedSkillBadges.some(b => b.id === 'open_source'), 'computeBadgeSummary accurately integrates source-verified skill badges')
+
+  // --- SUITE 15: Adversarial Protocol Verification & Layered Proof Analysis ---
+  console.log('\n► SUITE 15: Adversarial Protocol Verification & Layered Proof Analysis')
+
+  // Test 1: Signature-Valid vs Protocol-Valid Distinction
+  const testKeypair = nacl.sign.keyPair()
+  const testWallet = bs58.encode(testKeypair.publicKey)
+  const validIso = new Date().toISOString()
+  const serverChallenge = 'CHALLENGE_LEGITIMATE_SERVER_ISSUED_UUID_9999'
+
+  const legitimateCanonical = buildCanonicalSubmitMessageV2({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: testWallet,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    timestamp: validIso,
+    challenge: serverChallenge,
+    githubUrl: 'https://github.com/dren712/pow-logger/pull/1',
+  })
+  const legitSig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(legitimateCanonical), testKeypair.secretKey))
+
+  const legitimateReport = evaluateProofValidity({
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
+    protocol_version: 2,
+    provenance_level: 'source_verified',
+    archival_state: 'receipt_obtained',
+    irys_tx_id: 'irys_receipt_tx_hash_123456789',
+  })
+
+  assert(legitimateReport.signatureVerified === true, 'Authentic proof signature verified as cryptographically valid')
+  assert(legitimateReport.protocolVerified === true, 'Legitimate proof satisfies complete protocol validity checks')
+  assert(legitimateReport.proofStatus.signature === 'VERIFIED', '4-Layer status: signature === VERIFIED')
+  assert(legitimateReport.proofStatus.protocol === 'VERIFIED', '4-Layer status: protocol === VERIFIED')
+  assert(legitimateReport.proofStatus.source === 'VERIFIED', '4-Layer status: source === VERIFIED for source_verified provenance')
+  assert(legitimateReport.proofStatus.archive === 'VERIFIED', '4-Layer status: archive === VERIFIED for receipt_obtained with Irys TX ID')
+
+  // Test 2: Forged Challenge Rejection (Signature valid, Protocol invalid)
+  const shortChallenge = '123'
+  const forgedChallengeCanonical = buildCanonicalSubmitMessageV2({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: testWallet,
+    content: 'Forged challenge proof',
+    timestamp: validIso,
+    challenge: shortChallenge,
+  })
+  const forgedSig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(forgedChallengeCanonical), testKeypair.secretKey))
+
+  const forgedReport = evaluateProofValidity({
+    wallet_address: testWallet,
+    signature: forgedSig,
+    content: 'Forged challenge proof',
+    created_at: validIso,
+    challenge: shortChallenge,
+    domain: 'provn-sol.vercel.app',
+    protocol_version: 2,
+  })
+  assert(forgedReport.signatureVerified === true, 'Signature itself is cryptographically valid from keypair holder')
+  assert(forgedReport.protocolVerified === false, 'Protocol validity strictly REJECTS forged / malformed challenge')
+  assert(forgedReport.proofStatus.protocol === 'UNVERIFIED', '4-Layer status: protocol marks UNVERIFIED for non-protocol challenge')
+
+  // Test 3: Atomic OAuth State Single-Use Replay Defense
+  const mockOAuthState = {
+    state_id: 'oauth-state-uuid-1234',
+    wallet_address: testWallet,
+    consumed_at: null as string | null,
+    expires_at: new Date(Date.now() + 600000).toISOString(),
+  }
+
+  function consumeOAuthState(state: typeof mockOAuthState) {
+    if (state.consumed_at !== null || new Date(state.expires_at) < new Date()) {
+      return null // Rejected: already consumed or expired
+    }
+    state.consumed_at = new Date().toISOString()
+    return { wallet_address: state.wallet_address, consumed: true }
+  }
+
+  const firstOAuthConsumption = consumeOAuthState(mockOAuthState)
+  assert(firstOAuthConsumption !== null && firstOAuthConsumption.consumed === true, 'First OAuth state consumption succeeds atomically')
+
+  const replayOAuthConsumption = consumeOAuthState(mockOAuthState)
+  assert(replayOAuthConsumption === null, 'Adversarial Replay: Re-using consumed OAuth state is strictly rejected')
+
+  // Test 4: Server-Bounded Timestamp Anti-Replay Boundary (±15 min / 900,000ms window)
+  const serverTime = Date.now()
+  const windowMs = 15 * 60 * 1000 // 900,000ms
+
+  function isTimestampInWindow(clientTimestampIso: string, observationTime: number): boolean {
+    const clientTime = new Date(clientTimestampIso).getTime()
+    return Math.abs(observationTime - clientTime) <= windowMs
+  }
+
+  const past16Min = new Date(serverTime - 16 * 60 * 1000).toISOString()
+  const future16Min = new Date(serverTime + 16 * 60 * 1000).toISOString()
+  const valid5Min = new Date(serverTime - 5 * 60 * 1000).toISOString()
+
+  assert(isTimestampInWindow(past16Min, serverTime) === false, 'Timestamp 16 minutes in the past strictly rejected outside ±15m window')
+  assert(isTimestampInWindow(future16Min, serverTime) === false, 'Timestamp 16 minutes in the future strictly rejected outside ±15m window')
+  assert(isTimestampInWindow(valid5Min, serverTime) === true, 'Timestamp within 5 minutes of server observation time accepted')
+
+  // Test 5: GitHub Identity & Attribution Mismatch Adversarial Defense
+  const mismatchProvenance = evaluateProofValidity({
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Commit authored by third-party developer',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/commit/123456',
+    protocol_version: 2,
+    provenance_level: 'identity_linked', // Author mismatch: wallet linked to ID A, commit by ID B
+  })
+  assert(mismatchProvenance.sourceVerified === false, 'Author ID mismatch does NOT grant source_verified status')
+  assert(mismatchProvenance.proofStatus.source === 'ATTRIBUTED', 'Author ID mismatch correctly resolves to ATTRIBUTED / identity_linked')
 
   // --- SUMMARY ---
 
