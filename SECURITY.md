@@ -72,14 +72,14 @@ PROVN provides the *cryptographic wrapper* around a claim, but the claim itself 
 * **Identity & Attribution:** The integration establishes a strict cryptographic binding: `Wallet -> SIWS Challenge -> Server OAuth State (PKCE) -> Immutable GitHub ID -> Commit Author ID`. PROVN proves that the commit author matches the linked GitHub account, but it does NOT prove the user holds access to the original repository beyond that specific contribution.
 * **Anti-Gaming:** There is currently no algorithmic prevention against a user submitting low-effort logs purely to maintain a daily streak. The system enforces a strict maximum quota of 3 logs per day per wallet, but relies on human reviewers (DAOs, grant committees) to assess the quality of those logs.
 
-## 3. Database Security & Transactional Hardening
+## 5. Database Security & Transactional Hardening
 
 * **Transactional Challenge & Quota Enforcement:** Signing challenge consumption, daily quota incrementation (3 logs/day), and row insertion execute within a single atomic PostgreSQL transaction (`atomic_insert_log`). Quota exhaustion or challenge invalidation causes immediate rollback.
 * **Atomic OAuth State Consumption:** OAuth state records use single-operation atomic updates with `consumed_at` tracking and PKCE (`S256` code challenge / code verifier) verification to prevent CSRF and replay attacks.
 * **Row-Level Security (RLS):** Anonymous clients have read-only `SELECT` access to public logs. All mutations are restricted to the `service_role`.
 * **Rate Limiting:** Pre-verification in-memory rate limiting operates as a first-line UX barrier; authoritative replay defense and quota enforcement are enforced by PostgreSQL.
 
-## 4. Responsible Disclosure
+## 6. Responsible Disclosure
 
 If you discover a vulnerability that compromises the Ed25519 signature verification, replay protection, or allows bypassing the daily quota, please report it privately:
 

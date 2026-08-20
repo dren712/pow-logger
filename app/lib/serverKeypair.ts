@@ -2,6 +2,7 @@ import nacl, { SignKeyPair } from 'tweetnacl';
 import bs58 from 'bs58';
 
 let serverKeypair: SignKeyPair | null = null;
+let isProductionWithoutSecret = false;
 
 export const PROVN_KID = 'provn-server-2026-08';
 
@@ -24,6 +25,13 @@ if (process.env.PROVN_SERVER_SECRET) {
     throw new Error(`CRITICAL PROTOCOL ERROR: PROVN_SERVER_SECRET must be exactly 64 bytes (got ${secretKey.length})`);
   }
   serverKeypair = nacl.sign.keyPair.fromSecretKey(secretKey);
+  const derivedPubkey = bs58.encode(serverKeypair.publicKey);
+  const publishedPubkey = PROVN_TRUSTED_PUBLIC_KEYS[PROVN_KID];
+  if (publishedPubkey && derivedPubkey !== publishedPubkey) {
+    throw new Error(`CRITICAL TRUST-ANCHOR MISMATCH: Configured signing secret produces public key ${derivedPubkey}, which disagrees with published registry for ${PROVN_KID} (${publishedPubkey}).`);
+  }
+} else if (process.env.NODE_ENV === 'production') {
+  isProductionWithoutSecret = true;
 } else {
   // Deterministic seed for development and testing (matches genesis 'provn-server-2026-08' public key)
   const SERVER_SEED = new Uint8Array(32);
@@ -31,18 +39,10 @@ if (process.env.PROVN_SERVER_SECRET) {
     SERVER_SEED[i] = i; 
   }
   serverKeypair = nacl.sign.keyPair.fromSeed(SERVER_SEED);
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('WARNING: PROVN_SERVER_SECRET is not configured in production environment.');
-  }
 }
 
 export function getServerPublicKey(kid: string = PROVN_KID): Uint8Array | null {
-  // 1. If actively configured with a signing keypair matching this kid, return its public key
-  if (serverKeypair && kid === PROVN_KID) {
-    return serverKeypair.publicKey;
-  }
-
-  // 2. Resolve from published static public key registry (offline verifier friendly)
+  // Resolve from published static public key registry (offline verifier friendly)
   if (PROVN_TRUSTED_PUBLIC_KEYS[kid]) {
     try {
       return bs58.decode(PROVN_TRUSTED_PUBLIC_KEYS[kid]);
@@ -55,6 +55,9 @@ export function getServerPublicKey(kid: string = PROVN_KID): Uint8Array | null {
 }
 
 export function signServerReceipt(message: Uint8Array): Uint8Array {
+  if (isProductionWithoutSecret) {
+    throw new Error('CRITICAL PROTOCOL ERROR: PROVN_SERVER_SECRET is strictly required in production.');
+  }
   if (!serverKeypair) {
     throw new Error('Signing keypair is not configured on this node');
   }

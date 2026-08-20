@@ -1200,8 +1200,10 @@ async function runProductionTestSuite() {
   const challengePayload = JSON.stringify({
     id: crypto.randomUUID(),
     wallet: testWallet,
+    iat: new Date(serverTime).toISOString(),
     exp: new Date(serverTime + 5 * 60 * 1000).toISOString(),
-    iss: 'PROVN'
+    iss: 'PROVN',
+    kid: 'provn-server-2026-08',
   })
   const payloadBytes = new TextEncoder().encode(challengePayload)
   const challengeSig = signServerReceipt(payloadBytes)
@@ -1407,7 +1409,6 @@ async function runProductionTestSuite() {
     challenge_id: serverChallenge,
     wallet: testWallet,
     signed_payload_hash: expectedCanonicalHash,
-    payload_hash: expectedCanonicalHash,
     observed_at: observedTimestamp,
     iss: 'PROVN',
     kid: 'provn-server-2026-08',
@@ -1478,7 +1479,6 @@ async function runProductionTestSuite() {
     challenge_id: serverChallenge,
     wallet: testWallet,
     signed_payload_hash: '0000000000000000000000000000000000000000000000000000000000000000', // Spoofed payload hash
-    payload_hash: '0000000000000000000000000000000000000000000000000000000000000000',
     observed_at: observedTimestamp,
     iss: 'PROVN',
     kid: 'provn-server-2026-08',
@@ -1649,6 +1649,50 @@ async function runProductionTestSuite() {
   })
   assert(proofWithUnknownKidChal.challengeVerified === false, 'Challenge signed with unknown/untrusted KID is strictly rejected')
   assert(proofWithUnknownKidChal.protocolVerified === false, 'Protocol verification fails for untrusted challenge KID')
+
+  // Test 17: Challenge Missing KID is Strictly Rejected (No Silent Defaulting)
+  const missingKidChallengePayload = JSON.stringify({
+    id: crypto.randomUUID(),
+    wallet: testWallet,
+    exp: new Date(serverTime + 5 * 60 * 1000).toISOString(),
+    iat: new Date(serverTime).toISOString(),
+    iss: 'PROVN',
+    // kid deliberately omitted
+  })
+  const missingKidChalBytes = new TextEncoder().encode(missingKidChallengePayload)
+  const missingKidChalSig = signServerReceipt(missingKidChalBytes)
+  const missingKidChallenge = `${bs58.encode(missingKidChalBytes)}.${bs58.encode(missingKidChalSig)}`
+
+  const proofWithMissingKidChal = evaluateProofValidity({
+    ...baseProof,
+    challenge: missingKidChallenge,
+  })
+  assert(proofWithMissingKidChal.challengeVerified === false, 'Challenge missing KID in V2 is strictly rejected')
+  assert(proofWithMissingKidChal.protocolVerified === false, 'Protocol verification fails when challenge KID is omitted')
+
+  // Test 18: Submission Receipt Missing KID is Strictly Rejected
+  const missingKidSubPayload = JSON.stringify({
+    type: 'PROVN_SUBMISSION_RECEIPT',
+    version: 1,
+    protocol_version: 2,
+    proof_id: 101,
+    challenge_id: serverChallenge,
+    wallet: testWallet,
+    signed_payload_hash: computeCanonicalProofHash(legitimateCanonical),
+    observed_at: validIso,
+    iss: 'PROVN',
+    // kid deliberately omitted
+  })
+  const missingKidSubBytes = new TextEncoder().encode(missingKidSubPayload)
+  const missingKidSubSig = signServerReceipt(missingKidSubBytes)
+  const missingKidSubReceipt = `${bs58.encode(missingKidSubBytes)}.${bs58.encode(missingKidSubSig)}`
+
+  const proofWithMissingKidReceipt = evaluateProofValidity({
+    ...baseProof,
+    submission_receipt: missingKidSubReceipt,
+  })
+  assert(proofWithMissingKidReceipt.details.submissionReceiptValid === false, 'Submission receipt missing KID is strictly rejected')
+  assert(proofWithMissingKidReceipt.protocolVerified === false, 'Protocol verification fails when submission receipt KID is omitted')
 
   // --- SUMMARY ---
 

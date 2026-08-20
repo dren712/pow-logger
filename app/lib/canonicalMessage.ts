@@ -424,9 +424,9 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
           const payloadBytes = decodeBase58(parts[0])
           const sigBytes = decodeBase58(parts[1])
           const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
-          const challengeKid = typeof payload.kid === 'string' ? payload.kid : 'provn-server-2026-08'
+          const challengeKid = typeof payload.kid === 'string' && payload.kid.trim() !== '' ? payload.kid : null
           
-          if (verifyServerReceipt(payloadBytes, sigBytes, challengeKid)) {
+          if (challengeKid && verifyServerReceipt(payloadBytes, sigBytes, challengeKid)) {
             if (payload.wallet === log.wallet_address && payload.iss === 'PROVN') {
               challengeValid = true
               
@@ -509,9 +509,9 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
         const subPayloadBytes = decodeBase58(subParts[0])
         const subSigBytes = decodeBase58(subParts[1])
         const subPayload = JSON.parse(new TextDecoder().decode(subPayloadBytes))
-        const kid = subPayload.kid || 'provn-server-2026-08'
+        const kid = typeof subPayload.kid === 'string' && subPayload.kid.trim() !== '' ? subPayload.kid : null
 
-        if (verifyServerReceipt(subPayloadBytes, subSigBytes, kid)) {
+        if (kid && verifyServerReceipt(subPayloadBytes, subSigBytes, kid)) {
           const canonicalMsg = reconstructCanonicalSubmitMessage(log)
           const canonicalHash = canonicalMsg ? computeCanonicalProofHash(canonicalMsg) : null
           
