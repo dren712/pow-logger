@@ -265,6 +265,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save log to database' }, { status: 500 })
     }
 
+    // 7.5. Generate Cryptographic Signed Submission Receipt
+    let submissionReceipt: string | null = null
+    const observedAt = new Date().toISOString()
+    try {
+      const { signServerReceipt, PROVN_KID } = await import('@/app/lib/serverKeypair')
+      const { encodeBase58 } = await import('@/app/lib/canonicalMessage')
+      const crypto = await import('crypto')
+
+      const submissionPayload = JSON.stringify({
+        type: 'PROVN_SUBMISSION_RECEIPT',
+        version: 1,
+        proof_id: savedLog.id,
+        challenge_id: challenge || nonce || 'legacy',
+        wallet: walletAddress,
+        payload_hash: crypto.createHash('sha256').update(content.trim()).digest('hex'),
+        observed_at: observedAt,
+        iss: 'PROVN',
+        kid: PROVN_KID
+      })
+      const payloadBytes = new TextEncoder().encode(submissionPayload)
+      const receiptSig = signServerReceipt(payloadBytes)
+      submissionReceipt = `${encodeBase58(payloadBytes)}.${encodeBase58(receiptSig)}`
+
+      // Persist submission receipt to logs table
+      await supabase
+        .from('logs')
+        .update({ submission_receipt: submissionReceipt })
+        .eq('id', savedLog.id)
+    } catch (receiptErr) {
+      console.warn('Could not generate or store submission receipt:', receiptErr)
+    }
+
     // ─── Milestone & Reputation Detection ──────────────────────────────────
     const allLogs = await fetchAllWalletLogs(supabase, walletAddress)
     const currentReputation = calculateReputation(walletAddress, allLogs)
@@ -278,12 +310,15 @@ export async function POST(req: NextRequest) {
       success: true,
       log: {
         ...savedLog,
+        submission_receipt: submissionReceipt,
         evidence_url: cleanEvidenceUrl,
         github_url: cleanGithubUrl,
         irys_tx_id: null,
         archival_state: 'not_requested',
       },
       classification,
+      submission_receipt: submissionReceipt,
+      server_observed_at: observedAt,
       archivalState: 'not_requested',
       irysTxId: null,
       gatewayUrl: null,

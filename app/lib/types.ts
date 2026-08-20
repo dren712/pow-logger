@@ -32,6 +32,8 @@ export interface ProofValidityReport {
     domainVerified: boolean
     timestampBound: boolean
     challengeValid: boolean
+    submissionReceiptValid?: boolean
+    serverObservedAt?: string | null
     provenanceLevel: string
     archivalState: string
     irysReceipt: string | null
@@ -50,6 +52,8 @@ export interface WalletLog {
   signature?: string
   nonce?: string
   domain?: string
+  challenge?: string
+  submission_receipt?: string | null
   evidence_url?: string | null
   github_url?: string | null
   skills?: string[]
@@ -138,6 +142,8 @@ export interface ProofDetail {
   category?: string
   irysTxId?: string | null
   archivalState: ArchivalState
+  submissionReceipt?: string | null
+  serverObservedAt?: string | null
   isCryptographicallyVerified: boolean
   verificationState: LogVerificationState
   signatureVerified?: boolean

@@ -12,10 +12,12 @@ import { ProofStatusLayers, ProofValidityReport } from './types'
 import { verifyServerReceipt } from './serverKeypair'
 
 export interface VerifiableLog {
+  id?: number | string | null
   wallet_address: string
   signature?: string | null
   nonce?: string | null
   challenge?: string | null
+  submission_receipt?: string | null
   domain?: string | null
   created_at: string
   content: string
@@ -34,6 +36,13 @@ export function decodeBase58(str: string): Uint8Array {
   const fn = bs58Obj.decode || bs58Obj.default?.decode
   if (!fn) throw new Error('Base58 decoder unavailable')
   return fn(str)
+}
+
+export function encodeBase58(bytes: Uint8Array): string {
+  const bs58Obj = bs58 as unknown as { encode?: (b: Uint8Array) => string; default?: { encode: (b: Uint8Array) => string } }
+  const fn = bs58Obj.encode || bs58Obj.default?.encode
+  if (!fn) throw new Error('Base58 encoder unavailable')
+  return fn(bytes)
 }
 
 export const CURRENT_PROTOCOL_VERSION = 2
@@ -464,6 +473,40 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
     archiveStatus = 'NOT_REQUESTED'
   }
 
+  // Submission Receipt Verification (if present)
+  let submissionReceiptValid: boolean | undefined = undefined
+  let serverObservedAt: string | null = null
+
+  if (log.submission_receipt && typeof log.submission_receipt === 'string') {
+    const subParts = log.submission_receipt.split('.')
+    if (subParts.length === 2) {
+      try {
+        const subPayloadBytes = decodeBase58(subParts[0])
+        const subSigBytes = decodeBase58(subParts[1])
+        if (verifyServerReceipt(subPayloadBytes, subSigBytes)) {
+          const subPayload = JSON.parse(new TextDecoder().decode(subPayloadBytes))
+          if (
+            subPayload.type === 'PROVN_SUBMISSION_RECEIPT' &&
+            subPayload.wallet === log.wallet_address &&
+            (!log.id || String(subPayload.proof_id) === String(log.id)) &&
+            subPayload.iss === 'PROVN'
+          ) {
+            submissionReceiptValid = true
+            serverObservedAt = subPayload.observed_at || null
+          } else {
+            submissionReceiptValid = false
+          }
+        } else {
+          submissionReceiptValid = false
+        }
+      } catch {
+        submissionReceiptValid = false
+      }
+    } else {
+      submissionReceiptValid = false
+    }
+  }
+
   return {
     signatureVerified: isSigValid,
     protocolVerified: isProtocolValid,
@@ -483,6 +526,8 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
       domainVerified: isDomainValid,
       timestampBound: timestampValid,
       challengeValid,
+      submissionReceiptValid,
+      serverObservedAt,
       provenanceLevel: provLevel,
       archivalState: archState,
       irysReceipt: (log.irys_tx_id && !log.irys_tx_id.startsWith('powl_')) ? log.irys_tx_id : null,

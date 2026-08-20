@@ -1378,6 +1378,71 @@ async function runProductionTestSuite() {
   assert(mismatchProvenance.sourceVerified === false, 'Author ID mismatch does NOT grant source_verified status')
   assert(mismatchProvenance.proofStatus.source === 'ATTRIBUTED', 'Author ID mismatch correctly resolves to ATTRIBUTED / identity_linked')
 
+  // Test 7: Cryptographic Submission Receipt Verification
+  const observedTimestamp = new Date().toISOString()
+  const subPayload = JSON.stringify({
+    type: 'PROVN_SUBMISSION_RECEIPT',
+    version: 1,
+    proof_id: 101,
+    challenge_id: serverChallenge,
+    wallet: testWallet,
+    payload_hash: '3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b',
+    observed_at: observedTimestamp,
+    iss: 'PROVN',
+    kid: 'provn-server-2026-08',
+  })
+  const subBytes = new TextEncoder().encode(subPayload)
+  const subSig = signServerReceipt(subBytes)
+  const validSubmissionReceipt = `${bs58.encode(subBytes)}.${bs58.encode(subSig)}`
+
+  const proofWithReceipt = evaluateProofValidity({
+    id: 101,
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    protocol_version: 2,
+    submission_receipt: validSubmissionReceipt,
+  })
+
+  assert(proofWithReceipt.details.submissionReceiptValid === true, 'Valid submission receipt cryptographically verified by server key')
+  assert(proofWithReceipt.details.serverObservedAt === observedTimestamp, 'Server observation timestamp extracted accurately from submission receipt')
+
+  // Test 8: Forged Submission Receipt Rejection (signed by attacker key)
+  const forgedSubSig = nacl.sign.detached(subBytes, testKeypair.secretKey)
+  const forgedSubmissionReceipt = `${bs58.encode(subBytes)}.${bs58.encode(forgedSubSig)}`
+
+  const proofWithForgedReceipt = evaluateProofValidity({
+    id: 101,
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    protocol_version: 2,
+    submission_receipt: forgedSubmissionReceipt,
+  })
+
+  assert(proofWithForgedReceipt.details.submissionReceiptValid === false, 'Forged submission receipt strictly REJECTED by offline verifier')
+
+  // Test 9: Tampered Submission Receipt Rejection (Proof ID mismatch)
+  const proofWithMismatchedId = evaluateProofValidity({
+    id: 999, // Mismatched proof ID (receipt was for proof 101)
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    protocol_version: 2,
+    submission_receipt: validSubmissionReceipt,
+  })
+
+  assert(proofWithMismatchedId.details.submissionReceiptValid === false, 'Mismatched proof ID in submission receipt strictly REJECTED')
+
   // --- SUMMARY ---
 
   console.log('\n===================================================================')

@@ -53,6 +53,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       category: rawLog.category,
       irysTxId: rawLog.irys_tx_id || null,
       archivalState: rawLog.archival_state || 'not_requested',
+      submissionReceipt: rawLog.submission_receipt || null,
+      serverObservedAt: validityReport.details.serverObservedAt || null,
       isCryptographicallyVerified: signatureValid,
       verificationState,
       signatureVerified: validityReport.signatureVerified,
