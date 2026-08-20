@@ -30,6 +30,8 @@ import {
   decodeBase58,
   verifyLogCryptographically,
   evaluateProofValidity,
+  computeCanonicalProofHash,
+  reconstructCanonicalSubmitMessage,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
@@ -1380,13 +1382,16 @@ async function runProductionTestSuite() {
 
   // Test 7: Cryptographic Submission Receipt Verification
   const observedTimestamp = new Date().toISOString()
+  const expectedCanonicalHash = computeCanonicalProofHash(legitimateCanonical)
+
   const subPayload = JSON.stringify({
     type: 'PROVN_SUBMISSION_RECEIPT',
     version: 1,
     proof_id: 101,
     challenge_id: serverChallenge,
     wallet: testWallet,
-    payload_hash: '3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b',
+    signed_payload_hash: expectedCanonicalHash,
+    payload_hash: expectedCanonicalHash,
     observed_at: observedTimestamp,
     iss: 'PROVN',
     kid: 'provn-server-2026-08',
@@ -1403,12 +1408,16 @@ async function runProductionTestSuite() {
     created_at: validIso,
     challenge: serverChallenge,
     domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
     protocol_version: 2,
     submission_receipt: validSubmissionReceipt,
   })
 
   assert(proofWithReceipt.details.submissionReceiptValid === true, 'Valid submission receipt cryptographically verified by server key')
+  assert(proofWithReceipt.details.signedPayloadHashValid === true, 'Exact canonical signed payload hash bound and verified')
   assert(proofWithReceipt.details.serverObservedAt === observedTimestamp, 'Server observation timestamp extracted accurately from submission receipt')
+  assert(proofWithReceipt.submissionReceiptVerified === true, 'submissionReceiptVerified flag is true')
+  assert(proofWithReceipt.protocolVerified === true, 'Protocol fully verified with valid challenge AND submission receipt')
 
   // Test 8: Forged Submission Receipt Rejection (signed by attacker key)
   const forgedSubSig = nacl.sign.detached(subBytes, testKeypair.secretKey)
@@ -1422,6 +1431,7 @@ async function runProductionTestSuite() {
     created_at: validIso,
     challenge: serverChallenge,
     domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
     protocol_version: 2,
     submission_receipt: forgedSubmissionReceipt,
   })
@@ -1437,11 +1447,126 @@ async function runProductionTestSuite() {
     created_at: validIso,
     challenge: serverChallenge,
     domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
     protocol_version: 2,
     submission_receipt: validSubmissionReceipt,
   })
 
   assert(proofWithMismatchedId.details.submissionReceiptValid === false, 'Mismatched proof ID in submission receipt strictly REJECTED')
+
+  // Test 10: Adversarial Payload Hash Mismatch Rejection (Proof substitution attack)
+  const badHashPayload = JSON.stringify({
+    type: 'PROVN_SUBMISSION_RECEIPT',
+    version: 1,
+    proof_id: 101,
+    challenge_id: serverChallenge,
+    wallet: testWallet,
+    signed_payload_hash: '0000000000000000000000000000000000000000000000000000000000000000', // Spoofed payload hash
+    payload_hash: '0000000000000000000000000000000000000000000000000000000000000000',
+    observed_at: observedTimestamp,
+    iss: 'PROVN',
+    kid: 'provn-server-2026-08',
+  })
+  const badHashBytes = new TextEncoder().encode(badHashPayload)
+  const badHashSig = signServerReceipt(badHashBytes)
+  const badHashReceipt = `${bs58.encode(badHashBytes)}.${bs58.encode(badHashSig)}`
+
+  const proofWithBadHash = evaluateProofValidity({
+    id: 101,
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
+    protocol_version: 2,
+    submission_receipt: badHashReceipt,
+  })
+
+  assert(proofWithBadHash.details.signedPayloadHashValid === false, 'Spoofed canonical payload hash strictly detected')
+  assert(proofWithBadHash.details.submissionReceiptValid === false, 'Receipt with mismatched payload hash strictly REJECTED')
+  assert(proofWithBadHash.protocolVerified === false, 'Protocol verification fails when submission receipt payload hash is invalid')
+
+  // Test 11: Adversarial Challenge ID Mismatch Rejection
+  const badChallengePayload = JSON.stringify({
+    type: 'PROVN_SUBMISSION_RECEIPT',
+    version: 1,
+    proof_id: 101,
+    challenge_id: 'DIFFERENT_UNBOUND_CHALLENGE_STRING_1234',
+    wallet: testWallet,
+    signed_payload_hash: expectedCanonicalHash,
+    observed_at: observedTimestamp,
+    iss: 'PROVN',
+    kid: 'provn-server-2026-08',
+  })
+  const badChallengeBytes = new TextEncoder().encode(badChallengePayload)
+  const badChallengeSig = signServerReceipt(badChallengeBytes)
+  const badChallengeReceipt = `${bs58.encode(badChallengeBytes)}.${bs58.encode(badChallengeSig)}`
+
+  const proofWithBadChallenge = evaluateProofValidity({
+    id: 101,
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
+    protocol_version: 2,
+    submission_receipt: badChallengeReceipt,
+  })
+
+  assert(proofWithBadChallenge.details.submissionReceiptValid === false, 'Mismatched challenge ID in submission receipt strictly REJECTED')
+
+  // Test 12: Adversarial Unknown Key ID (kid) Rejection
+  const unknownKidPayload = JSON.stringify({
+    type: 'PROVN_SUBMISSION_RECEIPT',
+    version: 1,
+    proof_id: 101,
+    challenge_id: serverChallenge,
+    wallet: testWallet,
+    signed_payload_hash: expectedCanonicalHash,
+    observed_at: observedTimestamp,
+    iss: 'PROVN',
+    kid: 'provn-unauthorized-revoked-key-99', // Unknown/revoked key ID
+  })
+  const unknownKidBytes = new TextEncoder().encode(unknownKidPayload)
+  const unknownKidSig = signServerReceipt(unknownKidBytes)
+  const unknownKidReceipt = `${bs58.encode(unknownKidBytes)}.${bs58.encode(unknownKidSig)}`
+
+  const proofWithUnknownKid = evaluateProofValidity({
+    id: 101,
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/1',
+    protocol_version: 2,
+    submission_receipt: unknownKidReceipt,
+  })
+
+  assert(proofWithUnknownKid.details.submissionReceiptValid === false, 'Unknown or revoked key ID (kid) strictly REJECTED')
+
+  // Test 13: Evidence Tampering Invalidates Canonical Payload Hash
+  const proofWithTamperedEvidence = evaluateProofValidity({
+    id: 101,
+    wallet_address: testWallet,
+    signature: legitSig,
+    content: 'Legitimate protocol proof submission with valid challenge',
+    created_at: validIso,
+    challenge: serverChallenge,
+    domain: 'provn-sol.vercel.app',
+    github_url: 'https://github.com/dren712/pow-logger/pull/999', // Tampered from pull/1 to pull/999
+    protocol_version: 2,
+    submission_receipt: validSubmissionReceipt,
+  })
+
+  assert(proofWithTamperedEvidence.details.signedPayloadHashValid === false, 'Evidence URL tampering breaks canonical payload hash match')
+  assert(proofWithTamperedEvidence.signatureVerified === false, 'Evidence URL tampering breaks wallet signature')
+  assert(proofWithTamperedEvidence.protocolVerified === false, 'Evidence URL tampering fails protocol verification')
 
   // --- SUMMARY ---
 

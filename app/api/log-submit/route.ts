@@ -270,8 +270,9 @@ export async function POST(req: NextRequest) {
     const observedAt = new Date().toISOString()
     try {
       const { signServerReceipt, PROVN_KID } = await import('@/app/lib/serverKeypair')
-      const { encodeBase58 } = await import('@/app/lib/canonicalMessage')
-      const crypto = await import('crypto')
+      const { encodeBase58, computeCanonicalProofHash } = await import('@/app/lib/canonicalMessage')
+
+      const signedPayloadHash = computeCanonicalProofHash(expectedMessageText)
 
       const submissionPayload = JSON.stringify({
         type: 'PROVN_SUBMISSION_RECEIPT',
@@ -279,7 +280,8 @@ export async function POST(req: NextRequest) {
         proof_id: savedLog.id,
         challenge_id: challenge || nonce || 'legacy',
         wallet: walletAddress,
-        payload_hash: crypto.createHash('sha256').update(content.trim()).digest('hex'),
+        signed_payload_hash: signedPayloadHash,
+        payload_hash: signedPayloadHash,
         observed_at: observedAt,
         iss: 'PROVN',
         kid: PROVN_KID
@@ -306,6 +308,8 @@ export async function POST(req: NextRequest) {
 
     const newMilestone = checkNewMilestoneReached(previousReputation.currentStreak, currentReputation.currentStreak)
 
+    const isProtocolVerified = Boolean(!challenge || submissionReceipt)
+
     return NextResponse.json({
       success: true,
       log: {
@@ -324,12 +328,14 @@ export async function POST(req: NextRequest) {
       gatewayUrl: null,
       proof_status: {
         signature: 'VERIFIED',
-        protocol: 'VERIFIED',
+        protocol: isProtocolVerified ? 'VERIFIED' : 'UNVERIFIED',
         source: provenanceLevel === 'source_verified' ? 'VERIFIED' : (provenanceLevel === 'identity_linked' ? 'ATTRIBUTED' : (provenanceLevel === 'source_exists' ? 'EXISTS' : (cleanEvidenceUrl ? 'LINKED' : 'SELF_ATTESTED'))),
         archive: 'NOT_REQUESTED',
       },
       signature_verified: true,
-      protocol_verified: true,
+      protocol_verified: isProtocolVerified,
+      challenge_verified: true,
+      submission_receipt_verified: Boolean(submissionReceipt),
       source_verified: provenanceLevel === 'source_verified',
       archive_verified: false,
       // Milestone & Badge data derived strictly from deterministic reputation engine

@@ -21,6 +21,8 @@ export interface ProofStatusLayers {
 export interface ProofValidityReport {
   signatureVerified: boolean
   protocolVerified: boolean
+  challengeVerified: boolean
+  submissionReceiptVerified: boolean
   sourceVerified: boolean
   archiveVerified: boolean
   sourceVerificationMode: 'LOCAL_METADATA' | 'REMOTE_RECHECK' | 'CRYPTOGRAPHIC'
@@ -32,7 +34,10 @@ export interface ProofValidityReport {
     domainVerified: boolean
     timestampBound: boolean
     challengeValid: boolean
+    challengeVerified: boolean
     submissionReceiptValid?: boolean
+    submissionReceiptVerified: boolean
+    signedPayloadHashValid?: boolean
     serverObservedAt?: string | null
     provenanceLevel: string
     archivalState: string

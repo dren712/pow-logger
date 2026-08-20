@@ -8,6 +8,7 @@
 
 import bs58 from 'bs58'
 import nacl from 'tweetnacl'
+import crypto from 'crypto'
 import { ProofStatusLayers, ProofValidityReport } from './types'
 import { verifyServerReceipt } from './serverKeypair'
 
@@ -275,6 +276,74 @@ Challenge: ${params.challenge}
 Timestamp: ${params.timestamp}`
 }
 
+export function computeCanonicalProofHash(canonicalMsg: string): string {
+  return crypto.createHash('sha256').update(new TextEncoder().encode(canonicalMsg)).digest('hex')
+}
+
+export function reconstructCanonicalSubmitMessage(log: VerifiableLog): string | null {
+  if (!log.wallet_address || !log.created_at || !log.content) {
+    return null
+  }
+
+  const challengeStr = log.challenge || (log.protocol_version === 2 ? log.nonce : null)
+  const isV2 = log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!challengeStr)
+
+  if (isV2 && (!challengeStr || typeof challengeStr !== 'string' || challengeStr.trim() === '')) {
+    return null
+  }
+  if (!isV2 && (!log.nonce || typeof log.nonce !== 'string')) {
+    return null
+  }
+
+  // Strict URL Validation: Non-empty URLs must be valid and normalized (prevent silent collapse to 'none')
+  if (log.github_url && typeof log.github_url === 'string' && log.github_url.trim().length > 0) {
+    const normalizedGh = validateAndNormalizeUrl(log.github_url, 'github')
+    if (!normalizedGh) return null
+  }
+  if (log.evidence_url && typeof log.evidence_url === 'string' && log.evidence_url.trim().length > 0) {
+    const normalizedEv = validateAndNormalizeUrl(log.evidence_url, 'evidence')
+    if (!normalizedEv) return null
+  }
+
+  // Exact domain: strictly use the log's persisted domain
+  const domain = log.domain || 'provn-sol.vercel.app'
+
+  // Postgres / Supabase transforms "2026-08-17T18:01:50.481Z" into "...+00:00" and may trim trailing ms zeroes.
+  // We MUST restore the exact string the client signed (which is standard JS .toISOString() format).
+  let fixedTimestamp = log.created_at
+  if (fixedTimestamp.endsWith('+00:00')) {
+    fixedTimestamp = fixedTimestamp.replace('+00:00', 'Z')
+    const msMatch = fixedTimestamp.match(/\.(\d+)Z$/)
+    if (msMatch) {
+      let ms = msMatch[1]
+      while (ms.length < 3) ms += '0'
+      fixedTimestamp = fixedTimestamp.replace(/\.\d+Z$/, `.${ms}Z`)
+    }
+  }
+
+  if (isV2) {
+    return buildCanonicalSubmitMessageV2({
+      domain,
+      walletAddress: log.wallet_address,
+      content: log.content,
+      timestamp: fixedTimestamp,
+      challenge: challengeStr!,
+      githubUrl: log.github_url || undefined,
+      evidenceUrl: log.evidence_url || undefined,
+    })
+  } else {
+    return buildCanonicalSubmitMessage({
+      domain,
+      walletAddress: log.wallet_address,
+      content: log.content,
+      timestamp: fixedTimestamp,
+      nonce: log.nonce!,
+      githubUrl: log.github_url || undefined,
+      evidenceUrl: log.evidence_url || undefined,
+    })
+  }
+}
+
 /**
  * The single canonical cryptographic verification function across the PROVN protocol.
  * Reconstructs the canonical SIWS-inspired proof message and executes TweetNaCl Ed25519
@@ -293,14 +362,9 @@ export function verifyLogCryptographically(
     return false
   }
 
-  const challengeStr = log.challenge || (log.protocol_version === 2 ? log.nonce : null)
-  const isV2 = log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!challengeStr)
+  const isV2 = log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!log.challenge)
 
-  if (isV2) {
-    if (!challengeStr || typeof challengeStr !== 'string' || challengeStr.trim() === '') {
-      return false
-    }
-  } else {
+  if (!isV2) {
     // Strict Nonce Validation: Base58 string, 8-64 chars, no surrounding whitespace
     if (!log.nonce || typeof log.nonce !== 'string' || log.nonce.trim() !== log.nonce || log.nonce.length < 8 || log.nonce.length > 64) {
       return false
@@ -313,16 +377,6 @@ export function verifyLogCryptographically(
     }
   }
 
-  // Strict URL Validation: Non-empty URLs must be valid and normalized (prevent silent collapse to 'none')
-  if (log.github_url && typeof log.github_url === 'string' && log.github_url.trim().length > 0) {
-    const normalizedGh = validateAndNormalizeUrl(log.github_url, 'github')
-    if (!normalizedGh) return false
-  }
-  if (log.evidence_url && typeof log.evidence_url === 'string' && log.evidence_url.trim().length > 0) {
-    const normalizedEv = validateAndNormalizeUrl(log.evidence_url, 'evidence')
-    if (!normalizedEv) return false
-  }
-
   try {
     const publicKeyBytes = decodeBase58(log.wallet_address)
     if (publicKeyBytes.length !== 32) return false
@@ -330,44 +384,9 @@ export function verifyLogCryptographically(
     const signatureBytes = decodeBase58(log.signature)
     if (signatureBytes.length !== 64) return false
 
-    // Exact domain: strictly use the log's persisted domain
-    const domain = log.domain || 'provn-sol.vercel.app'
+    const canonicalMsg = reconstructCanonicalSubmitMessage(log)
+    if (!canonicalMsg) return false
 
-    // Postgres / Supabase transforms "2026-08-17T18:01:50.481Z" into "...+00:00" and may trim trailing ms zeroes.
-    // We MUST restore the exact string the client signed (which is standard JS .toISOString() format).
-    let fixedTimestamp = log.created_at;
-    if (fixedTimestamp.endsWith('+00:00')) {
-      fixedTimestamp = fixedTimestamp.replace('+00:00', 'Z');
-      const msMatch = fixedTimestamp.match(/\.(\d+)Z$/);
-      if (msMatch) {
-        let ms = msMatch[1];
-        while (ms.length < 3) ms += '0';
-        fixedTimestamp = fixedTimestamp.replace(/\.\d+Z$/, `.${ms}Z`);
-      }
-    }
-
-    let canonicalMsg: string
-    if (isV2) {
-      canonicalMsg = buildCanonicalSubmitMessageV2({
-        domain,
-        walletAddress: log.wallet_address,
-        content: log.content,
-        timestamp: fixedTimestamp,
-        challenge: challengeStr!,
-        githubUrl: log.github_url || undefined,
-        evidenceUrl: log.evidence_url || undefined,
-      })
-    } else {
-      canonicalMsg = buildCanonicalSubmitMessage({
-        domain,
-        walletAddress: log.wallet_address,
-        content: log.content,
-        timestamp: fixedTimestamp,
-        nonce: log.nonce!,
-        githubUrl: log.github_url || undefined,
-        evidenceUrl: log.evidence_url || undefined,
-      })
-    }
     const msgBytes = new TextEncoder().encode(canonicalMsg)
     return nacl.sign.detached.verify(msgBytes, signatureBytes, publicKeyBytes)
   } catch {
@@ -428,7 +447,7 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
     } catch { }
   }
 
-  const isProtocolValid = isSigValid && isDomainValid && challengeValid && timestampValid
+  const challengeVerified = isDomainValid && challengeValid && timestampValid
 
   // Source Validity Layer
   const provLevel = (log.provenance_level || 'self_attested').toLowerCase()
@@ -475,6 +494,7 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
 
   // Submission Receipt Verification (if present)
   let submissionReceiptValid: boolean | undefined = undefined
+  let signedPayloadHashValid: boolean | undefined = undefined
   let serverObservedAt: string | null = null
 
   if (log.submission_receipt && typeof log.submission_receipt === 'string') {
@@ -483,14 +503,22 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
       try {
         const subPayloadBytes = decodeBase58(subParts[0])
         const subSigBytes = decodeBase58(subParts[1])
-        if (verifyServerReceipt(subPayloadBytes, subSigBytes)) {
-          const subPayload = JSON.parse(new TextDecoder().decode(subPayloadBytes))
-          if (
-            subPayload.type === 'PROVN_SUBMISSION_RECEIPT' &&
-            subPayload.wallet === log.wallet_address &&
-            (!log.id || String(subPayload.proof_id) === String(log.id)) &&
-            subPayload.iss === 'PROVN'
-          ) {
+        const subPayload = JSON.parse(new TextDecoder().decode(subPayloadBytes))
+        const kid = subPayload.kid || 'provn-server-2026-08'
+
+        if (verifyServerReceipt(subPayloadBytes, subSigBytes, kid)) {
+          const canonicalMsg = reconstructCanonicalSubmitMessage(log)
+          const canonicalHash = canonicalMsg ? computeCanonicalProofHash(canonicalMsg) : null
+          
+          const payloadHashCandidate = subPayload.signed_payload_hash || subPayload.payload_hash
+          signedPayloadHashValid = Boolean(canonicalHash && payloadHashCandidate === canonicalHash)
+
+          const challengeMatches = subPayload.challenge_id === (log.challenge || log.nonce)
+          const walletMatches = subPayload.wallet === log.wallet_address
+          const proofIdMatches = !log.id || String(subPayload.proof_id) === String(log.id)
+          const typeAndIssMatches = subPayload.type === 'PROVN_SUBMISSION_RECEIPT' && subPayload.iss === 'PROVN'
+
+          if (typeAndIssMatches && walletMatches && proofIdMatches && challengeMatches && signedPayloadHashValid) {
             submissionReceiptValid = true
             serverObservedAt = subPayload.observed_at || null
           } else {
@@ -507,9 +535,14 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
     }
   }
 
+  const submissionReceiptVerified = Boolean(submissionReceiptValid)
+  const isProtocolValid = isSigValid && challengeVerified && (log.submission_receipt ? submissionReceiptVerified : true)
+
   return {
     signatureVerified: isSigValid,
     protocolVerified: isProtocolValid,
+    challengeVerified,
+    submissionReceiptVerified,
     sourceVerified: isSourceVerified,
     archiveVerified: isArchiveVerified,
     sourceVerificationMode,
@@ -526,7 +559,10 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
       domainVerified: isDomainValid,
       timestampBound: timestampValid,
       challengeValid,
+      challengeVerified,
       submissionReceiptValid,
+      submissionReceiptVerified,
+      signedPayloadHashValid,
       serverObservedAt,
       provenanceLevel: provLevel,
       archivalState: archState,
