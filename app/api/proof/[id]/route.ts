@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifyLogCryptographically, evaluateProofValidity } from '@/app/lib/canonicalMessage'
+import { evaluateProofValidity } from '@/app/lib/canonicalMessage'
 import { ProofDetail, WalletLog } from '@/app/lib/types'
+import { PROVN_ALLOWED_DOMAINS } from '@/app/lib/serverKeypair'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -31,12 +32,34 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     }
 
     const rawLog = log as WalletLog
-    const signatureValid = verifyLogCryptographically(rawLog)
-    const validityReport = evaluateProofValidity(rawLog)
-    const canonicalMessageReconstructed = Boolean((rawLog.nonce || rawLog.protocol_version === 2) && rawLog.wallet_address)
-    const domainVerified = signatureValid
 
-    const verificationState = signatureValid ? 'VERIFIED' : ((!rawLog.nonce && rawLog.protocol_version !== 2) ? 'LEGACY' : 'UNVERIFIED')
+    // Privacy boundary enforcement: Private proofs cannot be queried publicly without authorization
+    const isPrivate = rawLog.visibility === 'private' || (rawLog as unknown as Record<string, unknown>).is_public === false
+    const authWallet = req.headers.get('x-wallet-address')
+
+    if (isPrivate && (!authWallet || authWallet !== rawLog.wallet_address)) {
+      return NextResponse.json(
+        { error: 'This proof record is private and visible only to the author wallet' },
+        { status: 403 }
+      )
+    }
+
+    const validityReport = evaluateProofValidity(rawLog)
+    const isSigValid = validityReport.signatureVerified
+    const isProtoValid = validityReport.protocolVerified
+    const isDomainValid = Boolean(rawLog.domain && PROVN_ALLOWED_DOMAINS.includes(rawLog.domain.trim().toLowerCase().split(':')[0]))
+    const domainVerified = validityReport.challengeVerified && isDomainValid
+    const canonicalMessageReconstructed = Boolean((rawLog.nonce || rawLog.protocol_version === 2) && rawLog.wallet_address)
+
+    // Accurate verification state: do NOT collapse signature-only validity into full protocol validity
+    let verificationState: ProofDetail['verificationState'] = 'UNVERIFIED'
+    if (isProtoValid) {
+      verificationState = 'VERIFIED'
+    } else if (isSigValid) {
+      verificationState = 'UNVERIFIED' // Signature valid but protocol bounds/receipt incomplete
+    } else if (!rawLog.nonce && rawLog.protocol_version !== 2) {
+      verificationState = 'LEGACY'
+    }
 
     const proofDetail: ProofDetail = {
       id: rawLog.id,
@@ -55,17 +78,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       archivalState: rawLog.archival_state || 'not_requested',
       submissionReceipt: rawLog.submission_receipt || null,
       serverObservedAt: validityReport.details.serverObservedAt || null,
-      isCryptographicallyVerified: signatureValid,
+      isCryptographicallyVerified: isSigValid,
       verificationState,
-      signatureVerified: validityReport.signatureVerified,
-      protocolVerified: validityReport.protocolVerified,
+      signatureVerified: isSigValid,
+      protocolVerified: isProtoValid,
       sourceVerified: validityReport.sourceVerified,
       archiveVerified: validityReport.archiveVerified,
       proofStatus: validityReport.proofStatus,
       validityReport,
       verificationDetails: {
         canonicalMessageReconstructed,
-        signatureValid,
+        signatureValid: isSigValid,
         domainVerified,
         timestampIso: new Date(rawLog.created_at).toISOString(),
       },

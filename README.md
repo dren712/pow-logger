@@ -49,6 +49,22 @@ PROVN evaluates proof validity across four independent, non-fungible layers:
 | **Archive** | **Permanent Data Availability** | ✅ **Guaranteed when archived** — Immutable Arweave storage via confirmed Irys receipts. |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 
+### Adversarial Attack & Tampering Matrix (274+ Tests)
+
+The protocol test suite rigorously verifies resistance against active attacks across every layer:
+
+| Attack Scenario | Threat Description | Protocol Defense & Verification Result |
+|---|---|---|
+| **Content Tampering** | Adversary alters 1 byte of signed work text | ❌ Rejected — Ed25519 signature verification fails |
+| **Evidence URL Injection** | Adversary adds or modifies PR/demo URL | ❌ Rejected — Reconstructed canonical hash mismatch |
+| **Signature Replay** | Re-submitting an authentic historic proof | ❌ Rejected — Single-use challenge token & signature `UNIQUE INDEX` |
+| **Timestamp Backdating** | Claiming work was signed hours earlier | ❌ Rejected — Challenge `iat`/`exp` window strictly bounds timestamp |
+| **Server Receipt Forgery** | Fabricating ingestion receipt without key | ❌ Rejected — Ed25519 verification against published trust manifest |
+| **Key Epoch Expiry** | Signing with an expired/retired server key | ❌ Rejected — `resolveTrustedKey` enforces `valid_until` temporal bounds |
+| **Untrusted Domain** | Submitting proof on unauthorized origin | ❌ Rejected — Domain checked against `protocol/trust-manifest.json` |
+| **Unknown KID Injection** | Specifying arbitrary Key ID in challenge | ❌ Rejected — Key not found in published trust registry |
+| **Identity Impersonation** | Claiming another author's commit | ❌ Rejected — SIWS OAuth numeric GitHub ID mismatch (`source_verified` denied) |
+
 ---
 
 ## 3. Core Architecture

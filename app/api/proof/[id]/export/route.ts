@@ -36,6 +36,16 @@ export async function GET(
     return NextResponse.json({ error: `Proof #${proofId} not found` }, { status: 404 })
   }
 
+  const isPrivate = (log as unknown as Record<string, unknown>).visibility === 'private' || (log as unknown as Record<string, unknown>).is_public === false
+  const authWallet = request.headers.get('x-wallet-address')
+
+  if (isPrivate && (!authWallet || authWallet !== log.wallet_address)) {
+    return NextResponse.json(
+      { error: 'This proof record is private and visible only to the author wallet' },
+      { status: 403 }
+    )
+  }
+
   const proof = log as WalletLog
   const validity = evaluateProofValidity(proof)
   const canonicalMsg = reconstructCanonicalSubmitMessage(proof)

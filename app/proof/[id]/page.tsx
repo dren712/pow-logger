@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { buildCanonicalSubmitMessage, verifyLogCryptographically } from '@/app/lib/canonicalMessage'
+import { reconstructCanonicalSubmitMessage, evaluateProofValidity } from '@/app/lib/canonicalMessage'
 import { WalletLog } from '@/app/lib/types'
 
 const supabase = createClient(
@@ -56,23 +56,25 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
 
   const proof = log as WalletLog
 
-  // Re-verify Ed25519 signature against canonical message
-  const isSignatureValid = verifyLogCryptographically(proof)
-  let reconstructedMessage = ''
-
-  if (proof.nonce && proof.wallet_address) {
-    const domain = proof.domain || 'provn-sol.vercel.app'
-    reconstructedMessage = buildCanonicalSubmitMessage({
-      domain,
-      walletAddress: proof.wallet_address,
-      timestamp: proof.created_at,
-      nonce: proof.nonce,
-      content: proof.content,
-      githubUrl: proof.github_url || undefined,
-      evidenceUrl: proof.evidence_url || undefined,
-    })
+  // Privacy boundary check
+  const isPrivate = proof.visibility === 'private' || (proof as unknown as Record<string, unknown>).is_public === false
+  if (isPrivate) {
+    return (
+      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ffb800', fontFamily: 'monospace' }}>
+        <h1 style={{ color: '#ffb800' }}>🔒 Private Proof Record</h1>
+        <p style={{ color: '#888' }}>Proof #{proofId} was submitted with private visibility and is accessible only to the author wallet.</p>
+        <Link href="/" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
+      </main>
+    )
   }
 
+  // Authoritative 4-layer protocol evaluation
+  const validityReport = evaluateProofValidity(proof)
+  const isSignatureValid = validityReport.signatureVerified
+  const isProtocolValid = validityReport.protocolVerified
+
+  // Unified canonical message reconstruction
+  const reconstructedMessage = reconstructCanonicalSubmitMessage(proof) || ''
   const walletShort = `${proof.wallet_address.slice(0, 4)}...${proof.wallet_address.slice(-4)}`
 
   return (
@@ -127,7 +129,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         </div>
 
         <div>
-          {isSignatureValid ? (
+          {isProtocolValid ? (
             <span
               style={{
                 background: 'rgba(0, 255, 136, 0.1)',
@@ -139,7 +141,21 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
                 fontWeight: 700,
               }}
             >
-              ✓ ED25519 SIGNATURE VALID
+              ✓ PROTOCOL VERIFIED
+            </span>
+          ) : isSignatureValid ? (
+            <span
+              style={{
+                background: 'rgba(0, 229, 255, 0.1)',
+                border: '1px solid #00e5ff',
+                color: '#00e5ff',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 700,
+              }}
+            >
+              ✓ SIGNATURE VALID (V1 / PENDING RECEIPT)
             </span>
           ) : (
             <span
@@ -153,7 +169,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
                 fontWeight: 700,
               }}
             >
-              ⚠ UNVERIFIED / LEGACY
+              ⚠ UNVERIFIED / INVALID
             </span>
           )}
         </div>
@@ -166,9 +182,9 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
           <div style={{ color: '#fff', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>Builder Statement</div>
         </div>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>2. Provenance</div>
-          <div style={{ color: isSignatureValid ? '#00ff88' : '#ff4444', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {isSignatureValid ? 'Ed25519 Verified ✓' : 'Unsigned / Legacy'}
+          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>2. Signature & Protocol</div>
+          <div style={{ color: isProtocolValid ? '#00ff88' : isSignatureValid ? '#00e5ff' : '#ff4444', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
+            {isProtocolValid ? 'Protocol Sealed ✓' : isSignatureValid ? 'Signature Only' : 'Invalid'}
           </div>
         </div>
         <div className="terminal-card" style={{ padding: '12px 14px' }}>
@@ -300,9 +316,15 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
             <span style={{ color: '#00e5ff', wordBreak: 'break-all' }}>{proof.domain || 'provn-sol.vercel.app'}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Anti-Replay Nonce:</span>
-            <span style={{ color: '#aaa', wordBreak: 'break-all' }}>{proof.nonce || 'N/A'}</span>
+            <span style={{ color: '#666' }}>Server Challenge Token:</span>
+            <span style={{ color: '#aaa', wordBreak: 'break-all', fontSize: '10px' }}>{proof.challenge || proof.nonce || 'N/A'}</span>
           </div>
+          {proof.submission_receipt && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+              <span style={{ color: '#666' }}>Server Submission Receipt:</span>
+              <span style={{ color: '#00ff88', wordBreak: 'break-all', fontSize: '10px' }}>{proof.submission_receipt.slice(0, 24)}... (Verified ✓)</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ color: '#666' }}>Archival State:</span>
             <span style={{ color: (proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized') ? '#00ff88' : '#ffb800' }}>
@@ -350,77 +372,44 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
             href={`/api/proof/${proof.id}/export?download=true`}
             download={`provn-proof-${proof.id}.json`}
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
               background: 'rgba(0, 229, 255, 0.1)',
               border: '1px solid #00e5ff',
               color: '#00e5ff',
-              padding: '8px 14px',
+              padding: '8px 16px',
               borderRadius: '6px',
               fontSize: '11px',
               fontWeight: 700,
               textDecoration: 'none',
-              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease',
             }}
           >
             📥 Download Proof Envelope (.json)
           </a>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginTop: '16px' }}>
-          <div>
-            <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>
-              1. Verify via Standalone CLI:
-            </div>
-            <pre
-              style={{
-                background: '#060709',
-                border: '1px solid #161c28',
-                padding: '10px 14px',
-                borderRadius: '6px',
-                color: '#00ff88',
-                fontSize: '11px',
-                overflowX: 'auto',
-                margin: 0,
-              }}
-            >
-              {`npx provn verify ${proof.id}`}
-            </pre>
+        <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '12px', fontSize: '11px' }}>
+          <div style={{ color: '#aaa', marginBottom: '6px' }}>
+            Verify offline using the standalone open-source PROVN CLI:
           </div>
-          <div>
-            <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>
-              2. Offline Verification via Downloaded File:
-            </div>
-            <pre
-              style={{
-                background: '#060709',
-                border: '1px solid #161c28',
-                padding: '10px 14px',
-                borderRadius: '6px',
-                color: '#00e5ff',
-                fontSize: '11px',
-                overflowX: 'auto',
-                margin: 0,
-              }}
-            >
-              {`npx provn verify provn-proof-${proof.id}.json`}
-            </pre>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #161c28', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '11px' }}>
-          <span style={{ color: '#666' }}>
-            Trust Anchors & Key Manifest:
-          </span>
-          <a
-            href="/.well-known/provn-keys.json"
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: '#ab9ff2', textDecoration: 'none' }}
+          <pre
+            style={{
+              color: '#00ff88',
+              margin: '0 0 8px 0',
+              padding: '8px',
+              background: '#0a0d14',
+              borderRadius: '4px',
+              fontSize: '11px',
+              overflowX: 'auto',
+            }}
           >
-            /.well-known/provn-keys.json ↗
-          </a>
+            npx provn verify ./provn-proof-{proof.id}.json
+          </pre>
+          <div style={{ color: '#666', fontSize: '10px' }}>
+            Or fetch and independently verify live: <code style={{ color: '#ffb800' }}>npx provn verify {proof.id}</code>
+          </div>
         </div>
       </div>
     </main>

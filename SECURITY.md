@@ -9,7 +9,7 @@ When a log is evaluated by PROVN or an independent third-party auditor, the prot
 * **Protocol Context & Challenge Issuance (Layer 2):** The challenge was issued by the PROVN server, cryptographically signed by an authorized server key (`kid`), and strictly bounded by the issuance window (`iat <= client_timestamp <= exp`) on an authorized domain.
 * **Server Observation & Submission Receipt (Layer 2.5):** The PROVN server observed and ingested the proof, issuing a signed `PROVN_SUBMISSION_RECEIPT` that cryptographically binds to the exact `SHA-256` digest of the canonical signed message (`signed_payload_hash`).
 * **Author Identity Attribution (Layer 3):** When linked via SIWS OAuth, PROVN cryptographically establishes that the commit/PR author matches the verified GitHub account bound to the wallet (`source_verified`).
-* **Archival Data Availability (Layer 4):** Once archived on Arweave via Irys, the cryptographic envelope becomes an immutable, multi-decade decentralized public record with a verifiable transaction receipt.
+* **Archival Data Availability (Layer 4):** When archival is requested and confirmed, the server records an archival state backed by a verifiable Irys/Arweave transaction receipt.
 
 ## 2. Published Trust Anchors (Public Key Registry)
 
