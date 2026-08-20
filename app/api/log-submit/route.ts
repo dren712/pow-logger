@@ -291,12 +291,18 @@ export async function POST(req: NextRequest) {
       submissionReceipt = `${encodeBase58(payloadBytes)}.${encodeBase58(receiptSig)}`
 
       // Persist submission receipt to logs table
-      await supabase
+      const { error: receiptUpdateError } = await supabase
         .from('logs')
         .update({ submission_receipt: submissionReceipt })
         .eq('id', savedLog.id)
+
+      if (receiptUpdateError) {
+        console.error('Failed to persist submission receipt in database:', receiptUpdateError)
+        submissionReceipt = null
+      }
     } catch (receiptErr) {
       console.warn('Could not generate or store submission receipt:', receiptErr)
+      submissionReceipt = null
     }
 
     // ─── Milestone & Reputation Detection ──────────────────────────────────

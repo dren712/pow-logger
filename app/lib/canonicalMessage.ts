@@ -423,8 +423,10 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
         try {
           const payloadBytes = decodeBase58(parts[0])
           const sigBytes = decodeBase58(parts[1])
-          if (verifyServerReceipt(payloadBytes, sigBytes)) {
-            const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
+          const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
+          const challengeKid = typeof payload.kid === 'string' ? payload.kid : 'provn-server-2026-08'
+          
+          if (verifyServerReceipt(payloadBytes, sigBytes, challengeKid)) {
             if (payload.wallet === log.wallet_address && payload.iss === 'PROVN') {
               challengeValid = true
               

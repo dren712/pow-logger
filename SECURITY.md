@@ -5,20 +5,30 @@ PROVN is designed to provide cryptographic evidence of a builder's claims. Howev
 ## 1. Cryptographic Guarantees (What PROVN Proves)
 
 When a log is evaluated by PROVN or an independent third-party auditor, the protocol verifies a 4-layer proof model:
-* **Signature Authenticity (Layer 1):** The exact Solana wallet address holding the private key explicitly signed the canonical SIWS payload using Ed25519 detached signatures.
-* **Protocol Context & Challenge Issuance (Layer 2):** The challenge was issued by the PROVN server, cryptographically signed by an authorized server key (`kid`), and strictly bounded by the issuance window (`iat <= client_timestamp <= exp`).
+* **Signature Authenticity (Layer 1):** The private key corresponding to the supplied Solana public key produced the Ed25519 signature over the reconstructed canonical SIWS message envelope.
+* **Protocol Context & Challenge Issuance (Layer 2):** The challenge was issued by the PROVN server, cryptographically signed by an authorized server key (`kid`), and strictly bounded by the issuance window (`iat <= client_timestamp <= exp`) on an authorized domain.
 * **Server Observation & Submission Receipt (Layer 2.5):** The PROVN server observed and ingested the proof, issuing a signed `PROVN_SUBMISSION_RECEIPT` that cryptographically binds to the exact `SHA-256` digest of the canonical signed message (`signed_payload_hash`).
 * **Author Identity Attribution (Layer 3):** When linked via SIWS OAuth, PROVN cryptographically establishes that the commit/PR author matches the verified GitHub account bound to the wallet (`source_verified`).
 * **Archival Data Availability (Layer 4):** Once archived on Arweave via Irys, the cryptographic envelope becomes an immutable, multi-decade decentralized public record with a verifiable transaction receipt.
 
-## 2. Formal Verification Algorithm Specification (Protocol V2)
+## 2. Published Trust Anchors (Public Key Registry)
+
+Independent verifiers and auditors can verify PROVN signatures offline using the published public key registry:
+
+| Key ID (`kid`) | Algorithm | Published Public Key (Base58) | Epoch Status |
+|---|---|---|---|
+| `provn-server-2026-08` | Ed25519 | `FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF` | Active Genesis |
+| `provn-server-2026-06` | Ed25519 | `3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG` | Historical |
+
+## 3. Formal Verification Algorithm Specification (Protocol V2)
 
 Any independent node, auditor, or smart contract can evaluate a PROVN proof offline using the following 7-step algorithm without database access:
 
 ```text
-1. RECONSTRUCT CANONICAL MESSAGE
+1. RECONSTRUCT CANONICAL MESSAGE & VALIDATE DOMAIN
    canonicalMsg = reconstructCanonicalSubmitMessage(log)
    assert(canonicalMsg != null)
+   assert(ALLOWED_DOMAINS.includes(log.domain))
 
 2. VERIFY WALLET SIGNATURE (Layer 1)
    assert(Ed25519.verify(signature: log.signature, message: canonicalMsg, publicKey: log.wallet_address) == true)
@@ -29,7 +39,7 @@ Any independent node, auditor, or smart contract can evaluate a PROVN proof offl
    assert(challengeObj.iss == "PROVN")
    assert(challengeObj.wallet == log.wallet_address)
    assert(challengeObj.iat <= log.created_at <= challengeObj.exp)
-   assert(Ed25519.verify(signature: challengeSig, message: challengePayload, publicKey: KEY_REGISTRY[challengeObj.kid]) == true)
+   assert(Ed25519.verify(signature: challengeSig, message: challengePayload, publicKey: PROVN_TRUSTED_PUBLIC_KEYS[challengeObj.kid]) == true)
 
 4. VERIFY SERVER SUBMISSION RECEIPT (Layer 2.5)
    [subPayload, subSig] = log.submission_receipt.split('.')
@@ -44,7 +54,7 @@ Any independent node, auditor, or smart contract can evaluate a PROVN proof offl
 5. VERIFY CANONICAL PROOF HASH BINDING
    expectedHash = SHA256(canonicalMsg)
    assert(subObj.signed_payload_hash == expectedHash)
-   assert(Ed25519.verify(signature: subSig, message: subPayload, publicKey: KEY_REGISTRY[subObj.kid]) == true)
+   assert(Ed25519.verify(signature: subSig, message: subPayload, publicKey: PROVN_TRUSTED_PUBLIC_KEYS[subObj.kid]) == true)
 
 6. EVALUATE SOURCE & ARCHIVE STATUS (Layers 3 & 4)
    sourceVerificationMode = "LOCAL_METADATA"  -> sourceStatus = "CLAIMED"
@@ -55,7 +65,7 @@ Any independent node, auditor, or smart contract can evaluate a PROVN proof offl
    protocolVerified  = (Steps 1, 2, 3, 4, 5 passed)
 ```
 
-## 3. Assumptions & Limitations (What PROVN Does NOT Prove)
+## 4. Assumptions & Limitations (What PROVN Does NOT Prove)
 
 PROVN provides the *cryptographic wrapper* around a claim, but the claim itself may be false. Reviewers MUST independently verify the claims.
 * **Work Quality / Truthfulness:** PROVN does NOT prove that the builder actually performed the work they claim to have done in the text content, nor does it evaluate code quality.

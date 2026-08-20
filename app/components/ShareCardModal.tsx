@@ -226,6 +226,7 @@ export default function ShareCardModal({
             overflow: 'hidden',
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={displayImage}
             alt="PROVN Proof Card"

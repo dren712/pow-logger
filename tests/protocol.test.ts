@@ -43,6 +43,7 @@ import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
 import { WalletLog, BuilderReputation } from '../app/lib/types'
 import { parseGithubUrl, verifyGithubSource } from '../app/lib/githubVerifier'
+import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS } from '../app/lib/serverKeypair'
 import { evaluateEligibility, STANDARD_POLICY_PRESETS } from '../app/lib/policyEngine'
 
 import fs from 'fs'
@@ -1190,9 +1191,6 @@ async function runProductionTestSuite() {
   // --- SUITE 15: Adversarial Protocol Verification & Layered Proof Analysis ---
   console.log('\n► SUITE 15: Adversarial Protocol Verification & Layered Proof Analysis')
 
-  // Import for challenge receipt generation
-  const { signServerReceipt } = require('../app/lib/serverKeypair')
-
   const testKeypair = nacl.sign.keyPair()
   const testWallet = bs58.encode(testKeypair.publicKey)
   const serverTime = Date.now()
@@ -1627,6 +1625,30 @@ async function runProductionTestSuite() {
   // 12. Tampered Server Receipt Signature
   const badSigReceipt = legitimateReceipt.slice(0, -6) + 'AAAAAA'
   assert(!evaluateProofValidity({ ...baseProof, submission_receipt: badSigReceipt }).protocolVerified, 'Matrix 12: Tampered server receipt signature rejected')
+
+  // Test 15: Challenge KID Resolution via Static Public Key Registry
+  assert(PROVN_TRUSTED_PUBLIC_KEYS['provn-server-2026-08'] !== undefined, 'Genesis key exists in published public key registry')
+  assert(reconstructCanonicalSubmitMessage(baseProof) !== null, 'reconstructCanonicalSubmitMessage successfully reproduces canonical string')
+
+  // Test 16: Challenge Signed with Unknown/Revoked KID Strictly Rejected
+  const unknownKidChallengePayload = JSON.stringify({
+    id: crypto.randomUUID(),
+    wallet: testWallet,
+    exp: new Date(serverTime + 5 * 60 * 1000).toISOString(),
+    iat: new Date(serverTime).toISOString(),
+    iss: 'PROVN',
+    kid: 'provn-unauthorized-key-id-999',
+  })
+  const unknownKidChalBytes = new TextEncoder().encode(unknownKidChallengePayload)
+  const unknownKidChalSig = signServerReceipt(unknownKidChalBytes)
+  const unknownKidChallenge = `${bs58.encode(unknownKidChalBytes)}.${bs58.encode(unknownKidChalSig)}`
+
+  const proofWithUnknownKidChal = evaluateProofValidity({
+    ...baseProof,
+    challenge: unknownKidChallenge,
+  })
+  assert(proofWithUnknownKidChal.challengeVerified === false, 'Challenge signed with unknown/untrusted KID is strictly rejected')
+  assert(proofWithUnknownKidChal.protocolVerified === false, 'Protocol verification fails for untrusted challenge KID')
 
   // --- SUMMARY ---
 
