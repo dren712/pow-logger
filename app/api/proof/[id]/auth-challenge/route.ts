@@ -23,7 +23,7 @@ export async function GET(
     }
 
     // Rate limit check: In-memory first-line UX protection (10 requests per 15 min per IP)
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+    const ipAddress = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
     const rl = checkRateLimit(`auth_chal_${ipAddress}`, 'ip', 10, 900000)
     if (!rl.allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded for challenge requests' }, { status: 429 })

@@ -573,12 +573,13 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
 
 /**
  * Cryptographically verifies private proof access authorization.
- * Replaces unauthenticated headers with a strict SIWS-style detached Ed25519 signature verification:
+ * Enforces a strict SIWS-style detached Ed25519 signature verification:
  * 1. Authorization header format: 'Bearer <payloadB58>.<sigB58>' or 'WalletAuth <payloadB58>.<sigB58>'
- * 2. Payload contains { wallet: string, proofId: number, timestamp: string }
- * 3. Asserts payload.wallet === expectedWallet and payload.proofId === expectedProofId
- * 4. Asserts timestamp is fresh (within 5 minutes)
- * 5. Asserts Ed25519 detached signature verifies against wallet public key
+ * 2. Payload contains { domain, uri, wallet, proofId, nonce, issuedAt, expirationTime }
+ * 3. Asserts payload parameters match expected target proof, wallet ownership, and canonical domain/URI
+ * 4. Asserts timestamp freshness and TTL window (iat <= now, exp > iat, exp - iat <= 5 min)
+ * 5. Asserts Ed25519 detached signature verifies against wallet public key over canonical UTF-8 message
+ * 6. Atomically consumes single-use nonce in PostgreSQL via consume_private_auth_nonce RPC
  */
 export function buildPrivateProofAuthMessage(
   domain: string,
@@ -616,9 +617,9 @@ export function getCanonicalDomainAndUri(
   if (reqHost) {
     const cleanHost = reqHost.trim().toLowerCase().split(':')[0]
     if (PROVN_ALLOWED_DOMAINS.includes(cleanHost)) {
-      domain = reqHost.trim()
+      domain = cleanHost
       const proto = cleanHost === 'localhost' || cleanHost === '127.0.0.1' ? 'http' : 'https'
-      origin = `${proto}://${reqHost.trim()}`
+      origin = `${proto}://${cleanHost}`
     }
   }
 

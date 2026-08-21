@@ -44,7 +44,8 @@ PROVN evaluates proof validity across four independent, non-fungible layers:
 |---|---|---|
 | **Signature** | **Author Authenticity** | ✅ **Guaranteed** — The Ed25519 signature proves that the holder of the Solana private key authored the canonical payload. |
 | **Protocol** | **Server-Bounded Timestamp & Challenge** | ✅ **Guaranteed** — Signed timestamp is bounded within ±15 min observation window (`900,000ms`) of server clock, with single-use transactional challenge consumption. |
-| **Protocol** | **Replay Defense** | ✅ **Guaranteed** — Database-level `UNIQUE INDEX` on signatures prevents re-submitting previously signed messages. |
+| **Protocol** | **Proof Submission Replay Defense** | ✅ **Guaranteed** — Single-use transactional challenge consumption (`atomic_insert_log`) and database-level `UNIQUE INDEX` on signatures. |
+| **Protocol** | **Private Auth Replay Defense** | ✅ **Guaranteed** — One-time 128-bit server-issued nonces atomically consumed in PostgreSQL (`consume_private_auth_nonce`). |
 | **Source** | **Author Identity Verification** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth, verifying commit author identity matches wallet owner. |
 | **Archive** | **Archival Availability** | ✅ **Confirmed when archived** — Immutable Arweave storage via confirmed Irys receipts. |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
