@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS public.private_auth_challenges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     proof_id BIGINT NOT NULL,
-    wallet_address TEXT NOT NULL,
+    wallet_address TEXT,
     nonce TEXT NOT NULL UNIQUE,
     ip_address TEXT,
     issued_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -10,8 +10,13 @@ CREATE TABLE IF NOT EXISTS public.private_auth_challenges (
     consumed_at TIMESTAMPTZ
 );
 
+-- Ensure columns exist if table was created in an earlier pass
+ALTER TABLE public.private_auth_challenges ADD COLUMN IF NOT EXISTS wallet_address TEXT;
+ALTER TABLE public.private_auth_challenges ADD COLUMN IF NOT EXISTS ip_address TEXT;
+
 ALTER TABLE public.private_auth_challenges ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role only" ON public.private_auth_challenges;
 CREATE POLICY "Service role only" ON public.private_auth_challenges
     FOR ALL
     TO service_role
@@ -22,6 +27,9 @@ CREATE INDEX IF NOT EXISTS idx_private_auth_challenges_nonce ON public.private_a
 CREATE INDEX IF NOT EXISTS idx_private_auth_challenges_proof_id ON public.private_auth_challenges(proof_id);
 CREATE INDEX IF NOT EXISTS idx_private_auth_challenges_wallet_consumed ON public.private_auth_challenges(wallet_address, consumed_at);
 CREATE INDEX IF NOT EXISTS idx_private_auth_challenges_ip_issued ON public.private_auth_challenges(ip_address, issued_at);
+
+-- Drop previous 2-argument overload if it existed
+DROP FUNCTION IF EXISTS public.consume_private_auth_nonce(TEXT, BIGINT);
 
 CREATE OR REPLACE FUNCTION public.consume_private_auth_nonce(
     p_nonce TEXT,
@@ -54,4 +62,5 @@ REVOKE EXECUTE ON FUNCTION public.consume_private_auth_nonce(TEXT, BIGINT, TEXT)
 REVOKE EXECUTE ON FUNCTION public.consume_private_auth_nonce(TEXT, BIGINT, TEXT) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.consume_private_auth_nonce(TEXT, BIGINT, TEXT) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.consume_private_auth_nonce(TEXT, BIGINT, TEXT) TO service_role;
+
 
