@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { checkRateLimit } from '@/app/lib/rateLimiter'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -21,6 +22,13 @@ export async function GET(
       return NextResponse.json({ error: 'Valid positive integer proof ID is required' }, { status: 400 })
     }
 
+    // Rate limit check: In-memory first-line UX protection (10 requests per 15 min per IP)
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+    const rl = checkRateLimit(`auth_chal_${ipAddress}`, 'ip', 10, 900000)
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded for challenge requests' }, { status: 429 })
+    }
+
     // Verify proof exists
     const { data: log, error: logError } = await supabase
       .from('logs')
@@ -31,10 +39,35 @@ export async function GET(
     if (logError || !log) {
       return NextResponse.json({ error: 'Proof record not found' }, { status: 404 })
     }
-    
-    // Optional: Could reject if it's already public, but allowing it is fine for flexibility.
 
-    // Generate cryptographic nonce
+    // Security policy: Auth challenges are strictly for private proofs
+    const isPrivate = log.visibility === 'private' || (log as unknown as Record<string, unknown>).is_public === false
+    if (!isPrivate) {
+      return NextResponse.json(
+        { error: 'Auth challenges are strictly issued for private proofs. Public proofs do not require authorization.' },
+        { status: 400 }
+      )
+    }
+
+    // Lazy cleanup: prune stale challenges older than 1 hour
+    await supabase
+      .from('private_auth_challenges')
+      .delete()
+      .lt('expires_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+
+    // Database-level rate limiting: max 10 active/pending challenges per proof per 15 minutes
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+    const { count: proofChalCount } = await supabase
+      .from('private_auth_challenges')
+      .select('*', { count: 'exact', head: true })
+      .eq('proof_id', proofId)
+      .gte('issued_at', fifteenMinsAgo)
+
+    if (proofChalCount !== null && proofChalCount >= 10) {
+      return NextResponse.json({ error: 'Too many pending auth challenges for this proof ID' }, { status: 429 })
+    }
+
+    // Generate cryptographic 128-bit nonce
     const nonceBytes = crypto.randomBytes(16)
     const nonce = nonceBytes.toString('base64url')
 
@@ -45,7 +78,9 @@ export async function GET(
       .from('private_auth_challenges')
       .insert({
         proof_id: proofId,
+        wallet_address: log.wallet_address,
         nonce,
+        ip_address: ipAddress,
         issued_at: issuedAt.toISOString(),
         expires_at: expiresAt.toISOString(),
       })
@@ -73,3 +108,4 @@ export async function GET(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
+

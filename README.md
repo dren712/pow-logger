@@ -6,7 +6,7 @@ PROVN is a portable, cryptographically verifiable provenance protocol for softwa
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-278%20Passing-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-292%20Passing-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
@@ -46,10 +46,10 @@ PROVN evaluates proof validity across four independent, non-fungible layers:
 | **Protocol** | **Server-Bounded Timestamp & Challenge** | ✅ **Guaranteed** — Signed timestamp is bounded within ±15 min observation window (`900,000ms`) of server clock, with single-use transactional challenge consumption. |
 | **Protocol** | **Replay Defense** | ✅ **Guaranteed** — Database-level `UNIQUE INDEX` on signatures prevents re-submitting previously signed messages. |
 | **Source** | **Author Identity Verification** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth, verifying commit author identity matches wallet owner. |
-| **Archive** | **Permanent Data Availability** | ✅ **Guaranteed when archived** — Immutable Arweave storage via confirmed Irys receipts. |
+| **Archive** | **Archival Availability** | ✅ **Confirmed when archived** — Immutable Arweave storage via confirmed Irys receipts. |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 
-### Adversarial Attack & Tampering Matrix (278+ Tests)
+### Adversarial Attack & Tampering Matrix (292+ Tests)
 
 The protocol test suite rigorously verifies resistance against active attacks across every layer:
 

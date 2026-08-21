@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { evaluateProofValidity, verifyPrivateProofAuth } from '@/app/lib/canonicalMessage'
+import { evaluateProofValidity, verifyPrivateProofAuth, getCanonicalDomainAndUri } from '@/app/lib/canonicalMessage'
 import { ProofDetail, WalletLog } from '@/app/lib/types'
 import { PROVN_ALLOWED_DOMAINS } from '@/app/lib/serverKeypair'
 
@@ -37,10 +37,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     const isPrivate = rawLog.visibility === 'private' || (rawLog as unknown as Record<string, unknown>).is_public === false
     if (isPrivate) {
       const authHeader = req.headers.get('authorization')
-      const host = req.headers.get('host') || 'provn.vercel.app'
-      const proto = req.headers.get('x-forwarded-proto') || 'https'
-      const expectedUri = `${proto}://${host}/api/proof/${proofId}`
-      const isAuthorized = await verifyPrivateProofAuth(supabase, authHeader, host, expectedUri, proofId, rawLog.wallet_address)
+      const { domain: expectedDomain, uri: expectedUri } = getCanonicalDomainAndUri(
+        req.headers.get('host'),
+        `/api/proof/${proofId}`
+      )
+      const isAuthorized = await verifyPrivateProofAuth(supabase, authHeader, expectedDomain, expectedUri, proofId, rawLog.wallet_address)
       if (!isAuthorized) {
         return NextResponse.json(
           { error: 'This proof record is private and requires a valid wallet signature authorization header' },

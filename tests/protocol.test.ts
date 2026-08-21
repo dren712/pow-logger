@@ -34,6 +34,7 @@ import {
   reconstructCanonicalSubmitMessage,
   verifyPrivateProofAuth,
   buildPrivateProofAuthMessage,
+  getCanonicalDomainAndUri,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
@@ -2130,11 +2131,14 @@ async function runProductionTestSuite() {
   const attackerKp = nacl.sign.keyPair.fromSeed(attackerWalletSeed)
   const attackerWallet = bs58.encode(attackerKp.publicKey)
 
-  // Mock Supabase client for testing
+  // Mock Supabase client for testing with wallet-bound atomic RPC
   const mockSupabase = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rpc: async (fn: string, args: any) => {
       if (fn === 'consume_private_auth_nonce') {
-        if (args.p_nonce === 'valid-nonce' || args.p_nonce === 'fresh-nonce') return { data: true, error: null }
+        if (args.p_wallet_address === ownerWallet && (args.p_nonce === 'valid-nonce' || args.p_nonce === 'fresh-nonce')) {
+          return { data: true, error: null }
+        }
         return { data: false, error: null }
       }
       return { data: null, error: 'Unknown RPC' }
@@ -2214,11 +2218,53 @@ async function runProductionTestSuite() {
     'Expired private proof auth token strictly fails closed'
   )
 
-  // 5b. Nonce reuse (atomically consumed) is rejected
+  // 5b. Future issuedAt (> 1 min allowable clock skew) is strictly rejected
+  const futureIssuedAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+  const futureExpTime = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+  const futurePayloadObj = {
+    ...validAuthPayloadObj,
+    issuedAt: futureIssuedAt,
+    expirationTime: futureExpTime
+  }
+  const futureMsg = buildPrivateProofAuthMessage(domain, uri, ownerWallet, privateProofId, 'valid-nonce', futureIssuedAt, futureExpTime)
+  const futureSig = nacl.sign.detached(new TextEncoder().encode(futureMsg), ownerKp.secretKey)
+  const futureAuthHeader = `Bearer ${bs58.encode(new TextEncoder().encode(JSON.stringify(futurePayloadObj)))}.${bs58.encode(futureSig)}`
   assert(
-    await verifyPrivateProofAuth(mockSupabase, validAuthHeader, domain, uri, privateProofId, ownerWallet) === true,
-    'Mock check: Nonce valid check (consumed false returned if not valid-nonce)'
+    await verifyPrivateProofAuth(mockSupabase, futureAuthHeader, domain, uri, privateProofId, ownerWallet) === false,
+    'Auth token with future issuedAt strictly fails closed'
   )
+
+  // 5c. Expiration before or equal to issuedAt is strictly rejected
+  const invalidExpPayloadObj = {
+    ...validAuthPayloadObj,
+    issuedAt: new Date().toISOString(),
+    expirationTime: new Date(Date.now() - 1000).toISOString()
+  }
+  const invalidExpMsg = buildPrivateProofAuthMessage(domain, uri, ownerWallet, privateProofId, 'valid-nonce', invalidExpPayloadObj.issuedAt, invalidExpPayloadObj.expirationTime)
+  const invalidExpSig = nacl.sign.detached(new TextEncoder().encode(invalidExpMsg), ownerKp.secretKey)
+  const invalidExpHeader = `Bearer ${bs58.encode(new TextEncoder().encode(JSON.stringify(invalidExpPayloadObj)))}.${bs58.encode(invalidExpSig)}`
+  assert(
+    await verifyPrivateProofAuth(mockSupabase, invalidExpHeader, domain, uri, privateProofId, ownerWallet) === false,
+    'Auth token with expiration <= issuedAt strictly fails closed'
+  )
+
+  // 5d. Expiration window exceeding MAX_AUTH_TTL (5 minutes) is strictly rejected
+  const longTtlIssuedAt = new Date().toISOString()
+  const longTtlExpTime = new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 minutes
+  const longTtlPayloadObj = {
+    ...validAuthPayloadObj,
+    issuedAt: longTtlIssuedAt,
+    expirationTime: longTtlExpTime
+  }
+  const longTtlMsg = buildPrivateProofAuthMessage(domain, uri, ownerWallet, privateProofId, 'valid-nonce', longTtlIssuedAt, longTtlExpTime)
+  const longTtlSig = nacl.sign.detached(new TextEncoder().encode(longTtlMsg), ownerKp.secretKey)
+  const longTtlHeader = `Bearer ${bs58.encode(new TextEncoder().encode(JSON.stringify(longTtlPayloadObj)))}.${bs58.encode(longTtlSig)}`
+  assert(
+    await verifyPrivateProofAuth(mockSupabase, longTtlHeader, domain, uri, privateProofId, ownerWallet) === false,
+    'Auth token with TTL exceeding 5 minutes strictly fails closed'
+  )
+
+  // 5e. Nonce reuse (atomically consumed) is rejected
   const reusePayloadObj = { ...validAuthPayloadObj, nonce: 'used-nonce' }
   const reuseMessage = buildPrivateProofAuthMessage(domain, uri, ownerWallet, privateProofId, 'used-nonce', issuedAt, expTime)
   const reuseSig = nacl.sign.detached(new TextEncoder().encode(reuseMessage), ownerKp.secretKey)
@@ -2226,6 +2272,18 @@ async function runProductionTestSuite() {
   assert(
     await verifyPrivateProofAuth(mockSupabase, reuseHeader, domain, uri, privateProofId, ownerWallet) === false,
     'Reused nonce or invalid nonce fails authorization'
+  )
+
+  // 5f. Host-header spoofing isolation via getCanonicalDomainAndUri
+  const spoofedHostResolution = getCanonicalDomainAndUri('attacker-evil-host.com', '/api/proof/42')
+  assert(
+    spoofedHostResolution.domain === 'provn-sol.vercel.app',
+    'getCanonicalDomainAndUri falls back to canonical domain when Host header is unauthorized'
+  )
+  const validHostResolution = getCanonicalDomainAndUri('provn-sol.vercel.app', '/api/proof/42')
+  assert(
+    validHostResolution.domain === 'provn-sol.vercel.app' && validHostResolution.uri === 'https://provn-sol.vercel.app/api/proof/42',
+    'getCanonicalDomainAndUri resolves canonical origin correctly'
   )
 
   // 6. Security Invariant: signatureValid === true does NOT imply protocolVerified === true

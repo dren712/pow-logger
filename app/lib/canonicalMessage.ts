@@ -601,10 +601,38 @@ export function buildPrivateProofAuthMessage(
   ].join('\n')
 }
 
+export function getCanonicalDomainAndUri(
+  reqHost: string | null | undefined,
+  path: string
+): { domain: string; uri: string } {
+  const defaultOrigin = process.env.PROVN_CANONICAL_ORIGIN || 'https://provn-sol.vercel.app'
+  let origin = defaultOrigin
+  let domain = 'provn-sol.vercel.app'
+  try {
+    const defaultUrl = new URL(defaultOrigin)
+    domain = defaultUrl.host
+  } catch { }
+
+  if (reqHost) {
+    const cleanHost = reqHost.trim().toLowerCase().split(':')[0]
+    if (PROVN_ALLOWED_DOMAINS.includes(cleanHost)) {
+      domain = reqHost.trim()
+      const proto = cleanHost === 'localhost' || cleanHost === '127.0.0.1' ? 'http' : 'https'
+      origin = `${proto}://${reqHost.trim()}`
+    }
+  }
+
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return {
+    domain,
+    uri: `${origin}${cleanPath}`
+  }
+}
+
 export type NonceConsumerClient =
   | SupabaseClient
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { rpc: (fn: string, args: { p_nonce: string; p_proof_id: number }) => PromiseLike<{ data?: boolean | null; error?: any }> }
+  | { rpc: (fn: string, args: { p_nonce: string; p_proof_id: number; p_wallet_address: string }) => PromiseLike<{ data?: boolean | null; error?: any }> }
 
 export async function verifyPrivateProofAuth(
   supabase: NonceConsumerClient | null | undefined,
@@ -640,10 +668,18 @@ export async function verifyPrivateProofAuth(
     if (payload.domain !== expectedDomain) return false
     if (payload.uri !== expectedUri) return false
 
-    // Assert timestamp freshness (prevent expired tokens)
-    const expTime = new Date(payload.expirationTime).getTime()
-    if (Number.isNaN(expTime)) return false
-    if (Date.now() > expTime) return false
+    // Strict timestamp & TTL validation
+    const iat = Date.parse(payload.issuedAt)
+    const exp = Date.parse(payload.expirationTime)
+    const now = Date.now()
+    const CLOCK_SKEW_MS = 60 * 1000 // 1 minute allowable clock skew
+    const MAX_AUTH_TTL_MS = 5 * 60 * 1000 // 5 minutes max allowable window
+
+    if (!Number.isFinite(iat) || !Number.isFinite(exp)) return false
+    if (iat > now + CLOCK_SKEW_MS) return false // issued in the future
+    if (exp <= iat) return false // expiration must be strictly after issuance
+    if (exp - iat > MAX_AUTH_TTL_MS + CLOCK_SKEW_MS) return false // TTL exceeds max window
+    if (now > exp) return false // token expired
     
     // Cryptographically verify detached signature
     const canonicalMessage = buildPrivateProofAuthMessage(
@@ -662,11 +698,12 @@ export async function verifyPrivateProofAuth(
     const isValidSig = nacl.sign.detached.verify(messageBytes, sigBytes, walletPubkeyBytes)
     if (!isValidSig) return false
     
-    // Atomically consume nonce
+    // Atomically consume nonce in PostgreSQL with wallet binding
     if (!supabase) return false
     const { data: consumed, error } = await supabase.rpc('consume_private_auth_nonce', {
       p_nonce: payload.nonce,
-      p_proof_id: Number(expectedProofId)
+      p_proof_id: Number(expectedProofId),
+      p_wallet_address: expectedWallet
     })
     
     if (error || !consumed) return false

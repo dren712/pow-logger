@@ -6,6 +6,7 @@ import {
   computeCanonicalProofHash,
   decodeBase58,
   verifyPrivateProofAuth,
+  getCanonicalDomainAndUri,
 } from '@/app/lib/canonicalMessage'
 import { WalletLog } from '@/app/lib/types'
 
@@ -40,10 +41,11 @@ export async function GET(
   const isPrivate = (log as unknown as Record<string, unknown>).visibility === 'private' || (log as unknown as Record<string, unknown>).is_public === false
   if (isPrivate) {
     const authHeader = request.headers.get('authorization')
-    const host = request.headers.get('host') || 'provn.vercel.app'
-    const proto = request.headers.get('x-forwarded-proto') || 'https'
-    const expectedUri = `${proto}://${host}/api/proof/${proofId}/export`
-    const isAuthorized = await verifyPrivateProofAuth(supabase, authHeader, host, expectedUri, proofId, log.wallet_address)
+    const { domain: expectedDomain, uri: expectedUri } = getCanonicalDomainAndUri(
+      request.headers.get('host'),
+      `/api/proof/${proofId}/export`
+    )
+    const isAuthorized = await verifyPrivateProofAuth(supabase, authHeader, expectedDomain, expectedUri, proofId, log.wallet_address)
     if (!isAuthorized) {
       return NextResponse.json(
         { error: 'This proof record is private and requires a valid wallet signature authorization header to export' },
