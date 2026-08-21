@@ -32,6 +32,7 @@ import {
   evaluateProofValidity,
   computeCanonicalProofHash,
   reconstructCanonicalSubmitMessage,
+  verifyPrivateProofAuth,
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
@@ -2113,6 +2114,89 @@ async function runProductionTestSuite() {
   })
   assert(proofWithExpiredKeyChal.challengeVerified === false, 'Protocol strictly rejects challenge signed with expired key epoch')
   assert(proofWithExpiredKeyChal.protocolVerified === false, 'Protocol verification fails when key epoch has expired')
+
+  // =========================================================================
+  // SUITE 19: Private Proof Cryptographic Authorization & Route Security Matrix
+  // =========================================================================
+  console.log('\n► SUITE 19: Private Proof Authorization & Security Invariants')
+
+  const privateProofId = 42
+  const ownerWalletSeed = new Uint8Array(32).fill(7)
+  const ownerKp = nacl.sign.keyPair.fromSeed(ownerWalletSeed)
+  const ownerWallet = bs58.encode(ownerKp.publicKey)
+
+  const attackerWalletSeed = new Uint8Array(32).fill(9)
+  const attackerKp = nacl.sign.keyPair.fromSeed(attackerWalletSeed)
+  const attackerWallet = bs58.encode(attackerKp.publicKey)
+
+  // 1. Valid signed SIWS private proof access token
+  const validAuthPayloadObj = {
+    wallet: ownerWallet,
+    proofId: privateProofId,
+    timestamp: new Date().toISOString(),
+    purpose: 'private_proof_access',
+  }
+  const validAuthPayloadBytes = new TextEncoder().encode(JSON.stringify(validAuthPayloadObj))
+  const validAuthSig = nacl.sign.detached(validAuthPayloadBytes, ownerKp.secretKey)
+  const validAuthHeader = `Bearer ${bs58.encode(validAuthPayloadBytes)}.${bs58.encode(validAuthSig)}`
+
+  assert(
+    verifyPrivateProofAuth(validAuthHeader, privateProofId, ownerWallet) === true,
+    'Valid SIWS wallet-signed token successfully authorizes private proof access'
+  )
+
+  // 2. Unauthenticated request (no header) is strictly rejected
+  assert(
+    verifyPrivateProofAuth(null, privateProofId, ownerWallet) === false,
+    'Unauthenticated request without auth header is strictly rejected'
+  )
+
+  // 3. Attacker wallet signature (impersonation) is strictly rejected
+  const attackerAuthSig = nacl.sign.detached(validAuthPayloadBytes, attackerKp.secretKey)
+  const attackerAuthHeader = `Bearer ${bs58.encode(validAuthPayloadBytes)}.${bs58.encode(attackerAuthSig)}`
+  assert(
+    verifyPrivateProofAuth(attackerAuthHeader, privateProofId, ownerWallet) === false,
+    'Attacker wallet signature attempting to claim victim private proof is strictly rejected (403)'
+  )
+
+  // 4. Mismatched proof ID in auth payload is strictly rejected
+  assert(
+    verifyPrivateProofAuth(validAuthHeader, 999999, ownerWallet) === false,
+    'Auth token for different proof ID is strictly rejected'
+  )
+
+  // 5. Expired auth token (> 5 min) is strictly rejected (anti-replay)
+  const expiredAuthPayloadObj = {
+    wallet: ownerWallet,
+    proofId: privateProofId,
+    timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
+  }
+  const expiredAuthPayloadBytes = new TextEncoder().encode(JSON.stringify(expiredAuthPayloadObj))
+  const expiredAuthSig = nacl.sign.detached(expiredAuthPayloadBytes, ownerKp.secretKey)
+  const expiredAuthHeader = `Bearer ${bs58.encode(expiredAuthPayloadBytes)}.${bs58.encode(expiredAuthSig)}`
+  assert(
+    verifyPrivateProofAuth(expiredAuthHeader, privateProofId, ownerWallet) === false,
+    'Expired private proof auth token (>5min) strictly fails closed'
+  )
+
+  // 6. Security Invariant: signatureValid === true does NOT imply protocolVerified === true
+  const signatureOnlyProof = {
+    ...baseProof,
+    protocol_version: 2,
+    submission_receipt: null, // V2 proof missing mandatory submission receipt
+  }
+  const sigOnlyReport = evaluateProofValidity(signatureOnlyProof)
+  assert(
+    sigOnlyReport.signatureVerified === true && sigOnlyReport.protocolVerified === false,
+    'Security Invariant: signatureValid=true does NOT imply protocolVerified=true (missing receipt fails protocol)'
+  )
+
+  // 7. Security Invariant: resolveTrustedKey strictly requires valid timestamp
+  const noTimestampKey = resolveTrustedKey('provn-server-2026-08', null as unknown as string)
+  assert(
+    noTimestampKey === null,
+    'Security Invariant: resolveTrustedKey fails closed when timestamp parameter is omitted or null'
+  )
 
   // --- SUMMARY ---
 

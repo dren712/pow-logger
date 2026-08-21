@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { evaluateProofValidity } from '@/app/lib/canonicalMessage'
+import { evaluateProofValidity, verifyPrivateProofAuth } from '@/app/lib/canonicalMessage'
 import { ProofDetail, WalletLog } from '@/app/lib/types'
 import { PROVN_ALLOWED_DOMAINS } from '@/app/lib/serverKeypair'
 
@@ -33,15 +33,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 
     const rawLog = log as WalletLog
 
-    // Privacy boundary enforcement: Private proofs cannot be queried publicly without authorization
+    // Privacy boundary enforcement: Private proofs require cryptographic wallet signature authorization
     const isPrivate = rawLog.visibility === 'private' || (rawLog as unknown as Record<string, unknown>).is_public === false
-    const authWallet = req.headers.get('x-wallet-address')
-
-    if (isPrivate && (!authWallet || authWallet !== rawLog.wallet_address)) {
-      return NextResponse.json(
-        { error: 'This proof record is private and visible only to the author wallet' },
-        { status: 403 }
-      )
+    if (isPrivate) {
+      const authHeader = req.headers.get('authorization')
+      const isAuthorized = verifyPrivateProofAuth(authHeader, proofId, rawLog.wallet_address)
+      if (!isAuthorized) {
+        return NextResponse.json(
+          { error: 'This proof record is private and requires a valid wallet signature authorization header' },
+          { status: 403 }
+        )
+      }
     }
 
     const validityReport = evaluateProofValidity(rawLog)
@@ -101,7 +103,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 
     return NextResponse.json(proofDetail, {
       headers: {
-        'Cache-Control': 'public, max-age=60, s-maxage=300',
+        'Cache-Control': isPrivate ? 'private, no-store, no-cache, must-revalidate' : 'public, max-age=60, s-maxage=300',
         'Access-Control-Allow-Origin': '*',
       },
     })

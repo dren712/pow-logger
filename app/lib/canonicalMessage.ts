@@ -570,4 +570,56 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   }
 }
 
+/**
+ * Cryptographically verifies private proof access authorization.
+ * Replaces unauthenticated headers with a strict SIWS-style detached Ed25519 signature verification:
+ * 1. Authorization header format: 'Bearer <payloadB58>.<sigB58>' or 'WalletAuth <payloadB58>.<sigB58>'
+ * 2. Payload contains { wallet: string, proofId: number, timestamp: string }
+ * 3. Asserts payload.wallet === expectedWallet and payload.proofId === expectedProofId
+ * 4. Asserts timestamp is fresh (within 5 minutes)
+ * 5. Asserts Ed25519 detached signature verifies against wallet public key
+ */
+export function verifyPrivateProofAuth(
+  authHeader: string | null | undefined,
+  expectedProofId: number,
+  expectedWallet: string
+): boolean {
+  if (!authHeader || typeof authHeader !== 'string') return false
+
+  const token = authHeader.replace(/^(Bearer|WalletAuth)\s+/i, '').trim()
+  if (!token || !token.includes('.')) return false
+
+  const parts = token.split('.')
+  if (parts.length !== 2) return false
+
+  try {
+    const payloadBytes = decodeBase58(parts[0])
+    const sigBytes = decodeBase58(parts[1])
+    if (sigBytes.length !== 64) return false
+
+    const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
+    if (!payload.wallet || !payload.proofId || !payload.timestamp) return false
+
+    // Assert wallet matches proof owner
+    if (payload.wallet !== expectedWallet) return false
+
+    // Assert target proof ID matches
+    if (Number(payload.proofId) !== Number(expectedProofId)) return false
+
+    // Assert timestamp freshness (within 5 minutes to prevent replay of auth tokens)
+    const authTime = new Date(payload.timestamp).getTime()
+    if (Number.isNaN(authTime)) return false
+    const now = Date.now()
+    if (Math.abs(now - authTime) > 5 * 60 * 1000) return false
+
+    // Cryptographically verify detached signature
+    const walletPubkeyBytes = decodeBase58(expectedWallet)
+    if (walletPubkeyBytes.length !== 32) return false
+
+    return nacl.sign.detached.verify(payloadBytes, sigBytes, walletPubkeyBytes)
+  } catch {
+    return false
+  }
+}
+
 

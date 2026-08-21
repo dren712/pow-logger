@@ -49,6 +49,7 @@ function decodeBase58(str) {
  */
 function resolveTrustedKey(kid, timestamp) {
   if (!kid || typeof kid !== 'string') return null
+  if (timestamp === undefined || timestamp === null) return null
 
   const keyMeta = trustManifest.keys.find(k => k.kid === kid)
   if (!keyMeta) return null
@@ -57,23 +58,20 @@ function resolveTrustedKey(kid, timestamp) {
   if (keyMeta.status === 'revoked') return null
   if (keyMeta.algorithm !== 'Ed25519') return null
 
-  // Enforce temporal epoch validity window if timestamp is supplied
-  if (timestamp !== undefined && timestamp !== null) {
-    const t = new Date(timestamp).getTime()
-    if (Number.isNaN(t)) {
-      return null // Malformed timestamp strictly fails closed
+  const t = new Date(timestamp).getTime()
+  if (Number.isNaN(t)) {
+    return null // Malformed timestamp strictly fails closed
+  }
+  if (keyMeta.valid_from) {
+    const from = new Date(keyMeta.valid_from).getTime()
+    if (!Number.isNaN(from) && t < from) {
+      return null // Key was not yet active
     }
-    if (keyMeta.valid_from) {
-      const from = new Date(keyMeta.valid_from).getTime()
-      if (!Number.isNaN(from) && t < from) {
-        return null // Key was not yet active
-      }
-    }
-    if (keyMeta.valid_until) {
-      const until = new Date(keyMeta.valid_until).getTime()
-      if (!Number.isNaN(until) && t > until) {
-        return null // Key was expired/retired
-      }
+  }
+  if (keyMeta.valid_until) {
+    const until = new Date(keyMeta.valid_until).getTime()
+    if (!Number.isNaN(until) && t > until) {
+      return null // Key was expired/retired
     }
   }
 

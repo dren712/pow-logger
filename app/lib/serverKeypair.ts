@@ -52,13 +52,14 @@ if (process.env.PROVN_SERVER_SECRET) {
  * 1. Checks if Key ID exists in published trust manifest.
  * 2. Enforces status permits verification (active or historical, NOT revoked).
  * 3. Enforces temporal epoch bounds: timestamp must be between valid_from and valid_until.
- * 4. Malformed timestamps strictly fail closed (return null).
+ * 4. Temporal timestamp is MANDATORY in verification paths; omitted or malformed timestamps strictly fail closed (return null).
  */
 export function resolveTrustedKey(
   kid: string,
-  timestamp?: string | number | Date | null
+  timestamp: string | number | Date | null | undefined
 ): Uint8Array | null {
   if (!kid || typeof kid !== 'string') return null;
+  if (timestamp === undefined || timestamp === null) return null;
 
   const keyMeta = trustManifest.keys.find((k: { kid: string }) => k.kid === kid);
   if (!keyMeta) return null;
@@ -67,23 +68,20 @@ export function resolveTrustedKey(
   if (keyMeta.status === 'revoked') return null;
   if (keyMeta.algorithm !== 'Ed25519') return null;
 
-  // Enforce temporal epoch validity window if timestamp is supplied
-  if (timestamp !== undefined && timestamp !== null) {
-    const t = new Date(timestamp).getTime();
-    if (Number.isNaN(t)) {
-      return null; // Malformed timestamp strictly fails closed
+  const t = new Date(timestamp).getTime();
+  if (Number.isNaN(t)) {
+    return null; // Malformed timestamp strictly fails closed
+  }
+  if (keyMeta.valid_from) {
+    const from = new Date(keyMeta.valid_from).getTime();
+    if (!Number.isNaN(from) && t < from) {
+      return null; // Key was not yet active at this timestamp
     }
-    if (keyMeta.valid_from) {
-      const from = new Date(keyMeta.valid_from).getTime();
-      if (!Number.isNaN(from) && t < from) {
-        return null; // Key was not yet active at this timestamp
-      }
-    }
-    if (keyMeta.valid_until) {
-      const until = new Date(keyMeta.valid_until).getTime();
-      if (!Number.isNaN(until) && t > until) {
-        return null; // Key was expired/retired at this timestamp
-      }
+  }
+  if (keyMeta.valid_until) {
+    const until = new Date(keyMeta.valid_until).getTime();
+    if (!Number.isNaN(until) && t > until) {
+      return null; // Key was expired/retired at this timestamp
     }
   }
 
@@ -95,8 +93,23 @@ export function resolveTrustedKey(
   }
 }
 
+/**
+ * Returns raw published public key bytes from manifest without temporal epoch validation.
+ * Use resolveTrustedKey(kid, timestamp) for all verification decisions.
+ */
+export function getPublishedPublicKey(kid: string = PROVN_KID): Uint8Array | null {
+  const keyMeta = trustManifest.keys.find((k: { kid: string }) => k.kid === kid);
+  if (!keyMeta || keyMeta.status === 'revoked' || keyMeta.algorithm !== 'Ed25519') return null;
+  try {
+    const pub = bs58.decode(keyMeta.public_key);
+    return pub.length === 32 ? pub : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getServerPublicKey(kid: string = PROVN_KID): Uint8Array | null {
-  return resolveTrustedKey(kid);
+  return getPublishedPublicKey(kid);
 }
 
 export function signServerReceipt(message: Uint8Array): Uint8Array {

@@ -22,16 +22,16 @@ PROVN is a portable, cryptographically verifiable provenance protocol for softwa
 
 > [!IMPORTANT]
 > **What PROVN Proves vs. What it Doesn't**
-> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + challenge + optional links) at a specific time, and that statement is durably archived on Arweave. It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
+> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + challenge + optional links) at a specific time. When archival is requested and confirmed, the resulting envelope is also backed by a verifiable Irys/Arweave transaction receipt. It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
 > 
 > **Note on Author Identity Verification**: PROVN enforces strict cryptographic binding between a `github_id` and a `wallet_address` via SIWS (Sign-In-With-Solana) OAuth, granting logs a `source_verified` provenance level when the author matches the repository commit author.
 
 In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and social posts. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
 
-PROVN gives developers a single, permanent cryptographic record of their daily self-attested contributions:
+PROVN gives developers a single, tamper-evident cryptographic record of their daily self-attested contributions:
 1. **Sign**: The builder signs a canonical message containing their work summary, evidence links, timestamp, and server-issued challenge with their Solana wallet.
 2. **Verify**: The server cryptographically validates the Ed25519 signature, checks the 15-minute anti-replay observation window, and indexes the attestation.
-3. **Archive**: The signed envelope is permanently stored on Arweave via the Irys L1 gateway.
+3. **Archive**: The signed envelope is durably archived on Arweave via the Irys L1 gateway upon request.
 4. **Inspect**: Anyone can verify any proof record across 4 independent verification layers using the public verification API or on-page verifier inspector.
 
 ---

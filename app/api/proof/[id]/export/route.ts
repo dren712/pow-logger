@@ -4,7 +4,8 @@ import {
   evaluateProofValidity,
   reconstructCanonicalSubmitMessage,
   computeCanonicalProofHash,
-  decodeBase58
+  decodeBase58,
+  verifyPrivateProofAuth,
 } from '@/app/lib/canonicalMessage'
 import { WalletLog } from '@/app/lib/types'
 
@@ -37,13 +38,15 @@ export async function GET(
   }
 
   const isPrivate = (log as unknown as Record<string, unknown>).visibility === 'private' || (log as unknown as Record<string, unknown>).is_public === false
-  const authWallet = request.headers.get('x-wallet-address')
-
-  if (isPrivate && (!authWallet || authWallet !== log.wallet_address)) {
-    return NextResponse.json(
-      { error: 'This proof record is private and visible only to the author wallet' },
-      { status: 403 }
-    )
+  if (isPrivate) {
+    const authHeader = request.headers.get('authorization')
+    const isAuthorized = verifyPrivateProofAuth(authHeader, proofId, log.wallet_address)
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { error: 'This proof record is private and requires a valid wallet signature authorization header to export' },
+        { status: 403 }
+      )
+    }
   }
 
   const proof = log as WalletLog
@@ -123,6 +126,7 @@ export async function GET(
   return NextResponse.json(portableEnvelope, {
     headers: {
       'Access-Control-Allow-Origin': '*',
+      'Cache-Control': isPrivate ? 'private, no-store, no-cache, must-revalidate' : 'public, max-age=60, s-maxage=300',
       ...(isDownload
         ? {
             'Content-Disposition': `attachment; filename="provn-proof-${proof.id}.json"`,

@@ -87,9 +87,9 @@ export default async function GrantEvidencePage() {
           </div>
 
           <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-5 space-y-1">
-            <div className="text-xs font-mono text-gray-400 uppercase">Ed25519 Verified</div>
+            <div className="text-xs font-mono text-gray-400 uppercase">Public Proof Records</div>
             <div className="text-3xl font-extrabold font-mono text-yellow-400">{verifiedCount}</div>
-            <div className="text-[11px] font-mono text-gray-500">Signature Authenticated</div>
+            <div className="text-[11px] font-mono text-gray-500">Public Protocol Envelopes</div>
           </div>
 
           <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-5 space-y-1">
@@ -133,10 +133,10 @@ export default async function GrantEvidencePage() {
         {/* Capital Efficiency Callout */}
         <div className="bg-gradient-to-r from-emerald-950/30 to-purple-950/30 border border-emerald-500/30 rounded-2xl p-6 space-y-2">
           <h3 className="text-sm font-bold font-mono text-white">
-            🌱 $0 Infrastructure Capital Efficiency
+            🌱 Free-Tier Infrastructure Efficiency
           </h3>
           <p className="text-xs text-gray-300 leading-relaxed font-sans">
-            Every metric displayed above was achieved at <strong>$0/month recurring cost</strong> using serverless edge hosting, browser-native Ed25519 signing, and Irys micro-archival. The requested grant capital directly funds on-chain Merkle trees for compressed NFT achievement minting, public SDK infrastructure, and ecosystem bounty integrations.
+            The live prototype runs within free-tier infrastructure ($0/month recurring infrastructure cost) using serverless edge hosting, browser-native Ed25519 signing, and Irys micro-archival. The requested grant capital directly funds on-chain Merkle trees for compressed NFT achievement minting, public SDK infrastructure, and ecosystem bounty integrations.
           </p>
         </div>
       </div>
