@@ -6,7 +6,7 @@ PROVN is a portable, cryptographically verifiable provenance protocol for softwa
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-270%2B%20Passing-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-278%20Passing-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
@@ -49,7 +49,7 @@ PROVN evaluates proof validity across four independent, non-fungible layers:
 | **Archive** | **Permanent Data Availability** | ✅ **Guaranteed when archived** — Immutable Arweave storage via confirmed Irys receipts. |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 
-### Adversarial Attack & Tampering Matrix (274+ Tests)
+### Adversarial Attack & Tampering Matrix (278+ Tests)
 
 The protocol test suite rigorously verifies resistance against active attacks across every layer:
 
@@ -58,6 +58,7 @@ The protocol test suite rigorously verifies resistance against active attacks ac
 | **Content Tampering** | Adversary alters 1 byte of signed work text | ❌ Rejected — Ed25519 signature verification fails |
 | **Evidence URL Injection** | Adversary adds or modifies PR/demo URL | ❌ Rejected — Reconstructed canonical hash mismatch |
 | **Signature Replay** | Re-submitting an authentic historic proof | ❌ Rejected — Single-use challenge token & signature `UNIQUE INDEX` |
+| **Private Auth Replay** | Replaying a intercepted private proof bearer token | ❌ Rejected — One-time SIWS nonce atomically consumed on verification |
 | **Timestamp Backdating** | Claiming work was signed hours earlier | ❌ Rejected — Challenge `iat`/`exp` window strictly bounds timestamp |
 | **Server Receipt Forgery** | Fabricating ingestion receipt without key | ❌ Rejected — Ed25519 verification against published trust manifest |
 | **Key Epoch Expiry** | Signing with an expired/retired server key | ❌ Rejected — `resolveTrustedKey` enforces `valid_until` temporal bounds |

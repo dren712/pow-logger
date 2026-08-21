@@ -6,7 +6,7 @@ import { PROVN_ALLOWED_DOMAINS } from '@/app/lib/serverKeypair'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 )
 
 export const dynamic = 'force-dynamic'
@@ -37,7 +37,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     const isPrivate = rawLog.visibility === 'private' || (rawLog as unknown as Record<string, unknown>).is_public === false
     if (isPrivate) {
       const authHeader = req.headers.get('authorization')
-      const isAuthorized = verifyPrivateProofAuth(authHeader, proofId, rawLog.wallet_address)
+      const host = req.headers.get('host') || 'provn.vercel.app'
+      const proto = req.headers.get('x-forwarded-proto') || 'https'
+      const expectedUri = `${proto}://${host}/api/proof/${proofId}`
+      const isAuthorized = await verifyPrivateProofAuth(supabase, authHeader, host, expectedUri, proofId, rawLog.wallet_address)
       if (!isAuthorized) {
         return NextResponse.json(
           { error: 'This proof record is private and requires a valid wallet signature authorization header' },

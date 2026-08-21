@@ -168,6 +168,7 @@ The server dynamically renders a responsive vector SVG displaying the builder's 
 - **PostgreSQL Row-Level Security**: Public clients (`anon`) are strictly restricted to read-only `SELECT` queries on the `logs` table. Direct client `INSERT`, `UPDATE`, or `DELETE` operations are rejected by PostgreSQL policies. All writes execute through the `service_role` on verified server routes.
 - **Transactional Challenge Consumption**: Single-use signing challenges and quota increments are consumed atomically in a single PostgreSQL transaction (`atomic_insert_log`).
 - **Atomic OAuth State Consumption**: OAuth state transitions are atomically consumed on update to eliminate replay attacks and race conditions.
+- **Private Proof Authorization & One-Time Nonce Consumption**: Viewing and exporting private proofs requires a detached Ed25519 signature over a canonical UTF-8 authorization message. Server-issued nonces are atomically consumed in PostgreSQL (`consume_private_auth_nonce`) with a 5-minute TTL, completely eliminating authorization replay.
 - **Unique Signature Index**: Enforces a database-level `UNIQUE INDEX` on the `signature` column to neutralize signature replay attacks.
 - **Server-Bounded Timestamp Window**: Validates client timestamp against server observation time within a strict ±15 minute window (`900,000ms`).
 - **Daily Quota Enforcement**: Daily limits (3 logs/day) are securely enforced database-side using strict row-level locking on a `daily_quotas` table to prevent race conditions.

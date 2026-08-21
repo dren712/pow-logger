@@ -11,6 +11,7 @@ import nacl from 'tweetnacl'
 import crypto from 'crypto'
 import { ProofStatusLayers, ProofValidityReport } from './types'
 import { verifyServerReceipt, PROVN_ALLOWED_DOMAINS } from './serverKeypair'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface VerifiableLog {
   id?: number | string | null
@@ -396,7 +397,7 @@ export function verifyLogCryptographically(
  * 1. Signature Layer: Ed25519 cryptographic detached signature check against wallet public key.
  * 2. Protocol Layer: Server-issued challenge binding, domain normalization, and ISO timestamp bounds.
  * 3. Source Layer: Graduated evidence provenance (self_attested -> source_verified).
- * 4. Archive Layer: Permanent Arweave L1 data receipt verification via Irys.
+ * 4. Archive Layer: local validation of claimed Irys/Arweave archival state.
  */
 export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   const isSigValid = verifyLogCryptographically(log)
@@ -579,11 +580,40 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
  * 4. Asserts timestamp is fresh (within 5 minutes)
  * 5. Asserts Ed25519 detached signature verifies against wallet public key
  */
-export function verifyPrivateProofAuth(
+export function buildPrivateProofAuthMessage(
+  domain: string,
+  uri: string,
+  wallet: string,
+  proofId: number,
+  nonce: string,
+  issuedAt: string,
+  expirationTime: string
+): string {
+  return [
+    'PROVN Private Proof Authorization',
+    `Domain: ${domain}`,
+    `URI: ${uri}`,
+    `Wallet: ${wallet}`,
+    `Proof ID: ${proofId}`,
+    `Nonce: ${nonce}`,
+    `Issued At: ${issuedAt}`,
+    `Expiration: ${expirationTime}`
+  ].join('\n')
+}
+
+export type NonceConsumerClient =
+  | SupabaseClient
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | { rpc: (fn: string, args: { p_nonce: string; p_proof_id: number }) => PromiseLike<{ data?: boolean | null; error?: any }> }
+
+export async function verifyPrivateProofAuth(
+  supabase: NonceConsumerClient | null | undefined,
   authHeader: string | null | undefined,
+  expectedDomain: string,
+  expectedUri: string,
   expectedProofId: number,
   expectedWallet: string
-): boolean {
+): Promise<boolean> {
   if (!authHeader || typeof authHeader !== 'string') return false
 
   const token = authHeader.replace(/^(Bearer|WalletAuth)\s+/i, '').trim()
@@ -598,25 +628,50 @@ export function verifyPrivateProofAuth(
     if (sigBytes.length !== 64) return false
 
     const payload = JSON.parse(new TextDecoder().decode(payloadBytes))
-    if (!payload.wallet || !payload.proofId || !payload.timestamp) return false
+    if (!payload.domain || !payload.uri || !payload.nonce || !payload.issuedAt || !payload.expirationTime || !payload.wallet || !payload.proofId) return false
 
-    // Assert wallet matches proof owner
+    // Assert wallet matches expected
     if (payload.wallet !== expectedWallet) return false
 
     // Assert target proof ID matches
     if (Number(payload.proofId) !== Number(expectedProofId)) return false
+    
+    // Assert domain and URI match
+    if (payload.domain !== expectedDomain) return false
+    if (payload.uri !== expectedUri) return false
 
-    // Assert timestamp freshness (within 5 minutes to prevent replay of auth tokens)
-    const authTime = new Date(payload.timestamp).getTime()
-    if (Number.isNaN(authTime)) return false
-    const now = Date.now()
-    if (Math.abs(now - authTime) > 5 * 60 * 1000) return false
-
+    // Assert timestamp freshness (prevent expired tokens)
+    const expTime = new Date(payload.expirationTime).getTime()
+    if (Number.isNaN(expTime)) return false
+    if (Date.now() > expTime) return false
+    
     // Cryptographically verify detached signature
+    const canonicalMessage = buildPrivateProofAuthMessage(
+      payload.domain,
+      payload.uri,
+      payload.wallet,
+      payload.proofId,
+      payload.nonce,
+      payload.issuedAt,
+      payload.expirationTime
+    )
+    const messageBytes = new TextEncoder().encode(canonicalMessage)
     const walletPubkeyBytes = decodeBase58(expectedWallet)
     if (walletPubkeyBytes.length !== 32) return false
 
-    return nacl.sign.detached.verify(payloadBytes, sigBytes, walletPubkeyBytes)
+    const isValidSig = nacl.sign.detached.verify(messageBytes, sigBytes, walletPubkeyBytes)
+    if (!isValidSig) return false
+    
+    // Atomically consume nonce
+    if (!supabase) return false
+    const { data: consumed, error } = await supabase.rpc('consume_private_auth_nonce', {
+      p_nonce: payload.nonce,
+      p_proof_id: Number(expectedProofId)
+    })
+    
+    if (error || !consumed) return false
+    
+    return true
   } catch {
     return false
   }

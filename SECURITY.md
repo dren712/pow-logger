@@ -80,6 +80,8 @@ PROVN provides the *cryptographic wrapper* around a claim, but the claim itself 
 
 * **Transactional Challenge & Quota Enforcement:** Signing challenge consumption, daily quota incrementation (3 logs/day), and row insertion execute within a single atomic PostgreSQL transaction (`atomic_insert_log`). Quota exhaustion or challenge invalidation causes immediate rollback.
 * **Atomic OAuth State Consumption:** OAuth state records use single-operation atomic updates with `consumed_at` tracking and PKCE (`S256` code challenge / code verifier) verification to prevent CSRF and replay attacks.
+* **Private Proof Authorization & One-Time SIWS Challenges:** Private proof viewing and portable envelope export strictly require a detached Ed25519 signature over an explicit canonical UTF-8 authorization envelope (`PROVN Private Proof Authorization\nDomain: ...\nURI: ...\nWallet: ...\nProof ID: ...\nNonce: ...\nIssued At: ...\nExpiration: ...`). Nonces are issued with a 5-minute TTL via `GET /api/proof/[id]/auth-challenge` and atomically consumed in PostgreSQL via `consume_private_auth_nonce` upon verification to guarantee zero token replay.
+* **Conditional Cache Control:** Private proof responses strictly set `Cache-Control: private, no-store, no-cache, must-revalidate`, ensuring sensitive evidence cannot be cached on shared edge CDNs or intermediate proxies.
 * **Row-Level Security (RLS):** Anonymous clients have read-only `SELECT` access to public logs. All mutations are restricted to the `service_role`.
 * **Rate Limiting:** Pre-verification in-memory rate limiting operates as a first-line UX barrier; authoritative replay defense and quota enforcement are enforced by PostgreSQL.
 
