@@ -4,14 +4,10 @@ import { createClient } from '@supabase/supabase-js'
 export const dynamic = 'force-dynamic'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 
 export async function GET() {
-  if (!serviceKey) {
-    return NextResponse.json({ error: 'Missing service key' }, { status: 500 })
-  }
-
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createClient(supabaseUrl, apiKey)
 
   try {
     // 1. Total proofs
