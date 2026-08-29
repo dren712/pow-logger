@@ -9,6 +9,7 @@ import bs58 from 'bs58'
 import {
   buildCanonicalSubmitMessageV2,
   buildCanonicalRetryMessageV2,
+  getVerifiedDomain,
 } from './canonicalMessage'
 import { ArchivalState, LogRecord } from './types'
 
@@ -45,37 +46,31 @@ export interface RetryArchivalResponse {
   gatewayUrl: string
 }
 
-const encodeBase58 = (bytes: Uint8Array): string => {
-  const bs58Obj = bs58 as unknown as { encode?: (bytes: Uint8Array) => string; default?: { encode: (bytes: Uint8Array) => string } }
-  const fn = bs58Obj.encode || bs58Obj.default?.encode
-  if (!fn) throw new Error('Base58 encoder unavailable')
-  return fn(bytes)
+function encodeBase58(bytes: Uint8Array): string {
+  return bs58.encode(bytes)
 }
 
-/** @deprecated Use challenges instead */
-export function generateLegacyNonce(): string {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    const bytes = new Uint8Array(16)
-    crypto.getRandomValues(bytes)
-    return encodeBase58(bytes)
-  }
-  throw new Error('Secure random generator (crypto.getRandomValues) unavailable.')
-}
-
+/**
+ * Step 1: Request an anti-replay cryptographic signing challenge from the server
+ */
 export async function requestChallenge(walletAddress: string): Promise<string> {
   const response = await fetch('/api/challenge', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ walletAddress }),
   })
+
   if (!response.ok) {
-    let msg = 'Failed to fetch signing challenge'
+    let errorMsg = `Failed to get challenge (${response.status})`
     try {
-      const err = await response.json()
-      if (err.error) msg = err.error
-    } catch {}
-    throw new Error(msg)
+      const data = await response.json()
+      if (data.error) errorMsg = data.error
+    } catch {
+      // fallback
+    }
+    throw new Error(errorMsg)
   }
+
   const data = await response.json()
   return data.challenge
 }
@@ -91,9 +86,7 @@ export async function submitVerifiedLog(
   const challenge = await requestChallenge(walletAddress)
 
   // 1. Build canonical proof message cryptographically binding content AND evidence URLs
-  const clientDomain = typeof window !== 'undefined' && window.location?.host
-    ? window.location.host.split(':')[0]
-    : 'provn-sol.vercel.app'
+  const clientDomain = getVerifiedDomain(typeof window !== 'undefined' && window.location?.host ? window.location.host : null)
   const messageText = buildCanonicalSubmitMessageV2({
     domain: clientDomain,
     walletAddress,
@@ -158,9 +151,7 @@ export async function requestAuthorizedArchivalRetry(
   const challenge = await requestChallenge(walletAddress)
 
   // 1. Build canonical retry message
-  const clientDomain = typeof window !== 'undefined' && window.location?.host
-    ? window.location.host.split(':')[0]
-    : 'provn-sol.vercel.app'
+  const clientDomain = getVerifiedDomain(typeof window !== 'undefined' && window.location?.host ? window.location.host : null)
   const messageText = buildCanonicalRetryMessageV2({
     domain: clientDomain,
     walletAddress,

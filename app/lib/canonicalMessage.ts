@@ -129,7 +129,12 @@ export function getVerifiedDomain(reqHost: string | null): string {
 
   const cleanHost = reqHost.trim().toLowerCase().split(':')[0]
 
-  if (PROVN_ALLOWED_DOMAINS.includes(cleanHost)) {
+  if (
+    PROVN_ALLOWED_DOMAINS.includes(cleanHost) ||
+    cleanHost === 'localhost' ||
+    cleanHost === '127.0.0.1' ||
+    cleanHost.endsWith('.vercel.app')
+  ) {
     return cleanHost
   }
 

@@ -6,7 +6,8 @@
   "updated_at": "2026-08-21T00:00:00Z",
   "allowed_domains": [
     "provn-sol.vercel.app",
-    "localhost"
+    "localhost",
+    "127.0.0.1"
   ],
   "keys": [
     {
