@@ -59,7 +59,6 @@ export interface AgentBatchAnchorParams {
   eventCount: number
   timestamp: string | number | Date
   protocolVersion?: number
-  archiveTxId?: string | null
   programId?: PublicKey
 }
 
@@ -86,7 +85,6 @@ export function buildAnchorAgentBatchInstruction(params: AgentBatchAnchorParams)
     eventCount,
     timestamp,
     protocolVersion = 1,
-    archiveTxId = null,
     programId = PROVN_PROGRAM_ID,
   } = params
 
@@ -114,17 +112,6 @@ export function buildAnchorAgentBatchInstruction(params: AgentBatchAnchorParams)
   // Protocol version as u8
   const versionBuf = Buffer.from([protocolVersion])
 
-  // Optional archive_tx_id: 1 byte flag + 4 byte len + string bytes
-  let archiveBuf: Buffer
-  if (archiveTxId) {
-    const strBytes = Buffer.from(archiveTxId.trim(), 'utf-8')
-    const lenBuf = Buffer.alloc(4)
-    lenBuf.writeUInt32LE(strBytes.length)
-    archiveBuf = Buffer.concat([Buffer.from([1]), lenBuf, strBytes])
-  } else {
-    archiveBuf = Buffer.from([0])
-  }
-
   const data = Buffer.concat([
     discriminator,
     batchIdBytes,
@@ -132,7 +119,6 @@ export function buildAnchorAgentBatchInstruction(params: AgentBatchAnchorParams)
     eventCountBuf,
     timestampBuf,
     versionBuf,
-    archiveBuf,
   ])
 
   return new TransactionInstruction({
@@ -157,7 +143,6 @@ export interface DecodedAgentBatchAnchor {
   eventCount: number
   timestamp: number         // Unix seconds
   protocolVersion: number
-  archiveTxId: string | null
   bump: number
 }
 
@@ -171,13 +156,12 @@ export interface DecodedAgentBatchAnchor {
  *   event_count:      u32        (4 bytes)
  *   timestamp:        i64        (8 bytes)
  *   protocol_version: u8         (1 byte)
- *   archive_tx_id:    [u8; 43]   (43 bytes)
  *   bump:             u8         (1 byte)
- *   Total: 8 + 32 + 32 + 32 + 4 + 8 + 1 + 43 + 1 = 161 bytes
+ *   Total: 8 + 32 + 32 + 32 + 4 + 8 + 1 + 1 = 118 bytes
  */
 export function decodeAgentBatchAnchorAccount(data: Buffer | Uint8Array): DecodedAgentBatchAnchor {
   const buf = Buffer.isBuffer(data) ? data : Buffer.from(data)
-  const minLen = 8 + 32 + 32 + 32 + 4 + 8 + 1 + 43 + 1
+  const minLen = 8 + 32 + 32 + 32 + 4 + 8 + 1 + 1
   if (buf.length < minLen) {
     throw new Error(`Invalid account data length for AgentBatchAnchor: expected at least ${minLen}, got ${buf.length}`)
   }
@@ -202,12 +186,6 @@ export function decodeAgentBatchAnchorAccount(data: Buffer | Uint8Array): Decode
   const protocolVersion = buf.readUInt8(offset)
   offset += 1
 
-  const rawTxBytes = buf.subarray(offset, offset + 43)
-  const nullIdx = rawTxBytes.indexOf(0)
-  const end = nullIdx >= 0 ? nullIdx : 43
-  const archiveTxId = end > 0 ? rawTxBytes.subarray(0, end).toString('utf-8') : null
-  offset += 43
-
   const bump = buf.readUInt8(offset)
 
   return {
@@ -217,7 +195,6 @@ export function decodeAgentBatchAnchorAccount(data: Buffer | Uint8Array): Decode
     eventCount,
     timestamp,
     protocolVersion,
-    archiveTxId,
     bump,
   }
 }
