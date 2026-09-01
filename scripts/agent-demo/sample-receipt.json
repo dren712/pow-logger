@@ -1,0 +1,221 @@
+{
+  "protocol": "PROVN",
+  "version": "agent/1",
+  "generatedAt": "2026-09-01T22:10:25.728Z",
+  "execution": {
+    "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+    "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+    "startedAt": "2026-09-01T22:10:25.714Z",
+    "completedAt": "2026-09-01T22:10:25.728Z",
+    "status": "completed",
+    "eventCount": 5,
+    "terminalEventHash": "edcb87717804304c2fc2b349d5596c407657fecac7b8f3e3600a99e0928d91fa",
+    "merkleRoot": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17",
+    "anchorReference": {
+      "network": "devnet",
+      "signature": null,
+      "pda": "7To9GeP2aXSw56KJcdM5hvzQzo6feo6WQDWfqa5Q8Rf",
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+    },
+    "protocolVersion": "agent/1"
+  },
+  "events": [
+    {
+      "eventId": "f84d7888-f52a-4e01-99da-a82e7a9a1088",
+      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "sequence": 0,
+      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+      "eventType": "agent.started",
+      "timestamp": "2026-09-01T22:10:25.715Z",
+      "parentEventId": null,
+      "previousEventHash": null,
+      "payloadHash": "9ba0a2537fa2472fcf4a549b505ed64bbff29d5823e86d9e21e61518fe0f1f58",
+      "eventHash": "1b74186ab3ec53a91cf1292eb4b48c9900aaed652b22bee770ef70e8e2940bbd",
+      "signature": "5gCZeyFcWfFxomjAq5MrW2o3reJAFuoUQMRWVLSqactPtkEho3fa81Q82zwZq3STKWA5FTURGxSLd7DmSXNKp1sV",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "6d4b6a6a-ee76-4bc3-9296-c992dc9dd266",
+      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "sequence": 1,
+      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+      "eventType": "file.read",
+      "timestamp": "2026-09-01T22:10:25.718Z",
+      "parentEventId": null,
+      "previousEventHash": "1b74186ab3ec53a91cf1292eb4b48c9900aaed652b22bee770ef70e8e2940bbd",
+      "payloadHash": "034cfcd293b3ce56d65bf82bcb39447f9a44c876dc689478794953b34443e0bd",
+      "eventHash": "45d37d6281427b724282df72caa8821ff498f66965129e094724a80ee6544874",
+      "signature": "2NdZgYKazwxUaHuP5cz2wRW1iA4TtHB5vXnUxhFVfexQxZsERgMx6P6FJ5C3GdZpnzhhd1vWZBvqkG9MnpPvDxYF",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "5f357e0a-cda0-4e8b-9acc-d0bade7acfa5",
+      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "sequence": 2,
+      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+      "eventType": "file.write",
+      "timestamp": "2026-09-01T22:10:25.721Z",
+      "parentEventId": null,
+      "previousEventHash": "45d37d6281427b724282df72caa8821ff498f66965129e094724a80ee6544874",
+      "payloadHash": "fa5f45003391b0814e68c1a500fbcf67076027d5bcf08a90b049c9c17b054844",
+      "eventHash": "0a2584cafbdfc8bec4ed73196547470c6f6420ebfa0dbfd3ebd46cfa387a2091",
+      "signature": "3MANrkd8LEmqL37gHHmR19swM11mTHmj8ZDzVzjAyfVQ1DyRhQFCH2umMnT6BVZzkRWMtvGZLUhsNs35NJBMdDsZ",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "ad58d7c9-aec6-4294-b4b6-89008ac16cf1",
+      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "sequence": 3,
+      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+      "eventType": "shell.execute",
+      "timestamp": "2026-09-01T22:10:25.723Z",
+      "parentEventId": null,
+      "previousEventHash": "0a2584cafbdfc8bec4ed73196547470c6f6420ebfa0dbfd3ebd46cfa387a2091",
+      "payloadHash": "c5437456f9d01ca07091572e13dab2d66a9de7c0e75228ab51cf6c7b63bfe7f2",
+      "eventHash": "c85ce479022939dbe8b67662b3dd7ed628caef5b13a863676d67e29158df31dc",
+      "signature": "5eTaygkzTTGhv59yUWqEv86ZvwPofj7i4QGLpwda6BfZQxbtDFUrCbKfx8ADkQvxhyxY8S1rcbnbsebo2jMGU2Q3",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "ab87602c-115a-40e6-b952-53d9c4fd635a",
+      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "sequence": 4,
+      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+      "eventType": "agent.completed",
+      "timestamp": "2026-09-01T22:10:25.726Z",
+      "parentEventId": null,
+      "previousEventHash": "c85ce479022939dbe8b67662b3dd7ed628caef5b13a863676d67e29158df31dc",
+      "payloadHash": "9de724ebd7d9d18031d72bb6839eb4222bdf09d5e98db1e73f5d0d347abfd519",
+      "eventHash": "edcb87717804304c2fc2b349d5596c407657fecac7b8f3e3600a99e0928d91fa",
+      "signature": "21yChCb5dtsVcc5sShRDVX9qYu7jAKD4xtos8Ck7EeVZTQ8AfMG9orJVVgmMptVnYQn13tPA4fWQyU8s6eDwCc8v",
+      "protocolVersion": "agent/1"
+    }
+  ],
+  "batch": {
+    "batchId": "592c4a8d-decf-4fbb-98c7-701f51b79f66",
+    "protocolVersion": "agent/1",
+    "createdAt": "2026-09-01T22:10:25.728Z",
+    "eventCount": 5,
+    "firstSequence": 0,
+    "lastSequence": 4,
+    "merkleRoot": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17",
+    "executionIds": [
+      "8d328231-a521-4ed4-847a-2d4d5778e5d2"
+    ],
+    "solanaAnchor": {
+      "network": "devnet",
+      "signature": null,
+      "pda": "7To9GeP2aXSw56KJcdM5hvzQzo6feo6WQDWfqa5Q8Rf",
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+    },
+    "irysArchive": null,
+    "status": "anchored"
+  },
+  "merkle": {
+    "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17",
+    "leafCount": 5,
+    "leaves": [
+      "f2c60e3b4303927fd6c731c75151518c49b5e04f49481d6f11c98f65d6b83ce5",
+      "562eacd6de9fdcedc38f60ff974d7509322f1f0a851c8be62945f927c232b53e",
+      "920fd9aff577438234234d29a03705b83b6b78ba0b0674b4fc05201eaab47067",
+      "d902776d92a018742912a41e349d27b5456dfcf95491d3c033acfc08d09c2f74",
+      "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e"
+    ],
+    "proofs": [
+      {
+        "leafIndex": 0,
+        "leafHash": "f2c60e3b4303927fd6c731c75151518c49b5e04f49481d6f11c98f65d6b83ce5",
+        "proof": [
+          {
+            "hash": "562eacd6de9fdcedc38f60ff974d7509322f1f0a851c8be62945f927c232b53e",
+            "direction": "right"
+          },
+          {
+            "hash": "f4fe39df16741788133d7ea1291207ae8bdb1384c9ea01f4e698ee64d9ff5671",
+            "direction": "right"
+          },
+          {
+            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "direction": "right"
+          }
+        ],
+        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+      },
+      {
+        "leafIndex": 1,
+        "leafHash": "562eacd6de9fdcedc38f60ff974d7509322f1f0a851c8be62945f927c232b53e",
+        "proof": [
+          {
+            "hash": "f2c60e3b4303927fd6c731c75151518c49b5e04f49481d6f11c98f65d6b83ce5",
+            "direction": "left"
+          },
+          {
+            "hash": "f4fe39df16741788133d7ea1291207ae8bdb1384c9ea01f4e698ee64d9ff5671",
+            "direction": "right"
+          },
+          {
+            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "direction": "right"
+          }
+        ],
+        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+      },
+      {
+        "leafIndex": 2,
+        "leafHash": "920fd9aff577438234234d29a03705b83b6b78ba0b0674b4fc05201eaab47067",
+        "proof": [
+          {
+            "hash": "d902776d92a018742912a41e349d27b5456dfcf95491d3c033acfc08d09c2f74",
+            "direction": "right"
+          },
+          {
+            "hash": "047a7e242532d3aaf01d545bb0cba8f72358a5a9e6a14ec039690ee83e4d56ad",
+            "direction": "left"
+          },
+          {
+            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "direction": "right"
+          }
+        ],
+        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+      },
+      {
+        "leafIndex": 3,
+        "leafHash": "d902776d92a018742912a41e349d27b5456dfcf95491d3c033acfc08d09c2f74",
+        "proof": [
+          {
+            "hash": "920fd9aff577438234234d29a03705b83b6b78ba0b0674b4fc05201eaab47067",
+            "direction": "left"
+          },
+          {
+            "hash": "047a7e242532d3aaf01d545bb0cba8f72358a5a9e6a14ec039690ee83e4d56ad",
+            "direction": "left"
+          },
+          {
+            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "direction": "right"
+          }
+        ],
+        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+      },
+      {
+        "leafIndex": 4,
+        "leafHash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+        "proof": [
+          {
+            "hash": "ab93003fddf26395793f1ef3fc48a11f10082e6fbde82f418cd8206ccf831979",
+            "direction": "left"
+          }
+        ],
+        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+      }
+    ]
+  },
+  "solana": {
+    "network": "devnet",
+    "signature": null,
+    "pda": "7To9GeP2aXSw56KJcdM5hvzQzo6feo6WQDWfqa5Q8Rf",
+    "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+  },
+  "irys": null
+}

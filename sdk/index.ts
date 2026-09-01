@@ -34,6 +34,34 @@ export {
 }
 export type { AnchorProofParams, DecodedProofAnchor }
 
+// ─── Track B: Agent Protocol Exports ─────────────────────────────────────────
+
+export { ProvnAgentRuntime } from '../app/lib/agent/agentSdk'
+export { verifyAgentReceipt, formatVerificationReport } from '../app/lib/agent/agentVerifier'
+export { buildAgentReceipt, serializeReceipt, deserializeReceipt } from '../app/lib/agent/agentReceipt'
+export { deriveAgentBatchAnchorPda, buildAnchorAgentBatchInstruction, buildAnchorReference } from '../app/lib/agent/solanaAgentAnchor'
+export { buildMerkleTree, verifyMerkleProof, recomputeMerkleRoot } from '../app/lib/agent/merkleBatch'
+export { createSignedEvent, verifyEventSignature, sha256, generateId } from '../app/lib/agent/agentEvents'
+export { verifyHashChain } from '../app/lib/agent/hashChain'
+export {
+  AGENT_PROTOCOL_VERSION,
+  DOMAIN_SEPARATION,
+  AGENT_EVENT_TYPES,
+} from '../app/lib/agent/types'
+export type {
+  AgentEvent,
+  AgentExecution,
+  AgentBatch,
+  AgentReceipt,
+  MerkleTree,
+  MerkleInclusionProof,
+  VerificationResult,
+  TamperFailure,
+  PayloadCommitment,
+  AnchorReference,
+  IrysArchiveReference,
+} from '../app/lib/agent/types'
+
 export interface ProvnClientOptions {
   baseUrl?: string
 }
