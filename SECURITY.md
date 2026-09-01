@@ -15,10 +15,19 @@ When a log is evaluated by PROVN or an independent third-party auditor, the prot
 
 Independent verifiers and auditors can verify PROVN signatures offline using the published versioned trust manifest (`protocol/trust-manifest.json`):
 
-| Key ID (`kid`) | Algorithm | Published Public Key (Base58) | Epoch Status | Valid From | Valid Until |
+| Key ID (`kid`) | Algorithm | Published Public Key (Base58) | Epoch Status | Valid From | Valid Until / Revocation |
 |---|---|---|---|---|---|
-| `provn-server-2026-08` | Ed25519 | `FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF` | Active Genesis | 2026-08-01T00:00:00Z | None (Active) |
-| `provn-server-2026-06` | Ed25519 | `3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG` | Historical | 2026-06-01T00:00:00Z | 2026-08-31T23:59:59Z |
+| `provn-server-2026-09-r2` | Ed25519 | `Fxvcy7DSCesFrWpG3cLXbkDeu8cfRjezf87Tf2J13cKf` | Active (Production) | 2026-09-01T00:00:00Z | None (Active) |
+| `provn-server-2026-09` | Ed25519 | `83G8976bWFyr7ndabeC3MTDCFshRHoNTQFU5RdUPCKUT` | Revoked | 2026-09-01T00:00:00Z | Revoked: 2026-09-02T00:00:00Z (CI exposure) |
+| `provn-server-2026-08` | Ed25519 | `FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF` | Revoked | 2026-08-01T00:00:00Z | Revoked: 2026-09-01T00:00:00Z (Git history exposure) |
+| `provn-server-2026-06` | Ed25519 | `3yFwqdfjEU52f3Hj1m79xJ2vKrqWpZz7fE9iM2e7X8uG` | Historical | 2026-06-01T00:00:00Z | 2026-08-31T23:59:59Z (Retired) |
+| `provn-server-test-fixture` | Ed25519 | `J7LGJbc9y57x5uVuNkfMkqmk1FE4DTVatwfN4ak1QEhf` | Test Fixture | 2026-01-01T00:00:00Z | 2027-12-31T23:59:59Z (Isolated from production) |
+
+### Key Revocation Semantics
+PROVN implements standard PKI CRL/OCSP temporal revocation bounds:
+- When a key is marked as `revoked` with a specific `revoked_at` ISO-8601 timestamp, signatures observed **at or after** `revoked_at` are strictly rejected.
+- Historical receipts observed and signed **prior to** `revoked_at` remain cryptographically verifiable against the key epoch.
+- Dedicated test fixtures (`status: test`) are strictly rejected by production verification endpoints and cannot be used in production node initialization.
 
 ## 3. Formal Verification Algorithm Specification (Protocol V2)
 

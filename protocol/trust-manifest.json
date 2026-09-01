@@ -9,13 +9,24 @@
   ],
   "keys": [
     {
+      "kid": "provn-server-2026-09-r2",
+      "algorithm": "Ed25519",
+      "public_key": "Fxvcy7DSCesFrWpG3cLXbkDeu8cfRjezf87Tf2J13cKf",
+      "valid_from": "2026-09-01T00:00:00Z",
+      "valid_until": null,
+      "status": "active",
+      "purpose": "Server challenge token and submission receipt signing (Production Trust Anchor)"
+    },
+    {
       "kid": "provn-server-2026-09",
       "algorithm": "Ed25519",
       "public_key": "83G8976bWFyr7ndabeC3MTDCFshRHoNTQFU5RdUPCKUT",
       "valid_from": "2026-09-01T00:00:00Z",
-      "valid_until": null,
-      "status": "active",
-      "purpose": "Server challenge token and submission receipt signing"
+      "valid_until": "2026-09-30T23:59:59Z",
+      "status": "revoked",
+      "revoked_at": "2026-09-02T00:00:00Z",
+      "revocation_reason": "Key compromise: private signing secret exposed in CI workflow commit history",
+      "purpose": "Server challenge token and submission receipt signing (REVOKED)"
     },
     {
       "kid": "provn-server-2026-08",
@@ -36,6 +47,15 @@
       "valid_until": "2026-08-31T23:59:59Z",
       "status": "historical",
       "purpose": "Historical test and pilot epoch signing"
+    },
+    {
+      "kid": "provn-server-test-fixture",
+      "algorithm": "Ed25519",
+      "public_key": "J7LGJbc9y57x5uVuNkfMkqmk1FE4DTVatwfN4ak1QEhf",
+      "valid_from": "2026-01-01T00:00:00Z",
+      "valid_until": "2027-12-31T23:59:59Z",
+      "status": "test",
+      "purpose": "Dedicated test & CI environment signing identity (strictly rejected in production)"
     }
   ]
 }

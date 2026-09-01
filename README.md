@@ -6,7 +6,7 @@ PROVN is a portable, cryptographically verifiable provenance protocol for softwa
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-286%20Offline%20%7C%20296%20Total%20Passing-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-294%20Offline%20%7C%20304%20Total%20Passing-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
@@ -50,14 +50,14 @@ PROVN evaluates proof validity across four independent, non-fungible layers:
 | **Archive** | **Archival Availability** | ✅ **Confirmed when archived** — Decentralized Arweave storage via confirmed Irys receipts (`receipt_obtained`). |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 
-### Adversarial Attack & Tampering Matrix (286 Offline / 296 Total Tests)
+### Adversarial Attack & Tampering Matrix (294 Offline / 304 Total Tests)
 
 The protocol test suite rigorously verifies resistance against active attacks across every layer:
 
 > [!NOTE]
 > **Offline vs. Live Suite Breakdown**:
-> - **286 Offline Tests**: Fully air-gapped cryptographic verification, tampering matrices, SIWS auth, rate limiters, policy evaluation, key-epoch boundaries, and server ↔ standalone CLI differential tests run without network or database credentials.
-> - **10 Live Integration Tests**: Live Supabase database constraint, RLS policy, and provenance persistence checks run when connected to a configured database instance, totaling **296 passed tests**.
+> - **294 Offline Tests**: Fully air-gapped cryptographic verification, tampering matrices, SIWS auth, rate limiters, policy evaluation, key-epoch boundaries, revocation cutoff verification, and server ↔ standalone CLI differential tests run without network or database credentials.
+> - **10 Live Integration Tests**: Live Supabase database constraint, RLS policy, and provenance persistence checks run when connected to a configured database instance, totaling **304 passed tests**.
 
 | Attack Scenario | Threat Description | Protocol Defense & Verification Result |
 |---|---|---|

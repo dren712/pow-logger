@@ -46,7 +46,7 @@ import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
 import { WalletLog, BuilderReputation } from '../app/lib/types'
 import { parseGithubUrl, verifyGithubSource } from '../app/lib/githubVerifier'
-import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS, resolveTrustedKey, getPublishedPublicKey, PROVN_KID } from '../app/lib/serverKeypair'
+import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS, resolveTrustedKey, getPublishedPublicKey, PROVN_KID, requireServerKeypair } from '../app/lib/serverKeypair'
 import { evaluateEligibility, STANDARD_POLICY_PRESETS } from '../app/lib/policyEngine'
 
 import fs from 'fs'
@@ -65,8 +65,14 @@ try {
   }
 } catch {}
 
+// Dedicated Test Signing Identity:
+// Used exclusively for CI & test assertions; never trusted in production.
+const TEST_FIXTURE_KID = 'provn-server-test-fixture'
+const TEST_FIXTURE_SECRET = '4N7gBSB3K4SgqqkcBqaHnzqR12mc4XbnvS7Adx1SyeyiNVUTwF5AHoTrULhegPm3TYQWsWLJ5tHaBE9Yko5Dvbuj'
+
 if (!process.env.PROVN_SERVER_SECRET) {
-  process.env.PROVN_SERVER_SECRET = '2T8NMs4hHP4eRgqam6EdipLS93me19sPKfNquZdnugNJQdwobNKCu9Diktrot1U6zixSqyJDVZEkg5De73c1XTzP'
+  process.env.PROVN_KID = TEST_FIXTURE_KID
+  process.env.PROVN_SERVER_SECRET = TEST_FIXTURE_SECRET
 }
 
 async function runProductionTestSuite() {
@@ -2066,12 +2072,22 @@ async function runProductionTestSuite() {
   console.log('\n► SUITE 18: Key Epoch & Temporal Validity Enforcement')
 
   // Test 1: Active Key + Current Observation Timestamp resolves valid public key
-  const activeKeyBytes = resolveTrustedKey('provn-server-2026-09', '2026-09-02T00:00:00Z')
-  assert(activeKeyBytes !== null && activeKeyBytes.length === 32, 'Active key provn-server-2026-09 resolves for current epoch')
+  const activeKeyBytes = resolveTrustedKey('provn-server-2026-09-r2', '2026-09-02T00:00:00Z')
+  assert(activeKeyBytes !== null && activeKeyBytes.length === 32, 'Active production key provn-server-2026-09-r2 resolves for current epoch')
 
-  // Test 1b: Revoked Compromised Key is Strictly Rejected Under All Circumstances
-  const revokedKeyBytes = resolveTrustedKey('provn-server-2026-08', '2026-08-21T00:00:00Z')
-  assert(revokedKeyBytes === null, 'Revoked compromised key provn-server-2026-08 strictly rejected for verification')
+  // Test 1b: Revoked Key after revocation timestamp is Strictly Rejected
+  const revokedPostTimestampBytes = resolveTrustedKey('provn-server-2026-09', '2026-09-02T12:00:00Z')
+  assert(revokedPostTimestampBytes === null, 'Revoked compromised key provn-server-2026-09 strictly rejected after revoked_at')
+
+  // Test 1c: Standard PKI Revocation Semantics (Option B): Historical signatures before revoked_at are validated
+  const revokedPreTimestampBytes = resolveTrustedKey('provn-server-2026-09', '2026-09-01T12:00:00Z')
+  assert(revokedPreTimestampBytes !== null && revokedPreTimestampBytes.length === 32, 'Historical signature before revoked_at timestamp remains valid')
+
+  const augRevokedPostBytes = resolveTrustedKey('provn-server-2026-08', '2026-09-02T00:00:00Z')
+  assert(augRevokedPostBytes === null, 'Revoked key provn-server-2026-08 rejected after revoked_at')
+
+  const augRevokedPreBytes = resolveTrustedKey('provn-server-2026-08', '2026-08-20T00:00:00Z')
+  assert(augRevokedPreBytes !== null && augRevokedPreBytes.length === 32, 'Historical August receipt before revoked_at is verifiable')
 
   // Test 2: Historical Key + Valid Historical Epoch Timestamp resolves valid public key
   const historicalKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-07-15T00:00:00Z')
@@ -2124,6 +2140,18 @@ async function runProductionTestSuite() {
   })
   assert(proofWithExpiredKeyChal.challengeVerified === false, 'Protocol strictly rejects challenge signed with expired key epoch')
   assert(proofWithExpiredKeyChal.protocolVerified === false, 'Protocol verification fails when key epoch has expired')
+
+  // Test 10: Test Fixture Key is Strictly Blocked in Production Environment
+  const origNodeEnv = process.env.NODE_ENV
+  try {
+    process.env.NODE_ENV = 'production'
+    const testKeyInProd = resolveTrustedKey('provn-server-test-fixture', '2026-09-02T00:00:00Z')
+    assert(testKeyInProd === null, 'Test signing key is strictly rejected by resolveTrustedKey when NODE_ENV=production')
+    const testPubInProd = getPublishedPublicKey('provn-server-test-fixture')
+    assert(testPubInProd === null, 'Test signing key is strictly excluded by getPublishedPublicKey when NODE_ENV=production')
+  } finally {
+    process.env.NODE_ENV = origNodeEnv
+  }
 
   // =========================================================================
   // SUITE 19: Private Proof Cryptographic Authorization & Route Security Matrix
@@ -2328,24 +2356,34 @@ async function runProductionTestSuite() {
   console.log('\n► SUITE 20: Server Receipt Epoch Boundaries & Public Key Isolation')
   
   // 1. Receipt Timestamp Outside Key Epoch -> FAIL
-  const valid_from_epoch = new Date('2026-09-01T00:00:00Z').getTime() // From manifest for provn-server-2026-09
+  const valid_from_epoch = new Date('2026-09-01T00:00:00Z').getTime() // From manifest for provn-server-2026-09-r2
   const earlyTimestamp = new Date(valid_from_epoch - 1000).toISOString()
   
-  const earlyKey = resolveTrustedKey('provn-server-2026-09', earlyTimestamp)
+  const earlyKey = resolveTrustedKey('provn-server-2026-09-r2', earlyTimestamp)
   assert(earlyKey === null, 'resolveTrustedKey fails if timestamp is before valid_from of epoch')
   
   // 2. Receipt Timestamp Inside Active Key Epoch -> PASS
   const activeTimestamp = new Date(valid_from_epoch + 10000).toISOString()
-  const activeKey = resolveTrustedKey('provn-server-2026-09', activeTimestamp)
+  const activeKey = resolveTrustedKey('provn-server-2026-09-r2', activeTimestamp)
   assert(activeKey !== null, 'resolveTrustedKey passes if timestamp is inside valid epoch')
   
   // 3. getPublishedPublicKey cannot be used as verification authority
-  const pubKeyBytes = getPublishedPublicKey('provn-server-2026-09')
+  const pubKeyBytes = getPublishedPublicKey('provn-server-2026-09-r2')
   assert(pubKeyBytes !== null && pubKeyBytes instanceof Uint8Array, 'getPublishedPublicKey returns key for display')
 
   // 4. Revoked key is excluded from getPublishedPublicKey
-  const revokedPubKey = getPublishedPublicKey('provn-server-2026-08')
+  const revokedPubKey = getPublishedPublicKey('provn-server-2026-09')
   assert(revokedPubKey === null, 'getPublishedPublicKey returns null for revoked key')
+
+  // 5. requireServerKeypair() succeeds with initialized signing identity
+  const activeSigner = requireServerKeypair()
+  assert(activeSigner !== null && activeSigner.secretKey.length === 64, 'requireServerKeypair returns valid 64-byte signing keypair')
+
+  // 6. Regression Defense: Production key must never be embedded in tracked source code
+  const manifestRaw = fs.readFileSync(path.join(process.cwd(), 'protocol/trust-manifest.json'), 'utf-8')
+  assert(!manifestRaw.includes('private_key') && !manifestRaw.includes('secret_key') && !manifestRaw.includes('3acm8o7'), 'Trust manifest contains zero private key material')
+  const workflowRaw = fs.readFileSync(path.join(process.cwd(), '.github/workflows/test.yml'), 'utf-8')
+  assert(!workflowRaw.includes('3acm8o7') && !workflowRaw.includes('2T8NMs4'), 'CI workflow contains zero plaintext signing secrets')
   
   try {
     // We just want to ensure it's an array and cannot be used with temporal validation
