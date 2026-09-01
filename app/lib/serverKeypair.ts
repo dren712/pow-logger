@@ -4,10 +4,10 @@ import trustManifest from '../../protocol/trust-manifest.json';
 
 let serverKeypair: SignKeyPair | null = null;
 
-export const PROVN_KID = 'provn-server-2026-08';
+export const PROVN_KID = 'provn-server-2026-09';
 
 export const PROVN_ALLOWED_DOMAINS: readonly string[] = Object.freeze(
-  trustManifest.allowed_domains || ['provn-sol.vercel.app', 'localhost']
+  trustManifest.allowed_domains || ['provn-sol.vercel.app']
 );
 
 /**
@@ -22,29 +22,32 @@ for (const k of trustManifest.keys) {
 }
 export const PROVN_TRUSTED_PUBLIC_KEYS: Readonly<Record<string, string>> = Object.freeze(keyMap);
 
-const DEFAULT_SIGNER_SECRET = '1GMkH3brNXiNNs1tiFZHu4yZSRrzJwxi5wB9bHFtMikjwpAW9DMZzU2Pqakc5it8X3N5vPmqdN7KF4CCUpmKhq';
-
-const configuredSecret = process.env.PROVN_SERVER_SECRET || DEFAULT_SIGNER_SECRET;
-try {
-  const secretKey = bs58.decode(configuredSecret);
-  if (secretKey.length === 64) {
-    serverKeypair = nacl.sign.keyPair.fromSecretKey(secretKey);
-    const derivedPubkey = bs58.encode(serverKeypair.publicKey);
-    const publishedPubkey = PROVN_TRUSTED_PUBLIC_KEYS[PROVN_KID];
-    if (publishedPubkey && derivedPubkey !== publishedPubkey) {
-      console.warn(`TRUST-ANCHOR MISMATCH: Configured signing secret produces ${derivedPubkey}, expected ${publishedPubkey}`);
-    }
+function initServerKeypair(): SignKeyPair | null {
+  if (serverKeypair) return serverKeypair;
+  if (!process.env.PROVN_SERVER_SECRET) {
+    return null;
   }
-} catch (err) {
-  console.error('Failed to parse configured server secret:', err);
+  const secretKey = bs58.decode(process.env.PROVN_SERVER_SECRET.trim());
+  if (secretKey.length !== 64) {
+    throw new Error(`CRITICAL PROTOCOL ERROR: PROVN_SERVER_SECRET must be exactly 64 bytes (got ${secretKey.length})`);
+  }
+  const kp = nacl.sign.keyPair.fromSecretKey(secretKey);
+  const derivedPubkey = bs58.encode(kp.publicKey);
+  const publishedPubkey = PROVN_TRUSTED_PUBLIC_KEYS[PROVN_KID];
+  if (publishedPubkey && derivedPubkey !== publishedPubkey) {
+    throw new Error(`CRITICAL TRUST-ANCHOR MISMATCH: Configured signing secret produces public key ${derivedPubkey}, which disagrees with published registry for ${PROVN_KID} (${publishedPubkey}).`);
+  }
+  serverKeypair = kp;
+  return serverKeypair;
 }
 
-if (!serverKeypair) {
-  const TEST_SIGNER_SEED = new Uint8Array(32);
-  for (let i = 0; i < 32; i++) {
-    TEST_SIGNER_SEED[i] = i; 
+// Initial evaluation at module load
+try {
+  initServerKeypair();
+} catch (err) {
+  if (process.env.NODE_ENV === 'production') {
+    throw err;
   }
-  serverKeypair = nacl.sign.keyPair.fromSeed(TEST_SIGNER_SEED);
 }
 
 /**
@@ -113,14 +116,11 @@ export function getServerPublicKey(kid: string = PROVN_KID): Uint8Array | null {
 }
 
 export function signServerReceipt(message: Uint8Array): Uint8Array {
-  if (!serverKeypair) {
-    const TEST_SIGNER_SEED = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) {
-      TEST_SIGNER_SEED[i] = i; 
-    }
-    serverKeypair = nacl.sign.keyPair.fromSeed(TEST_SIGNER_SEED);
+  const kp = initServerKeypair();
+  if (!kp) {
+    throw new Error('CRITICAL PROTOCOL ERROR: PROVN_SERVER_SECRET is required and not configured on this node.');
   }
-  return nacl.sign.detached(message, serverKeypair.secretKey);
+  return nacl.sign.detached(message, kp.secretKey);
 }
 
 export function verifyServerReceipt(

@@ -6,7 +6,7 @@ PROVN is a portable, cryptographically verifiable provenance protocol for softwa
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-292%20Passing-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-286%20Offline%20%7C%20296%20Total%20Passing-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
@@ -22,7 +22,7 @@ PROVN is a portable, cryptographically verifiable provenance protocol for softwa
 
 > [!IMPORTANT]
 > **What PROVN Proves vs. What it Doesn't**
-> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + challenge + optional links) at a specific time. When archival is requested and confirmed, the resulting envelope is also backed by a verifiable Irys/Arweave transaction receipt. It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
+> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + challenge + optional links) at a specific time. When archival is requested and confirmed, the resulting envelope is also backed by a verifiable Irys/Arweave transaction receipt (`receipt_obtained`). It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
 > 
 > **Note on Author Identity Verification**: PROVN enforces strict cryptographic binding between a `github_id` and a `wallet_address` via SIWS (Sign-In-With-Solana) OAuth, granting logs a `source_verified` provenance level when the author matches the repository commit author.
 
@@ -47,12 +47,17 @@ PROVN evaluates proof validity across four independent, non-fungible layers:
 | **Protocol** | **Proof Submission Replay Defense** | ✅ **Guaranteed** — Single-use transactional challenge consumption (`atomic_insert_log`) and database-level `UNIQUE INDEX` on signatures. |
 | **Protocol** | **Private Auth Replay Defense** | ✅ **Guaranteed** — One-time 128-bit server-issued nonces atomically consumed in PostgreSQL (`consume_private_auth_nonce`). |
 | **Source** | **Author Identity Verification** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth, verifying commit author identity matches wallet owner. |
-| **Archive** | **Archival Availability** | ✅ **Confirmed when archived** — Immutable Arweave storage via confirmed Irys receipts. |
+| **Archive** | **Archival Availability** | ✅ **Confirmed when archived** — Decentralized Arweave storage via confirmed Irys receipts (`receipt_obtained`). |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 
-### Adversarial Attack & Tampering Matrix (292+ Tests)
+### Adversarial Attack & Tampering Matrix (286 Offline / 296 Total Tests)
 
 The protocol test suite rigorously verifies resistance against active attacks across every layer:
+
+> [!NOTE]
+> **Offline vs. Live Suite Breakdown**:
+> - **286 Offline Tests**: Fully air-gapped cryptographic verification, tampering matrices, SIWS auth, rate limiters, policy evaluation, key-epoch boundaries, and server ↔ standalone CLI differential tests run without network or database credentials.
+> - **10 Live Integration Tests**: Live Supabase database constraint, RLS policy, and provenance persistence checks run when connected to a configured database instance, totaling **296 passed tests**.
 
 | Attack Scenario | Threat Description | Protocol Defense & Verification Result |
 |---|---|---|

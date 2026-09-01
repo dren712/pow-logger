@@ -46,7 +46,7 @@ import { ProvnClient } from '../sdk/index'
 import { CARD_THEMES, getCardTheme } from '../app/lib/cardThemes'
 import { WalletLog, BuilderReputation } from '../app/lib/types'
 import { parseGithubUrl, verifyGithubSource } from '../app/lib/githubVerifier'
-import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS, resolveTrustedKey, getPublishedPublicKey } from '../app/lib/serverKeypair'
+import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS, resolveTrustedKey, getPublishedPublicKey, PROVN_KID } from '../app/lib/serverKeypair'
 import { evaluateEligibility, STANDARD_POLICY_PRESETS } from '../app/lib/policyEngine'
 
 import fs from 'fs'
@@ -64,6 +64,10 @@ try {
     }
   }
 } catch {}
+
+if (!process.env.PROVN_SERVER_SECRET) {
+  process.env.PROVN_SERVER_SECRET = '2T8NMs4hHP4eRgqam6EdipLS93me19sPKfNquZdnugNJQdwobNKCu9Diktrot1U6zixSqyJDVZEkg5De73c1XTzP'
+}
 
 async function runProductionTestSuite() {
   console.log('===================================================================')
@@ -1206,7 +1210,7 @@ async function runProductionTestSuite() {
     iat: new Date(serverTime).toISOString(),
     exp: new Date(serverTime + 5 * 60 * 1000).toISOString(),
     iss: 'PROVN',
-    kid: 'provn-server-2026-08',
+    kid: PROVN_KID,
   })
   const payloadBytes = new TextEncoder().encode(challengePayload)
   const challengeSig = signServerReceipt(payloadBytes)
@@ -1233,7 +1237,7 @@ async function runProductionTestSuite() {
     signed_payload_hash: computeCanonicalProofHash(legitimateCanonical),
     observed_at: validIso,
     iss: 'PROVN',
-    kid: 'provn-server-2026-08',
+    kid: PROVN_KID,
   })
   const legitReceiptBytes = new TextEncoder().encode(legitimateReceiptPayload)
   const legitReceiptSig = signServerReceipt(legitReceiptBytes)
@@ -1327,7 +1331,7 @@ async function runProductionTestSuite() {
     iat: new Date(serverTime - 10 * 60 * 1000).toISOString(),
     exp: new Date(serverTime - 5 * 60 * 1000).toISOString(),
     iss: 'PROVN',
-    kid: 'provn-server-2026-08'
+    kid: PROVN_KID
   })
   const expiredPayloadBytes = new TextEncoder().encode(expiredChallengePayload)
   const expiredChallengeSig = signServerReceipt(expiredPayloadBytes)
@@ -1414,7 +1418,7 @@ async function runProductionTestSuite() {
     signed_payload_hash: expectedCanonicalHash,
     observed_at: observedTimestamp,
     iss: 'PROVN',
-    kid: 'provn-server-2026-08',
+    kid: PROVN_KID,
   })
   const subBytes = new TextEncoder().encode(subPayload)
   const subSig = signServerReceipt(subBytes)
@@ -1484,7 +1488,7 @@ async function runProductionTestSuite() {
     signed_payload_hash: '0000000000000000000000000000000000000000000000000000000000000000', // Spoofed payload hash
     observed_at: observedTimestamp,
     iss: 'PROVN',
-    kid: 'provn-server-2026-08',
+    kid: PROVN_KID,
   })
   const badHashBytes = new TextEncoder().encode(badHashPayload)
   const badHashSig = signServerReceipt(badHashBytes)
@@ -1517,7 +1521,7 @@ async function runProductionTestSuite() {
     signed_payload_hash: expectedCanonicalHash,
     observed_at: observedTimestamp,
     iss: 'PROVN',
-    kid: 'provn-server-2026-08',
+    kid: PROVN_KID,
   })
   const badChallengeBytes = new TextEncoder().encode(badChallengePayload)
   const badChallengeSig = signServerReceipt(badChallengeBytes)
@@ -1630,7 +1634,7 @@ async function runProductionTestSuite() {
   assert(!evaluateProofValidity({ ...baseProof, submission_receipt: badSigReceipt }).protocolVerified, 'Matrix 12: Tampered server receipt signature rejected')
 
   // Test 15: Challenge KID Resolution via Static Public Key Registry
-  assert(PROVN_TRUSTED_PUBLIC_KEYS['provn-server-2026-08'] !== undefined, 'Genesis key exists in published public key registry')
+  assert(PROVN_TRUSTED_PUBLIC_KEYS[PROVN_KID] !== undefined, 'Active key exists in published public key registry')
   assert(reconstructCanonicalSubmitMessage(baseProof) !== null, 'reconstructCanonicalSubmitMessage successfully reproduces canonical string')
 
   // Test 16: Challenge Signed with Unknown/Revoked KID Strictly Rejected
@@ -1721,9 +1725,9 @@ async function runProductionTestSuite() {
     },
     server_attestations: {
       challenge: serverChallenge,
-      challenge_kid: 'provn-server-2026-08',
+      challenge_kid: PROVN_KID,
       submission_receipt: validSubmissionReceipt,
-      submission_kid: 'provn-server-2026-08',
+      submission_kid: PROVN_KID,
       signed_payload_hash: computeCanonicalProofHash(legitimateCanonical),
       observed_at: observedTimestamp,
     },
@@ -2062,8 +2066,12 @@ async function runProductionTestSuite() {
   console.log('\n► SUITE 18: Key Epoch & Temporal Validity Enforcement')
 
   // Test 1: Active Key + Current Observation Timestamp resolves valid public key
-  const activeKeyBytes = resolveTrustedKey('provn-server-2026-08', '2026-08-21T00:00:00Z')
-  assert(activeKeyBytes !== null && activeKeyBytes.length === 32, 'Active genesis key resolves for current epoch')
+  const activeKeyBytes = resolveTrustedKey('provn-server-2026-09', '2026-09-02T00:00:00Z')
+  assert(activeKeyBytes !== null && activeKeyBytes.length === 32, 'Active key provn-server-2026-09 resolves for current epoch')
+
+  // Test 1b: Revoked Compromised Key is Strictly Rejected Under All Circumstances
+  const revokedKeyBytes = resolveTrustedKey('provn-server-2026-08', '2026-08-21T00:00:00Z')
+  assert(revokedKeyBytes === null, 'Revoked compromised key provn-server-2026-08 strictly rejected for verification')
 
   // Test 2: Historical Key + Valid Historical Epoch Timestamp resolves valid public key
   const historicalKeyBytes = resolveTrustedKey('provn-server-2026-06', '2026-07-15T00:00:00Z')
@@ -2093,7 +2101,7 @@ async function runProductionTestSuite() {
   assert(nanTimestampBytes === null, 'NaN timestamp strictly fails closed (returns null)')
 
   // Test 8: Unknown / Revoked Key ID is Strictly Rejected
-  const unknownKeyBytes = resolveTrustedKey('provn-server-invalid-999', '2026-08-21T00:00:00Z')
+  const unknownKeyBytes = resolveTrustedKey('provn-server-invalid-999', '2026-09-02T00:00:00Z')
   assert(unknownKeyBytes === null, 'Unknown key ID strictly rejected')
 
   // Test 9: Full Protocol Proof Verification Rejects Expired Historical Key Epoch
@@ -2286,6 +2294,16 @@ async function runProductionTestSuite() {
     'getCanonicalDomainAndUri resolves canonical origin correctly'
   )
 
+  // 5g. Domain Whitelist: Reject Wildcard Vercel Subdomain Spoofing
+  assert(
+    getVerifiedDomain('attacker.vercel.app') === 'provn-sol.vercel.app',
+    'getVerifiedDomain strictly rejects untrusted wildcard Vercel subdomain (attacker.vercel.app)'
+  )
+  assert(
+    getVerifiedDomain('evil-phishing.vercel.app') === 'provn-sol.vercel.app',
+    'getVerifiedDomain strictly rejects untrusted wildcard Vercel subdomain (evil-phishing.vercel.app)'
+  )
+
   // 6. Security Invariant: signatureValid === true does NOT imply protocolVerified === true
   const signatureOnlyProof = {
     ...baseProof,
@@ -2299,32 +2317,36 @@ async function runProductionTestSuite() {
   )
 
   // 7. Security Invariant: resolveTrustedKey strictly requires valid timestamp
-  const noTimestampKey = resolveTrustedKey('provn-server-2026-08', null as unknown as string)
+  const noTimestampKey = resolveTrustedKey(PROVN_KID, null as unknown as string)
   assert(
     noTimestampKey === null,
     'Security Invariant: resolveTrustedKey fails closed when timestamp parameter is omitted or null'
   )
 
-  // SUITE 20: Server Receipt Timestamp Boundaries & Public Key Isolation
+  // =========================================================================
+  // SUITE 20: Server Receipt Epoch Boundaries & Public Key Isolation
   // =========================================================================
   console.log('\n► SUITE 20: Server Receipt Epoch Boundaries & Public Key Isolation')
   
   // 1. Receipt Timestamp Outside Key Epoch -> FAIL
-  const valid_from_epoch = new Date('2026-08-01T00:00:00Z').getTime() // From manifest
+  const valid_from_epoch = new Date('2026-09-01T00:00:00Z').getTime() // From manifest for provn-server-2026-09
   const earlyTimestamp = new Date(valid_from_epoch - 1000).toISOString()
   
-  const earlyKey = resolveTrustedKey('provn-server-2026-08', earlyTimestamp)
+  const earlyKey = resolveTrustedKey('provn-server-2026-09', earlyTimestamp)
   assert(earlyKey === null, 'resolveTrustedKey fails if timestamp is before valid_from of epoch')
   
-  // 2. Receipt Timestamp Inside Historical Key Epoch -> PASS
-  // If we had a historical key, it would pass. We'll just test inside the active epoch.
+  // 2. Receipt Timestamp Inside Active Key Epoch -> PASS
   const activeTimestamp = new Date(valid_from_epoch + 10000).toISOString()
-  const activeKey = resolveTrustedKey('provn-server-2026-08', activeTimestamp)
+  const activeKey = resolveTrustedKey('provn-server-2026-09', activeTimestamp)
   assert(activeKey !== null, 'resolveTrustedKey passes if timestamp is inside valid epoch')
   
   // 3. getPublishedPublicKey cannot be used as verification authority
-  const pubKeyBytes = getPublishedPublicKey('provn-server-2026-08')
+  const pubKeyBytes = getPublishedPublicKey('provn-server-2026-09')
   assert(pubKeyBytes !== null && pubKeyBytes instanceof Uint8Array, 'getPublishedPublicKey returns key for display')
+
+  // 4. Revoked key is excluded from getPublishedPublicKey
+  const revokedPubKey = getPublishedPublicKey('provn-server-2026-08')
+  assert(revokedPubKey === null, 'getPublishedPublicKey returns null for revoked key')
   
   try {
     // We just want to ensure it's an array and cannot be used with temporal validation

@@ -3,21 +3,30 @@
   "version": 2,
   "issuer": "PROVN Protocol Trust Registry",
   "manifest_uri": "https://provn-sol.vercel.app/.well-known/provn-keys.json",
-  "updated_at": "2026-08-21T00:00:00Z",
+  "updated_at": "2026-09-02T00:00:00Z",
   "allowed_domains": [
-    "provn-sol.vercel.app",
-    "localhost",
-    "127.0.0.1"
+    "provn-sol.vercel.app"
   ],
   "keys": [
+    {
+      "kid": "provn-server-2026-09",
+      "algorithm": "Ed25519",
+      "public_key": "83G8976bWFyr7ndabeC3MTDCFshRHoNTQFU5RdUPCKUT",
+      "valid_from": "2026-09-01T00:00:00Z",
+      "valid_until": null,
+      "status": "active",
+      "purpose": "Server challenge token and submission receipt signing"
+    },
     {
       "kid": "provn-server-2026-08",
       "algorithm": "Ed25519",
       "public_key": "FAe4sisG95oZ42w7buUn5qEE4TAnfTTFPiguZUHmhiF",
       "valid_from": "2026-08-01T00:00:00Z",
-      "valid_until": null,
-      "status": "active",
-      "purpose": "Server challenge token and submission receipt signing"
+      "valid_until": "2026-08-31T23:59:59Z",
+      "status": "revoked",
+      "revoked_at": "2026-09-01T00:00:00Z",
+      "revocation_reason": "Key compromise: private signing secret exposed in repository commit history",
+      "purpose": "Server challenge token and submission receipt signing (REVOKED)"
     },
     {
       "kid": "provn-server-2026-06",

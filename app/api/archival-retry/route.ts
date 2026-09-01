@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
-import { getVerifiedDomain, buildCanonicalRetryMessage, buildCanonicalRetryMessageV2, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { getVerifiedDomain, buildCanonicalRetryMessageV2, decodeBase58 } from '@/app/lib/canonicalMessage'
 
 export const maxDuration = 15 // Allow up to 15s execution for Irys Arweave upload
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid or malformed JSON body' }, { status: 400 })
     }
 
-    const { logId, walletAddress, timestamp, nonce, challenge, signature } = body
+    const { logId, walletAddress, timestamp, challenge, signature } = body
 
     // 1. Input Validation
     if (!logId || typeof logId !== 'number') {
@@ -37,6 +37,10 @@ export async function POST(req: NextRequest) {
 
     if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32) {
       return NextResponse.json({ error: 'Valid Base58 walletAddress is required' }, { status: 400 })
+    }
+
+    if (!challenge || typeof challenge !== 'string' || challenge.trim().length === 0) {
+      return NextResponse.json({ error: 'Anti-replay server challenge (v2) is strictly required for archival retry' }, { status: 400 })
     }
 
     if (!signature || typeof signature !== 'string') {
@@ -54,27 +58,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
     }
 
+    // 2.5. Challenge Lookup & Atomic Consumption
+    const { data: challengeRecord, error: challengeLookupError } = await supabase
+      .from('signing_challenges')
+      .select('id, expires_at, consumed_at')
+      .eq('challenge', challenge)
+      .eq('wallet_address', walletAddress)
+      .maybeSingle()
+
+    if (challengeLookupError || !challengeRecord) {
+      return NextResponse.json({ error: 'Invalid, missing, or unauthorized challenge for this wallet' }, { status: 401 })
+    }
+    if (challengeRecord.consumed_at) {
+      return NextResponse.json({ error: 'Challenge already consumed' }, { status: 401 })
+    }
+    if (new Date(challengeRecord.expires_at).getTime() < now) {
+      return NextResponse.json({ error: 'Challenge expired' }, { status: 401 })
+    }
+
+    // Atomically consume challenge
+    const { data: consumedChallenge, error: consumeErr } = await supabase
+      .from('signing_challenges')
+      .update({ consumed_at: new Date().toISOString() })
+      .eq('id', challengeRecord.id)
+      .is('consumed_at', null)
+      .select('id')
+      .maybeSingle()
+
+    if (consumeErr || !consumedChallenge) {
+      return NextResponse.json({ error: 'Challenge already consumed or expired during concurrent processing' }, { status: 409 })
+    }
+
     // 3. Cryptographic Wallet Signature Verification for Retry
     const reqHost = getVerifiedDomain(req.headers.get('host'))
 
-    let expectedRetryMessage: string;
-    if (challenge) {
-      expectedRetryMessage = buildCanonicalRetryMessageV2({
-        domain: reqHost,
-        walletAddress,
-        logId,
-        timestamp,
-        challenge: typeof challenge === 'string' ? challenge : '',
-      })
-    } else {
-      expectedRetryMessage = buildCanonicalRetryMessage({
-        domain: reqHost,
-        walletAddress,
-        logId,
-        timestamp,
-        nonce: typeof nonce === 'string' ? nonce : 'legacy',
-      })
-    }
+    const expectedRetryMessage = buildCanonicalRetryMessageV2({
+      domain: reqHost,
+      walletAddress,
+      logId,
+      timestamp,
+      challenge,
+    })
 
     const messageBytes = new TextEncoder().encode(expectedRetryMessage)
 
@@ -97,67 +121,61 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 4. Fetch log record from database & verify ownership
-    const { data: logRow, error: fetchErr } = await supabase
+    // 4. Atomic Log Reservation & State Check
+    const { data: reservedLog, error: reserveErr } = await supabase
       .from('logs')
-      .select('*')
+      .update({ archival_state: 'processing' })
       .eq('id', logId)
       .eq('wallet_address', walletAddress)
+      .in('archival_state', ['not_requested', 'failed'])
+      .select('*')
       .maybeSingle()
 
-    if (fetchErr || !logRow) {
-      return NextResponse.json({ error: 'Log entry not found or wallet mismatch' }, { status: 404 })
-    }
+    if (reserveErr || !reservedLog) {
+      // Check existing log status
+      const { data: existingLog } = await supabase
+        .from('logs')
+        .select('*')
+        .eq('id', logId)
+        .eq('wallet_address', walletAddress)
+        .maybeSingle()
 
-    if (logRow.irys_tx_id && !logRow.irys_tx_id.startsWith('powl_')) {
-      if (logRow.archival_state !== 'receipt_obtained') {
-        await supabase
-          .from('logs')
-          .update({ archival_state: 'receipt_obtained' })
-          .eq('id', logId)
+      if (!existingLog) {
+        return NextResponse.json({ error: 'Log entry not found or wallet mismatch' }, { status: 404 })
       }
-      return NextResponse.json({
-        success: true,
-        message: 'Log entry is already archived on Irys',
-        irysTxId: logRow.irys_tx_id,
-        archivalState: 'receipt_obtained',
-        gatewayUrl: `https://gateway.irys.xyz/${logRow.irys_tx_id}`,
-      })
+
+      if (existingLog.irys_tx_id && !existingLog.irys_tx_id.startsWith('powl_')) {
+        return NextResponse.json({
+          success: true,
+          message: 'Log entry is already archived on Irys',
+          irysTxId: existingLog.irys_tx_id,
+          archivalState: 'receipt_obtained',
+          gatewayUrl: `https://gateway.irys.xyz/${existingLog.irys_tx_id}`,
+        })
+      }
+
+      return NextResponse.json({ error: 'Archival retry already in progress or ineligible' }, { status: 409 })
     }
 
-    // Wallet Rate Limiting (ENFORCED ONLY FOR VALID UNARCHIVED RETRY ELIGIBLE REQUESTS)
+    const logRow = reservedLog
+
+    // Wallet Rate Limiting
     const walletLimit = checkRateLimit(walletAddress, 'wallet', 10, 900000)
     if (!walletLimit.allowed) {
+      // Revert reservation on rate limit
+      await supabase.from('logs').update({ archival_state: 'failed' }).eq('id', logId)
       return NextResponse.json({ error: walletLimit.error }, { status: 429 })
-    }
-
-    // Double check fresh status right before upload to prevent concurrent duplicate uploads
-    const { data: freshCheck } = await supabase
-      .from('logs')
-      .select('irys_tx_id, archival_state')
-      .eq('id', logId)
-      .maybeSingle()
-
-    if (freshCheck?.irys_tx_id && !freshCheck.irys_tx_id.startsWith('powl_')) {
-      return NextResponse.json({
-        success: true,
-        message: 'Log entry is already archived on Irys',
-        irysTxId: freshCheck.irys_tx_id,
-        archivalState: 'receipt_obtained',
-        gatewayUrl: `https://gateway.irys.xyz/${freshCheck.irys_tx_id}`,
-      })
     }
 
     // 5. Execute Retry Upload to Irys Node #1
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
-      version: challenge ? 2 : 1,
+      version: 2,
       retryAttempt: true,
       logId: logRow.id,
       walletAddress,
       timestamp: logRow.created_at,
-      nonce: challenge ? undefined : (typeof nonce === 'string' ? nonce : 'legacy'),
-      challenge: challenge ? challenge : undefined,
+      challenge,
       content: logRow.content.trim(),
       signature: logRow.signature,
       evidenceUrl: logRow.evidence_url,
@@ -182,6 +200,7 @@ export async function POST(req: NextRequest) {
     const uploadRes = await uploadEnvelopeToIrys(structuredEnvelope, tags)
 
     if (!uploadRes.success || !uploadRes.irysTxId) {
+      await supabase.from('logs').update({ archival_state: 'failed' }).eq('id', logId)
       const errDetail = uploadRes.error || 'Irys node upload unconfirmed'
       return NextResponse.json({ error: `Archival retry failed: ${errDetail}` }, { status: 502 })
     }

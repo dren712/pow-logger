@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import {
-  buildCanonicalSubmitMessage,
   buildCanonicalSubmitMessageV2,
   validateAndNormalizeUrl,
   decodeBase58,
@@ -48,14 +47,17 @@ export async function POST(req: NextRequest) {
     const walletAddress = typeof body.walletAddress === 'string' ? body.walletAddress : undefined
     const timestamp = typeof body.timestamp === 'string' ? body.timestamp : undefined
     const nonce = typeof body.nonce === 'string' ? body.nonce : undefined
-    const challenge = typeof body.challenge === 'string' ? body.challenge : undefined
+    const challenge = typeof body.challenge === 'string' ? body.challenge.trim() : undefined
     const signature = typeof body.signature === 'string' ? body.signature : undefined
     const evidenceUrl = typeof body.evidenceUrl === 'string' ? body.evidenceUrl : undefined
     const githubUrl = typeof body.githubUrl === 'string' ? body.githubUrl : undefined
     const visibility = typeof body.visibility === 'string' ? body.visibility : undefined
 
-    if (!challenge && !nonce) {
-      return NextResponse.json({ error: 'Either challenge (v2) or nonce (v1) is required' }, { status: 400 })
+    if (!challenge) {
+      return NextResponse.json(
+        { error: 'Protocol Version 1 (v1) submissions are deprecated. Anti-replay server challenge (v2) is strictly required.' },
+        { status: 400 }
+      )
     }
 
     if (visibility && visibility !== 'private' && visibility !== 'public') {
@@ -83,21 +85,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Timestamp is required' }, { status: 400 })
     }
 
-    if (!challenge && nonce !== undefined && nonce !== null) {
-      if (typeof nonce !== 'string' || nonce.trim().length < 8 || nonce !== nonce.trim()) {
-        return NextResponse.json({ error: 'Nonce must be a valid string of at least 8 characters with no leading or trailing whitespace' }, { status: 400 })
-      }
-      try {
-        decodeBase58(nonce)
-      } catch {
-        return NextResponse.json({ error: 'Nonce must be a valid Base58 encoded string' }, { status: 400 })
-      }
-    } else if (challenge) {
-      if (typeof challenge !== 'string' || challenge.trim().length === 0) {
-        return NextResponse.json({ error: 'Challenge must be a valid string' }, { status: 400 })
-      }
-    }
-
     // 2. Strict Replay Attack Mitigation (15-min window limit)
     const requestTime = new Date(timestamp).getTime()
     const now = Date.now()
@@ -112,51 +99,34 @@ export async function POST(req: NextRequest) {
     // Extract & strictly validate domain against injection attacks
     const reqHost = getVerifiedDomain(req.headers.get('host'))
 
-    let consumedChallengeId: string | null = null
+    const { data: challengeRecord, error: challengeLookupError } = await supabase
+      .from('signing_challenges')
+      .select('id, expires_at, consumed_at')
+      .eq('challenge', challenge)
+      .eq('wallet_address', walletAddress)
+      .maybeSingle()
 
-    if (challenge) {
-      const { data: challengeRecord, error: challengeLookupError } = await supabase
-        .from('signing_challenges')
-        .select('id, expires_at, consumed_at')
-        .eq('challenge', challenge)
-        .eq('wallet_address', walletAddress)
-        .maybeSingle()
-
-      if (challengeLookupError || !challengeRecord) {
-        return NextResponse.json({ error: 'Invalid, missing, or unauthorized challenge for this wallet' }, { status: 401 })
-      }
-      if (challengeRecord.consumed_at) {
-        return NextResponse.json({ error: 'Challenge already consumed' }, { status: 401 })
-      }
-      if (new Date(challengeRecord.expires_at).getTime() < now) {
-        return NextResponse.json({ error: 'Challenge expired' }, { status: 401 })
-      }
-      consumedChallengeId = challengeRecord.id
+    if (challengeLookupError || !challengeRecord) {
+      return NextResponse.json({ error: 'Invalid, missing, or unauthorized challenge for this wallet' }, { status: 401 })
     }
+    if (challengeRecord.consumed_at) {
+      return NextResponse.json({ error: 'Challenge already consumed' }, { status: 401 })
+    }
+    if (new Date(challengeRecord.expires_at).getTime() < now) {
+      return NextResponse.json({ error: 'Challenge expired' }, { status: 401 })
+    }
+    const consumedChallengeId = challengeRecord.id
 
     // 4. Cryptographic Ed25519 Signature Verification
-    let expectedMessageText: string
-    if (challenge) {
-      expectedMessageText = buildCanonicalSubmitMessageV2({
-        domain: reqHost,
-        walletAddress,
-        timestamp,
-        challenge,
-        content: content.trim(),
-        githubUrl: cleanGithubUrl,
-        evidenceUrl: cleanEvidenceUrl,
-      })
-    } else {
-      expectedMessageText = buildCanonicalSubmitMessage({
-        domain: reqHost,
-        walletAddress,
-        timestamp,
-        nonce: typeof nonce === 'string' ? nonce : 'legacy',
-        content: content.trim(),
-        githubUrl: cleanGithubUrl,
-        evidenceUrl: cleanEvidenceUrl,
-      })
-    }
+    const expectedMessageText = buildCanonicalSubmitMessageV2({
+      domain: reqHost,
+      walletAddress,
+      timestamp,
+      challenge,
+      content: content.trim(),
+      githubUrl: cleanGithubUrl,
+      evidenceUrl: cleanEvidenceUrl,
+    })
 
     const messageBytes = new TextEncoder().encode(expectedMessageText)
 

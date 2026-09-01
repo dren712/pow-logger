@@ -119,8 +119,13 @@ export function validateAndNormalizeUrl(
  * Prevents Host header injection by enforcing configured app domain or whitelisted patterns.
  */
 export function getVerifiedDomain(reqHost: string | null): string {
+  const isNonProd = process.env.NODE_ENV !== 'production'
+
   if (process.env.NEXT_PUBLIC_APP_DOMAIN) {
-    return process.env.NEXT_PUBLIC_APP_DOMAIN.trim().toLowerCase().split(':')[0]
+    const customHost = process.env.NEXT_PUBLIC_APP_DOMAIN.trim().toLowerCase().split(':')[0]
+    if (PROVN_ALLOWED_DOMAINS.includes(customHost) || (isNonProd && (customHost === 'localhost' || customHost === '127.0.0.1'))) {
+      return customHost
+    }
   }
 
   if (!reqHost || typeof reqHost !== 'string') {
@@ -129,12 +134,11 @@ export function getVerifiedDomain(reqHost: string | null): string {
 
   const cleanHost = reqHost.trim().toLowerCase().split(':')[0]
 
-  if (
-    PROVN_ALLOWED_DOMAINS.includes(cleanHost) ||
-    cleanHost === 'localhost' ||
-    cleanHost === '127.0.0.1' ||
-    cleanHost.endsWith('.vercel.app')
-  ) {
+  if (PROVN_ALLOWED_DOMAINS.includes(cleanHost)) {
+    return cleanHost
+  }
+
+  if (isNonProd && (cleanHost === 'localhost' || cleanHost === '127.0.0.1')) {
     return cleanHost
   }
 
@@ -611,6 +615,7 @@ export function getCanonicalDomainAndUri(
   reqHost: string | null | undefined,
   path: string
 ): { domain: string; uri: string } {
+  const isNonProd = process.env.NODE_ENV !== 'production'
   const defaultOrigin = process.env.PROVN_CANONICAL_ORIGIN || 'https://provn-sol.vercel.app'
   let origin = defaultOrigin
   let domain = 'provn-sol.vercel.app'
@@ -623,8 +628,10 @@ export function getCanonicalDomainAndUri(
     const cleanHost = reqHost.trim().toLowerCase().split(':')[0]
     if (PROVN_ALLOWED_DOMAINS.includes(cleanHost)) {
       domain = cleanHost
-      const proto = cleanHost === 'localhost' || cleanHost === '127.0.0.1' ? 'http' : 'https'
-      origin = `${proto}://${cleanHost}`
+      origin = `https://${cleanHost}`
+    } else if (isNonProd && (cleanHost === 'localhost' || cleanHost === '127.0.0.1')) {
+      domain = cleanHost
+      origin = `http://${cleanHost}`
     }
   }
 
