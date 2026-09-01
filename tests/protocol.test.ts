@@ -2137,7 +2137,6 @@ async function runProductionTestSuite() {
 
   const attackerWalletSeed = new Uint8Array(32).fill(9)
   const attackerKp = nacl.sign.keyPair.fromSeed(attackerWalletSeed)
-  const attackerWallet = bs58.encode(attackerKp.publicKey)
 
   // Mock Supabase client for testing with wallet-bound atomic RPC
   const mockSupabase = {
@@ -2351,7 +2350,7 @@ async function runProductionTestSuite() {
   try {
     // We just want to ensure it's an array and cannot be used with temporal validation
     assert(Boolean(pubKeyBytes && !('status' in pubKeyBytes)), 'getPublishedPublicKey exposes just raw bytes, not validated context')
-  } catch(e) {}
+  } catch {}
   
   // --- SUMMARY ---
 
