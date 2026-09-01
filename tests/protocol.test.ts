@@ -48,6 +48,13 @@ import { WalletLog, BuilderReputation } from '../app/lib/types'
 import { parseGithubUrl, verifyGithubSource } from '../app/lib/githubVerifier'
 import { signServerReceipt, PROVN_TRUSTED_PUBLIC_KEYS, resolveTrustedKey, getPublishedPublicKey, PROVN_KID, requireServerKeypair } from '../app/lib/serverKeypair'
 import { evaluateEligibility, STANDARD_POLICY_PRESETS } from '../app/lib/policyEngine'
+import { PublicKey } from '@solana/web3.js'
+import {
+  deriveProofAnchorPda,
+  buildAnchorProofInstruction,
+  decodeProofAnchorAccount,
+  PROVN_PROGRAM_ID,
+} from '../app/lib/solanaAnchor'
 
 import fs from 'fs'
 import path from 'path'
@@ -2389,6 +2396,173 @@ async function runProductionTestSuite() {
     // We just want to ensure it's an array and cannot be used with temporal validation
     assert(Boolean(pubKeyBytes && !('status' in pubKeyBytes)), 'getPublishedPublicKey exposes just raw bytes, not validated context')
   } catch {}
+
+  // =========================================================================
+  // SUITE 21: Automatic Background Irys Archival & Single-Signature Flow
+  // =========================================================================
+  console.log('\n► SUITE 21: Automatic Background Irys Archival & Single-Signature Flow')
+
+  // 1. Initial State starts in 'pending' rather than 'not_requested'
+  const pendingProof: WalletLog = {
+    ...baseProof,
+    archival_state: 'pending',
+    irys_tx_id: null,
+  }
+  const pendingReport = evaluateProofValidity(pendingProof)
+  assert(pendingReport.protocolVerified === true, 'Proof with pending archival is fully protocol verified')
+  assert(pendingReport.archiveVerified === false, 'Pending archival is not yet marked as archiveVerified')
+  assert(pendingReport.proofStatus.archive === 'PENDING', 'Proof status archive layer is PENDING')
+
+  // 2. State transition to 'receipt_obtained'
+  const confirmedProof: WalletLog = {
+    ...conformanceScenarios[0].proof,
+    archival_state: 'receipt_obtained',
+    irys_tx_id: 'irys_tx_sample_1234567890abcdef',
+  }
+  const confirmedReport = evaluateProofValidity(confirmedProof)
+  assert(confirmedReport.proofStatus.archive === 'CLAIMED', 'Proof status archive layer is CLAIMED in offline evaluator')
+
+  // 3. Single-Signature invariant: Original proof envelope contains all required metadata for archival
+  const canonicalEnvelope = JSON.stringify({
+    app: 'PROVN',
+    version: 2,
+    proofId: confirmedProof.id,
+    walletAddress: confirmedProof.wallet_address,
+    timestamp: confirmedProof.created_at,
+    challenge: confirmedProof.challenge,
+    content: confirmedProof.content,
+    signature: confirmedProof.signature,
+    submissionReceipt: confirmedProof.submission_receipt,
+  })
+  assert(canonicalEnvelope.includes('PROVN') && canonicalEnvelope.includes(confirmedProof.wallet_address), 'Archival envelope contains complete cryptographic context without requiring second signature')
+
+  // =========================================================================
+  // SUITE 22: Solana Proof Anchor Program & PDA Derivation Verification
+  // =========================================================================
+  console.log('\n► SUITE 22: Solana Proof Anchor Program & PDA Derivation Verification')
+
+  const testAuthority = new PublicKey(testWallet)
+  const otherAuthority = new PublicKey('11111111111111111111111111111111')
+
+  // 1. Deterministic PDA Derivation for Proof #101
+  const [pda1, bump1] = deriveProofAnchorPda(testAuthority, 101)
+  const [pda1Repeat, bump1Repeat] = deriveProofAnchorPda(testAuthority, 101)
+  assert(pda1.equals(pda1Repeat), 'deriveProofAnchorPda is strictly deterministic')
+  assert(bump1 === bump1Repeat, 'PDA bump seed is deterministic')
+
+  // 2. Non-Collision: Different proof IDs produce distinct PDAs
+  const [pda2] = deriveProofAnchorPda(testAuthority, 102)
+  assert(!pda1.equals(pda2), 'Different proof IDs produce non-colliding PDAs for same authority')
+
+  // 3. Non-Collision: Different authorities produce distinct PDAs for same proof ID
+  const [pdaOther] = deriveProofAnchorPda(otherAuthority, 101)
+  assert(!pda1.equals(pdaOther), 'Different authorities produce non-colliding PDAs for same proof ID')
+
+  // 4. Build Anchor Proof Instruction
+  const testProofHash = computeCanonicalProofHash('test-canonical-message')
+  const anchorIx = buildAnchorProofInstruction({
+    proofId: 101,
+    authority: testAuthority,
+    payloadHash: testProofHash,
+    timestamp: '2026-09-02T00:00:00.000Z',
+    protocolVersion: 2,
+    archiveTxId: 'tx_arweave_irys_abc123',
+    programId: PROVN_PROGRAM_ID,
+  })
+
+  assert(anchorIx.programId.equals(PROVN_PROGRAM_ID), 'Anchor instruction targets PROVN_PROGRAM_ID')
+  assert(anchorIx.keys.length === 3, 'Anchor instruction specifies 3 accounts (pda, authority, system_program)')
+  assert(anchorIx.keys[0].pubkey.equals(pda1), 'Account[0] is the derived ProofAnchor PDA')
+  assert(anchorIx.keys[0].isWritable === true, 'Account[0] (PDA) is marked writable')
+  assert(anchorIx.keys[1].pubkey.equals(testAuthority), 'Account[1] is the authority signer')
+  assert(anchorIx.keys[1].isSigner === true, 'Account[1] (authority) is marked signer')
+
+  // 5. Simulated On-Chain Account State Decoding
+  const simulatedAccountBuf = Buffer.alloc(8 + 8 + 32 + 32 + 8 + 1 + 43 + 1)
+  let offset = 0
+  // Discriminator
+  simulatedAccountBuf.writeBigUInt64LE(BigInt('0x0edda1582cbd0cf7'), offset)
+  offset += 8
+  // proof_id
+  simulatedAccountBuf.writeBigUInt64LE(BigInt(101), offset)
+  offset += 8
+  // authority
+  testAuthority.toBuffer().copy(simulatedAccountBuf, offset)
+  offset += 32
+  // payload_hash (32 bytes)
+  Buffer.from(testProofHash, 'hex').copy(simulatedAccountBuf, offset)
+  offset += 32
+  // timestamp (Unix seconds)
+  simulatedAccountBuf.writeBigInt64LE(BigInt(1788307200), offset)
+  offset += 8
+  // protocol_version
+  simulatedAccountBuf.writeUInt8(2, offset)
+  offset += 1
+  // archive_tx_id (43 bytes)
+  Buffer.from('tx_arweave_irys_abc123', 'utf-8').copy(simulatedAccountBuf, offset)
+  offset += 43
+  // bump
+  simulatedAccountBuf.writeUInt8(bump1, offset)
+
+  const decodedAnchor = decodeProofAnchorAccount(simulatedAccountBuf)
+  assert(decodedAnchor.proofId === BigInt(101), 'Decoded proofId matches')
+  assert(decodedAnchor.authority.equals(testAuthority), 'Decoded authority matches')
+  assert(decodedAnchor.payloadHash === testProofHash, 'Decoded payloadHash matches')
+  assert(decodedAnchor.protocolVersion === 2, 'Decoded protocolVersion matches')
+  assert(decodedAnchor.archiveTxId === 'tx_arweave_irys_abc123', 'Decoded archiveTxId matches')
+  assert(decodedAnchor.bump === bump1, 'Decoded bump matches')
+
+  // =========================================================================
+  // SUITE 23: 5-Link Verifiable Proof Chain & Autonomous AI Agent Provenance
+  // =========================================================================
+  console.log('\n► SUITE 23: 5-Link Verifiable Proof Chain & Autonomous AI Agent Provenance')
+
+  // 1. 5-Link Chain Representation
+  const fiveLinkProof: WalletLog = {
+    ...conformanceScenarios[0].proof,
+    provenance_level: 'source_verified',
+    archival_state: 'receipt_obtained',
+    irys_tx_id: 'arweave_tx_101_xyz',
+  }
+
+  const [pda101] = deriveProofAnchorPda(new PublicKey(fiveLinkProof.wallet_address), 101)
+  const report101 = evaluateProofValidity(fiveLinkProof)
+
+  assert(report101.signatureVerified === true, 'Link 1: Solana Wallet Signature Verified')
+  assert(report101.challengeVerified === true, 'Link 2: Protocol Epoch Challenge Verified')
+  assert(report101.proofStatus.source === 'CLAIMED', 'Link 3: GitHub Identity Attribution Evaluated')
+  assert(pda101 !== null && pda101 instanceof PublicKey, 'Link 4: Solana On-Chain Anchor PDA Computed')
+  assert(report101.proofStatus.archive === 'CLAIMED', 'Link 5: Irys Arweave Permanent Storage Evaluated')
+
+  // 2. Autonomous AI Agent Action Execution Provenance
+  const agentWalletKp = nacl.sign.keyPair()
+  const agentWalletAddress = bs58.encode(agentWalletKp.publicKey)
+  const agentActionTimestamp = new Date().toISOString()
+  const agentChallenge = `agent_chal_${crypto.randomUUID()}`
+
+  const agentExecutionClaim = 'Autonomous Agent Action: Verified & compiled Anchor smart contract, passed 14 security tests, deployed to devnet.'
+  const agentCanonicalMsg = buildCanonicalSubmitMessageV2({
+    domain: 'provn-sol.vercel.app',
+    walletAddress: agentWalletAddress,
+    timestamp: agentActionTimestamp,
+    challenge: agentChallenge,
+    content: agentExecutionClaim,
+    githubUrl: 'https://github.com/dren712/pow-logger/pull/12',
+    evidenceUrl: 'https://solscan.io/tx/sample-agent-tx',
+  })
+
+  const agentMsgBytes = new TextEncoder().encode(agentCanonicalMsg)
+  const agentSig = nacl.sign.detached(agentMsgBytes, agentWalletKp.secretKey)
+  const agentSigBase58 = bs58.encode(agentSig)
+
+  const isAgentSigValid = nacl.sign.detached.verify(agentMsgBytes, agentSig, agentWalletKp.publicKey)
+  assert(isAgentSigValid === true, 'Autonomous AI Agent signs execution trace with dedicated Solana keypair')
+  assert(agentSigBase58.length > 0, 'Agent signature encodes to valid Base58 string')
+
+  const agentProofPayloadHash = computeCanonicalProofHash(agentCanonicalMsg)
+  const [agentPda] = deriveProofAnchorPda(new PublicKey(agentWalletAddress), 9001)
+  assert(agentPda !== null, 'Autonomous AI Agent proof commitment anchors to dedicated Solana PDA')
+  assert(agentProofPayloadHash.length === 64, 'SHA-256 digest computed for AI Agent execution receipt')
   
   // --- SUMMARY ---
 

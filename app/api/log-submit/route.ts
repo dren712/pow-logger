@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
       p_skills: classification.skills,
       p_protocols: classification.protocols,
       p_category: classification.category,
-      p_archival_state: 'not_requested',
+      p_archival_state: 'pending',
       p_visibility: visibility || 'private',
       p_protocol_version: challenge ? 2 : 1,
       p_challenge_id: consumedChallengeId,
@@ -275,6 +275,80 @@ export async function POST(req: NextRequest) {
       submissionReceipt = null
     }
 
+    // 8. Automatic Background Irys Archival (Single-Signature Flow)
+    let currentArchivalState = 'pending'
+    let finalIrysTxId: string | null = null
+
+    try {
+      const structuredEnvelope = JSON.stringify({
+        app: 'PROVN',
+        version: challenge ? 2 : 1,
+        proofId: savedLog.id,
+        domain: reqHost,
+        walletAddress,
+        timestamp,
+        challenge,
+        content: content.trim(),
+        signature,
+        submissionReceipt,
+        evidenceUrl: cleanEvidenceUrl,
+        githubUrl: cleanGithubUrl,
+        category: classification.category,
+        evidenceType,
+        provenanceLevel,
+        sourceProvider,
+        sourceMetadata,
+        sourceVerificationStatus,
+        sourceVerifiedAt,
+        skills: classification.skills,
+        protocols: classification.protocols,
+        visibility: visibility || 'private',
+        serverObservedAt: observedAt
+      }, null, 2)
+
+      const tags = [
+        { name: 'App-Name', value: 'PROVN' },
+        { name: 'Content-Type', value: 'application/json' },
+        { name: 'Builder-Address', value: walletAddress },
+        { name: 'Proof-Id', value: String(savedLog.id) },
+        { name: 'Proof-Type', value: 'Ed25519-Signed-Proof' },
+        { name: 'Timestamp', value: timestamp },
+        { name: 'Protocol-Version', value: challenge ? '2' : '1' }
+      ]
+      if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
+      if (classification.category) tags.push({ name: 'Category', value: classification.category })
+
+      const { uploadEnvelopeToIrys } = await import('@/app/lib/irysUploader')
+      
+      // Fast sync attempt with timeout race
+      const uploadPromise = uploadEnvelopeToIrys(structuredEnvelope, tags).then(async (res) => {
+        if (res.success && res.irysTxId) {
+          await supabase
+            .from('logs')
+            .update({
+              irys_tx_id: res.irysTxId,
+              archival_state: 'receipt_obtained'
+            })
+            .eq('id', savedLog.id)
+          return res.irysTxId
+        }
+        return null
+      }).catch(err => {
+        console.warn('[PROVN Automatic Archival Background Warning]', err)
+        return null
+      })
+
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
+      const quickTxId = await Promise.race([uploadPromise, timeoutPromise])
+
+      if (quickTxId) {
+        currentArchivalState = 'receipt_obtained'
+        finalIrysTxId = quickTxId
+      }
+    } catch (archivalErr) {
+      console.warn('[PROVN Automatic Archival Init Warning]', archivalErr)
+    }
+
     // ─── Milestone & Reputation Detection ──────────────────────────────────
     const allLogs = await fetchAllWalletLogs(supabase, walletAddress)
     const currentReputation = calculateReputation(walletAddress, allLogs)
@@ -293,27 +367,27 @@ export async function POST(req: NextRequest) {
         submission_receipt: submissionReceipt,
         evidence_url: cleanEvidenceUrl,
         github_url: cleanGithubUrl,
-        irys_tx_id: null,
-        archival_state: 'not_requested',
+        irys_tx_id: finalIrysTxId,
+        archival_state: currentArchivalState,
       },
       classification,
       submission_receipt: submissionReceipt,
       server_observed_at: observedAt,
-      archivalState: 'not_requested',
-      irysTxId: null,
-      gatewayUrl: null,
+      archivalState: currentArchivalState,
+      irysTxId: finalIrysTxId,
+      gatewayUrl: finalIrysTxId ? `https://gateway.irys.xyz/${finalIrysTxId}` : null,
       proof_status: {
         signature: 'VERIFIED',
         protocol: isProtocolVerified ? 'VERIFIED' : 'UNVERIFIED',
         source: provenanceLevel === 'source_verified' ? 'VERIFIED' : (provenanceLevel === 'identity_linked' ? 'ATTRIBUTED' : (provenanceLevel === 'source_exists' ? 'EXISTS' : (cleanEvidenceUrl ? 'LINKED' : 'SELF_ATTESTED'))),
-        archive: 'NOT_REQUESTED',
+        archive: currentArchivalState === 'receipt_obtained' ? 'RECEIPT_OBTAINED' : 'PENDING',
       },
       signature_verified: true,
       protocol_verified: isProtocolVerified,
       challenge_verified: true,
       submission_receipt_verified: Boolean(submissionReceipt),
       source_verified: provenanceLevel === 'source_verified',
-      archive_verified: false,
+      archive_verified: currentArchivalState === 'receipt_obtained',
       // Milestone & Badge data derived strictly from deterministic reputation engine
       streak: currentReputation.currentStreak,
       builderLevel: {

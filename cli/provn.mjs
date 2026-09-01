@@ -22,12 +22,14 @@ async function main() {
 
   if (!command || !target) {
     console.log(`
-PROVN CLI 🗿 — Portable Builder Evidence Layer on Solana
+PROVN CLI 🗿 — Cryptographic Provenance Protocol on Solana
 
 Usage:
   provn passport <wallet>                 Fetch full Builder Passport JSON
   provn reputation <wallet>               Display reputation summary & active streak
   provn packet <wallet>                   Generate and print portable Proof Packet
+  provn inspect <proofId>                 Inspect full 5-link cryptographic provenance chain
+  provn anchor <proofId> <wallet>         Compute and display Solana On-Chain Anchor PDA
   provn verify <proofId>                  Fetch and inspect an individual proof
   provn eligibility <wallet> [options]    Evaluate wallet against community evidence policy
 
@@ -87,6 +89,52 @@ Options:
         console.log(`     Inspect:  https://provn-sol.vercel.app/proof/${p.id}`)
       })
       console.log('\n======================================================\n')
+    } else if (command === 'inspect') {
+      console.log(`\nInspecting 5-Link Provenance Chain for Proof #${target}...\n`)
+      const res = await fetch(`${BASE_URL}/api/proof/${target}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      const p = await res.json()
+
+      console.log('======================================================')
+      console.log(` ⛓️ PROVN 5-LINK PROVENANCE CHAIN — PROOF #${p.id}`)
+      console.log('======================================================')
+      console.log(` [1] Solana Wallet:   ${p.walletAddress} (${p.signatureVerified ? '✅ VERIFIED' : '❌ FAILED'})`)
+      console.log(` [2] Protocol Epoch:  ${p.nonce || 'v2'} (${p.protocolVerified ? '✅ VERIFIED' : '⏳ PENDING'})`)
+      console.log(` [3] Source Evidence: ${p.provenanceLevel || 'self_attested'} (${p.githubUrl || 'None'})`)
+      console.log(` [4] Solana Anchor:   PDA: ${p.solanaAnchorPda || 'Calculated on Request'}`)
+      console.log(`     Program ID:      ${p.solanaProgramId || 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx'}`)
+      console.log(` [5] Irys Storage:    ${p.irysTxId ? '✅ https://gateway.irys.xyz/' + p.irysTxId : '⏳ QUEUED (Automatic)'}`)
+      console.log('------------------------------------------------------')
+      console.log(` Work Claim: "${p.content}"`)
+      console.log(` Created At: ${p.createdAt}`)
+      console.log('======================================================\n')
+    } else if (command === 'anchor') {
+      const wallet = args[2] || target
+      const proofId = parseInt(target, 10)
+      console.log(`\nCalculating Solana Proof Anchor PDA for Proof #${proofId}...`)
+      console.log(`Authority Wallet: ${wallet}\n`)
+
+      const { PublicKey } = await import('@solana/web3.js')
+      const proofIdBuf = Buffer.alloc(8)
+      proofIdBuf.writeBigUInt64LE(BigInt(proofId))
+      const programId = new PublicKey('FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx')
+      const authorityPubkey = new PublicKey(wallet)
+
+      const [pda, bump] = PublicKey.findProgramAddressSync(
+        [Buffer.from('proof'), authorityPubkey.toBuffer(), proofIdBuf],
+        programId
+      )
+
+      console.log('======================================================')
+      console.log(' ⚓ SOLANA ON-CHAIN PROOF ANCHOR')
+      console.log('======================================================')
+      console.log(` Proof ID:     ${proofId}`)
+      console.log(` Authority:    ${authorityPubkey.toBase58()}`)
+      console.log(` Program ID:   ${programId.toBase58()}`)
+      console.log(` Derived PDA:  ${pda.toBase58()}`)
+      console.log(` Bump Seed:    ${bump}`)
+      console.log(' Seeds:        [b"proof", authority, proof_id.to_le_bytes(8)]')
+      console.log('======================================================\n')
     } else if (command === 'verify') {
       console.log(`\nFetching Proof #${target}...\n`)
       const res = await fetch(`${BASE_URL}/api/proof/${target}`)

@@ -1,0 +1,105 @@
+{
+  "address": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx",
+  "metadata": {
+    "name": "provn_anchor",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "PROVN Solana On-Chain Proof Anchor Protocol"
+  },
+  "instructions": [
+    {
+      "name": "anchor_proof",
+      "discriminator": [168, 149, 128, 48, 114, 219, 134, 184],
+      "accounts": [
+        {
+          "name": "proof_anchor",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [112, 114, 111, 111, 102] },
+              { "kind": "account", "path": "authority" },
+              { "kind": "arg", "path": "proof_id" }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        { "name": "proof_id", "type": "u64" },
+        { "name": "payload_hash", "type": { "array": ["u8", 32] } },
+        { "name": "timestamp", "type": "i64" },
+        { "name": "protocol_version", "type": "u8" },
+        { "name": "archive_tx_id", "type": { "option": "string" } }
+      ]
+    },
+    {
+      "name": "update_archive_tx",
+      "discriminator": [211, 74, 91, 137, 241, 153, 62, 105],
+      "accounts": [
+        {
+          "name": "proof_anchor",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [112, 114, 111, 111, 102] },
+              { "kind": "account", "path": "authority" },
+              { "kind": "arg", "path": "proof_id" }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true
+        }
+      ],
+      "args": [
+        { "name": "proof_id", "type": "u64" },
+        { "name": "archive_tx_id", "type": "string" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ProofAnchor",
+      "discriminator": [247, 12, 189, 44, 161, 88, 221, 14],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "proof_id", "type": "u64" },
+          { "name": "authority", "type": "pubkey" },
+          { "name": "payload_hash", "type": { "array": ["u8", 32] } },
+          { "name": "timestamp", "type": "i64" },
+          { "name": "protocol_version", "type": "u8" },
+          { "name": "archive_tx_id", "type": { "array": ["u8", 43] } },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "ProofAnchoredEvent",
+      "discriminator": [182, 107, 76, 219, 39, 124, 255, 12],
+      "fields": [
+        { "name": "proof_id", "type": "u64", "index": false },
+        { "name": "authority", "type": "pubkey", "index": false },
+        { "name": "payload_hash", "type": { "array": ["u8", 32] }, "index": false },
+        { "name": "timestamp", "type": "i64", "index": false },
+        { "name": "protocol_version", "type": "u8", "index": false }
+      ]
+    }
+  ],
+  "errors": [
+    { "code": 6000, "name": "Unauthorized", "msg": "You are not authorized to update this proof anchor." },
+    { "code": 6001, "name": "InvalidPayloadHash", "msg": "Invalid payload hash supplied." }
+  ]
+}

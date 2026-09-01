@@ -1,10 +1,10 @@
-# PROVN — Solana-Native Cryptographic Builder Evidence Protocol 🗿🛡️
+# PROVN — Solana-Native Cryptographic Provenance Protocol 🗿🛡️
 
-PROVN is a portable, cryptographically verifiable provenance protocol for software actions. It turns wallet-authenticated attestations into timestamp-bounded, tamper-evident evidence envelopes with graduated source provenance and decentralized Arweave archival ($0/month free-tier architecture). Designed to extend seamlessly from human developer attestations to autonomous AI-agent execution audit trails.
+PROVN is a Solana-native cryptographic provenance protocol that turns human developer contributions and autonomous AI agent actions into immutable, on-chain verifiable evidence envelopes. Solana provides decentralized identity and immutable proof commitments via PDAs; Irys/Arweave provides permanent decentralized evidence availability; GitHub and external providers supply cryptographic source attribution.
 
 [![CI Test Suite](https://github.com/dren712/pow-logger/actions/workflows/test.yml/badge.svg)](https://github.com/dren712/pow-logger/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Solana](https://img.shields.io/badge/Solana-Mainnet%2FDevnet-00ff88?logo=solana)](https://solana.com)
+[![Solana](https://img.shields.io/badge/Solana-Anchor%20PDA%20Commitments-00ff88?logo=solana)](programs/provn_anchor)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
 [![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-294%20Offline%20%7C%20304%20Total%20Passing-brightgreen)](tests/protocol.test.ts)
 
@@ -21,32 +21,34 @@ PROVN is a portable, cryptographically verifiable provenance protocol for softwa
 ## 1. What is PROVN?
 
 > [!IMPORTANT]
-> **What PROVN Proves vs. What it Doesn't**
-> PROVN cryptographically proves that a specific Solana wallet signed a specific canonical statement (content + timestamp + challenge + optional links) at a specific time. When archival is requested and confirmed, the resulting envelope is also backed by a verifiable Irys/Arweave transaction receipt (`receipt_obtained`). It **does NOT** independently prove that the underlying work was actually performed or anything about work quality. It is a tamper-evident cryptographic wrapper around a claim.
-> 
-> **Note on Author Identity Verification**: PROVN enforces strict cryptographic binding between a `github_id` and a `wallet_address` via SIWS (Sign-In-With-Solana) OAuth, granting logs a `source_verified` provenance level when the author matches the repository commit author.
+> **3-Tier Layered Trust Architecture**
+> - **Layer 1 (Solana Consensus)**: Stores immutable proof commitments in Program Derived Addresses (PDAs) with on-chain CPI composability for DAOs, grant escrows, and bounty payouts.
+> - **Layer 2 (Irys / Arweave)**: Provides permanent data availability for complete evidence envelopes via an automatic, single-signature background archival pipeline.
+> - **Layer 3 (PROVN Gateway & Indexer)**: High-speed cryptographic validation, SIWS OAuth GitHub author attribution, deterministic policy evaluation, and visual exploration.
+> - **Autonomous AI Agent Extension**: Dedicated agent keypairs sign execution traces (tool calls, PRs, contracts) producing verifiable `PROVN Agent Receipts`.
 
-In Web3, developer contributions are fragmented across GitHub repositories, pull requests, hackathons, and social posts. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
+In Web3, developer contributions and AI agent actions are fragmented across repositories, pull requests, hackathons, and execution logs. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
 
-PROVN gives developers a single, tamper-evident cryptographic record of their daily self-attested contributions:
-1. **Sign**: The builder signs a canonical message containing their work summary, evidence links, timestamp, and server-issued challenge with their Solana wallet.
+PROVN gives developers and agents a single, tamper-evident cryptographic record of their engineering contributions:
+1. **Sign**: The builder or agent signs a canonical message containing their work claim, evidence links, timestamp, and server-issued challenge with their Solana keypair.
 2. **Verify**: The server cryptographically validates the Ed25519 signature, checks the 15-minute anti-replay observation window, and indexes the attestation.
-3. **Archive**: The signed envelope is durably archived on Arweave via the Irys L1 gateway upon request.
-4. **Inspect**: Anyone can verify any proof record across 4 independent verification layers using the public verification API or on-page verifier inspector.
+3. **Anchor**: Derives a deterministic Solana PDA `[b"proof", authority, proof_id]` to commit the cryptographic hash on-chain.
+4. **Archive**: Automatically uploads the structured envelope to Arweave via the Irys L1 gateway without requiring a second signature.
+5. **Inspect**: Anyone can verify any proof record across the 5-link cryptographic chain using the public verification API or on-page verifier inspector.
 
 ---
 
 ## 2. What Does PROVN Cryptographically Prove?
 
-PROVN evaluates proof validity across four independent, non-fungible layers:
+PROVN evaluates proof validity across five independent, non-fungible layers:
 
 | Layer | Claim | Cryptographic Guarantee |
 |---|---|---|
 | **Signature** | **Author Authenticity** | ✅ **Guaranteed** — The Ed25519 signature proves that the holder of the Solana private key authored the canonical payload. |
 | **Protocol** | **Server-Bounded Timestamp & Challenge** | ✅ **Guaranteed** — Signed timestamp is bounded within ±15 min observation window (`900,000ms`) of server clock, with single-use transactional challenge consumption. |
 | **Protocol** | **Proof Submission Replay Defense** | ✅ **Guaranteed** — Single-use transactional challenge consumption (`atomic_insert_log`) and database-level `UNIQUE INDEX` on signatures. |
-| **Protocol** | **Private Auth Replay Defense** | ✅ **Guaranteed** — One-time 128-bit server-issued nonces atomically consumed in PostgreSQL (`consume_private_auth_nonce`). |
 | **Source** | **Author Identity Verification** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth, verifying commit author identity matches wallet owner. |
+| **Solana Anchor** | **On-Chain Cryptographic Commitment** | ✅ **Guaranteed (PDA)** — Deterministic Solana PDA committing `payload_hash` and `proof_id` for on-chain CPI composability. |
 | **Archive** | **Archival Availability** | ✅ **Confirmed when archived** — Decentralized Arweave storage via confirmed Irys receipts (`receipt_obtained`). |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
 

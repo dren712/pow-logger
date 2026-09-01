@@ -195,3 +195,32 @@ export async function requestAuthorizedArchivalRetry(
 
   return await response.json()
 }
+
+/**
+ * Automatic / Signature-Free Archival Retry Helper
+ * Re-triggers Irys archival for an existing validated proof without prompting a new wallet signature.
+ */
+export async function requestArchivalRetry(
+  walletAddress: string,
+  logId: number
+): Promise<RetryArchivalResponse> {
+  const response = await fetch('/api/archival-retry', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      logId,
+      walletAddress,
+    }),
+  })
+
+  if (!response.ok) {
+    let errorMsg = `Archival retry error (HTTP ${response.status})`
+    try {
+      const json = await response.json()
+      if (json.error) errorMsg = json.error
+    } catch {}
+    throw new Error(errorMsg)
+  }
+
+  return await response.json()
+}

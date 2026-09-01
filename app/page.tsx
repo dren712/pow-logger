@@ -10,7 +10,7 @@ import ContributionHeatmap from './components/ContributionHeatmap'
 import ShareCardModal from './components/ShareCardModal'
 import NetworkBanner from './components/NetworkBanner'
 import MobileWalletNotice from './components/MobileWalletNotice'
-import { submitVerifiedLog, requestAuthorizedArchivalRetry } from './lib/irys'
+import { submitVerifiedLog, requestArchivalRetry } from './lib/irys'
 import { classifyLog } from './lib/classifier'
 import { generateSingleLogNFTBadgeSVG } from './lib/badgeGenerator'
 import { fetchAllWalletLogs, toLocalDateString, PROTOCOL_TIMEZONE } from './lib/milestones'
@@ -154,10 +154,10 @@ export default function LoggerApp() {
   }
 
   const retryArchival = async (logId: number) => {
-    if (!connected || !publicKey || !signMessage) return
+    if (!connected || !publicKey) return
     setRetryingLogId(logId)
     try {
-      const data = await requestAuthorizedArchivalRetry(signMessage, publicKey.toBase58(), logId)
+      const data = await requestArchivalRetry(publicKey.toBase58(), logId)
       if (data.success && data.irysTxId) {
         setLogs((prev) =>
           prev.map((l) => (l.id === logId ? { ...l, irys_tx_id: data.irysTxId, archival_state: 'receipt_obtained' } : l))

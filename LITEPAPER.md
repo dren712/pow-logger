@@ -1,6 +1,6 @@
-# 🗿 PROVN Protocol — Technical Litepaper v1.0
+# 🗿 PROVN Protocol — Technical Litepaper v3.0
 
-**A Solana-Native, Wallet-Signed Builder Evidence Protocol with Optional Arweave Archival**
+**A Solana-Native Cryptographic Provenance Protocol with On-Chain PDA Commitments, Automatic Arweave Archival, and Autonomous AI Agent Extension**
 
 *Author: dren712*  
 *Repository: [github.com/dren712/pow-logger](https://github.com/dren712/pow-logger)*  
@@ -8,38 +8,46 @@
 
 ---
 
-## 1. Executive Summary & Problem Statement
+## 1. Executive Summary & Protocol Thesis
 
-In the modern Web3 software ecosystem, developer reputation is fragmented, unauthenticated, and prone to fabrication. Resumes, social media posts, and unauthenticated portfolio claims fail to provide immutable proof of daily engineering contributions. Conversely, existing centralized platforms rely on single points of trust that can alter, censor, or delete historical developer records.
+In both Web3 engineering and autonomous software execution, provenance is fragmented, unauthenticated, and prone to fabrication. Resumes, manual work claims, social media portfolios, and unverified AI agent actions lack cryptographic proof of authenticity, execution context, and data availability.
 
-**PROVN** solves this challenge by establishing a **lightweight, wallet-signed evidence protocol for developers**. By combining **SIWS-inspired canonical proof messages** and Ed25519 wallet signatures with **optional Arweave permanent storage**, PROVN creates a publicly verifiable, manual-review-ready record of developer-signed daily work claims.
+**PROVN** establishes a **Solana-native cryptographic provenance layer for human developers and autonomous AI agents**. 
+
+Rather than treating blockchain as a passive login mechanism or an expensive database, PROVN establishes a clear **3-Tier Layered Trust Architecture**:
+1. **Solana Consensus (Layer 1)**: Authoritative, immutable on-chain proof commitments stored in Program Derived Addresses (PDAs) with cross-program invocation (CPI) composability for DAOs, grant escrows, and bounty programs.
+2. **Irys / Arweave Decentralized Storage (Layer 2)**: Guaranteed permanent data availability for complete evidence envelopes via an automatic, single-signature background archival pipeline.
+3. **PROVN Gateway & Indexer (Layer 3)**: High-speed cryptographic validation, SIWS OAuth GitHub author attribution, deterministic policy evaluation, and visual exploration.
+
+```text
+                     BUILDER / AI AGENT
+                             │
+                             │ Single Ed25519 Wallet Signature
+                             ▼
+                    ┌─────────────────┐
+                    │  PROVN Gateway  │
+                    │                 │
+                    │ • Verify Wallet │
+                    │ • Verify Epoch  │
+                    │ • Server Receipt│
+                    └────────┬────────┘
+                             │
+            ┌────────────────┼────────────────┐
+            ▼                ▼                ▼
+     ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+     │  PostgreSQL │  │   SOLANA    │  │    IRYS     │
+     │  (Indexer)  │  │  (Layer 1)  │  │  (Layer 2)  │
+     ├─────────────┤  ├─────────────┤  ├─────────────┤
+     │ Fast UI &   │  │ PDA Proof   │  │ Immutable   │
+     │ API queries │  │ Commitments │  │ Evidence    │
+     │ & Quotas    │  │ for DAOs/CPI│  │ Envelope    │
+     └─────────────┘  └─────────────┘  └─────────────┘
+```
 
 ---
 
 ## 2. Core Protocol Architecture
 
-PROVN operates as a 4-layer cryptographically verifiable pipeline:
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            1. CLIENT ATTESTATION                            │
-│  User creates work log ──► Signs Canonical Proof Payload (Ed25519 Keypair)   │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │ POST /api/log-submit
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         2. SERVER VERIFICATION ENGINE                       │
-│  • Off-Chain Signature Re-derivation & TweetNaCl Ed25519 Verification        │
-│  • Replay Attack Defense (15-minute strict timestamp window)                │
-│  • Automatic Regex Classifier (16 skill, 15 protocol, 10 work categories)   │
-│  • Daily Quota Enforcement (3 logs/day via atomic daily_quotas table locks) │
-└──────────────────────┬──────────────────────────────┬───────────────────────┘
-                       │                              │
-                       ▼                              ▼
-┌──────────────────────────────┐ ┌────────────────────────────────────────────┐
-│ 3. PERMANENT ARWEAVE STORAGE │ │ 4. DATABASE INDEXING & REPUTATION ENGINE   │
-│ • Package 2KB JSON Envelope  │ │ • Supabase PostgreSQL (RLS Locked)         │
-│ • Upload via Irys Node #1    │ │ • Unique Signature Index (Prevent Replay)  │
 │ • Permanent Arweave Gateway  │ │ • Pure Deterministic Reputation Engine     │
 └──────────────────────────────┘ └────────────────────────────────────────────┘
 ```
@@ -119,39 +127,67 @@ PROVN establishes a strict, non-fungible progression of evidence strength:
 
 ---
 
-## 5. Four-Layer Proof Verification Architecture
+## 5. Five-Link Cryptographic Verification Architecture
 
-Independent verifiers and API consumers evaluate evidence across four distinct, non-fungible dimensions:
+Independent verifiers, DAOs, smart contracts, and API consumers evaluate evidence across five distinct, non-fungible dimensions:
 
 ```text
-1. SIGNATURE AUTHENTICITY   ──► Ed25519 Detached Verification (TweetNaCl) against wallet public key.
+1. SIGNATURE AUTHENTICITY   ──► Ed25519 Detached Verification (TweetNaCl) against Solana wallet public key.
 2. PROTOCOL VALIDITY        ──► Server-issued challenge binding + Server-bounded timestamp window (±15m).
 3. SOURCE ATTRIBUTION       ──► SIWS GitHub OAuth identity match against repository commit/PR author.
-4. ARCHIVAL INTEGRITY       ──► Permanent Arweave L1 data receipt verification via Irys gateway.
-```
-
-> [!NOTE]
-> **Offline Independent Verification**: Offline proof verification (via `provn verify`) verifies the cryptographic wallet signature, server challenge token, submission receipt, and canonical payload hash. It evaluates external network states (GitHub live API, Arweave node) as `CLAIMED` metadata from the signed record without making unverified assumptions about third-party live servers.
-
-Each proof detail report provides full layer-by-layer transparency:
-```json
-{
-  "proof_status": {
-    "signature": "VERIFIED",
-    "protocol": "VERIFIED",
-    "source": "VERIFIED",
-    "archive": "RECEIPT_OBTAINED"
-  },
-  "signature_verified": true,
-  "protocol_verified": true,
-  "source_verified": true,
-  "archive_verified": true
-}
+4. SOLANA ON-CHAIN ANCHOR   ──► Program Derived Address (PDA) commitment on Solana blockchain.
+5. ARCHIVAL INTEGRITY       ──► Permanent Arweave L1 data availability via automatic Irys background pipeline.
 ```
 
 ---
 
-## 6. Live GitHub SVG Embed Engine (`/api/badge/[wallet].svg`)
+## 6. Solana On-Chain Proof Anchor Program (`provn_anchor`)
+
+To enable native Web3 composability, PROVN includes a lightweight Solana Anchor program (`programs/provn_anchor`) that records proof commitments directly to Solana state:
+
+### PDA Derivation Scheme
+```rust
+seeds = [b"proof", authority.key().as_ref(), proof_id.to_le_bytes().as_ref()]
+```
+
+### Account Structure (`ProofAnchor`)
+```rust
+#[account]
+#[derive(InitSpace)]
+pub struct ProofAnchor {
+    pub proof_id: u64,             // Numeric PROVN proof identifier
+    pub authority: Pubkey,          // Builder or AI Agent Solana address
+    pub payload_hash: [u8; 32],     // SHA-256 digest of canonical message envelope
+    pub timestamp: i64,             // Unix timestamp of observation
+    pub protocol_version: u8,       // Protocol version (v2 / v3)
+    pub archive_tx_id: [u8; 43],    // Base64 Arweave/Irys transaction ID
+    pub bump: u8,
+}
+```
+
+### On-Chain Composability & CPI
+Any Solana smart contract (e.g., hackathon grant escrows, bounty payouts, DAO governance gates) can verify that a developer or autonomous agent completed an action:
+```rust
+let proof_anchor = ctx.accounts.proof_anchor;
+require!(proof_anchor.authority == ctx.accounts.builder.key(), ErrorCode::Unauthorized);
+require!(proof_anchor.payload_hash == expected_task_hash, ErrorCode::InvalidProof);
+```
+
+---
+
+## 7. Autonomous AI Agent Execution Provenance
+
+As software development transitions from purely human teams to human-agent pairs and autonomous agent swarms, verifiable proof of action becomes critical.
+
+PROVN extends seamlessly to autonomous AI agents:
+1. **Agent Keypair Identity**: Autonomous agents hold a dedicated Solana keypair.
+2. **Action Attribution**: The agent signs canonical execution statements (tool invocations, PR submissions, test suite passes, contract deployments).
+3. **Immutable Provenance Envelopes**: PROVN generates an immutable `PROVN Agent Receipt` anchored on Solana and archived to Arweave.
+4. **Agent Reputation & Escrow**: Escrow smart contracts on Solana release funds or grant deployment privileges based on verified on-chain proof commitments.
+
+---
+
+## 8. Live GitHub SVG Embed Engine (`/api/badge/[wallet].svg`)
 
 Developers can embed their real-time PROVN reputation badge in any markdown document (e.g. GitHub `README.md`):
 

@@ -39,86 +39,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Valid Base58 walletAddress is required' }, { status: 400 })
     }
 
-    if (!challenge || typeof challenge !== 'string' || challenge.trim().length === 0) {
-      return NextResponse.json({ error: 'Anti-replay server challenge (v2) is strictly required for archival retry' }, { status: 400 })
-    }
+    // Optional Re-authorization Challenge (if signature is supplied by client)
+    if (signature && typeof signature === 'string') {
+      if (!challenge || typeof challenge !== 'string' || challenge.trim().length === 0) {
+        return NextResponse.json({ error: 'Anti-replay server challenge (v2) is required when signing retry' }, { status: 400 })
+      }
+      if (!timestamp || typeof timestamp !== 'string') {
+        return NextResponse.json({ error: 'Timestamp is required when signing retry' }, { status: 400 })
+      }
 
-    if (!signature || typeof signature !== 'string') {
-      return NextResponse.json({ error: 'Authorized wallet signature is required for archival retry' }, { status: 401 })
-    }
+      const requestTime = new Date(timestamp).getTime()
+      const now = Date.now()
+      if (isNaN(requestTime) || Math.abs(now - requestTime) > 900000) {
+        return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
+      }
 
-    if (!timestamp || typeof timestamp !== 'string') {
-      return NextResponse.json({ error: 'Timestamp is required' }, { status: 400 })
-    }
+      // Challenge Lookup & Atomic Consumption
+      const { data: challengeRecord, error: challengeLookupError } = await supabase
+        .from('signing_challenges')
+        .select('id, expires_at, consumed_at')
+        .eq('challenge', challenge)
+        .eq('wallet_address', walletAddress)
+        .maybeSingle()
 
-    // 2. Replay Check (15-min timestamp window)
-    const requestTime = new Date(timestamp).getTime()
-    const now = Date.now()
-    if (isNaN(requestTime) || Math.abs(now - requestTime) > 900000) {
-      return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
-    }
+      if (challengeLookupError || !challengeRecord || challengeRecord.consumed_at || new Date(challengeRecord.expires_at).getTime() < now) {
+        return NextResponse.json({ error: 'Invalid, expired, or consumed challenge' }, { status: 401 })
+      }
 
-    // 2.5. Challenge Lookup & Atomic Consumption
-    const { data: challengeRecord, error: challengeLookupError } = await supabase
-      .from('signing_challenges')
-      .select('id, expires_at, consumed_at')
-      .eq('challenge', challenge)
-      .eq('wallet_address', walletAddress)
-      .maybeSingle()
+      await supabase
+        .from('signing_challenges')
+        .update({ consumed_at: new Date().toISOString() })
+        .eq('id', challengeRecord.id)
 
-    if (challengeLookupError || !challengeRecord) {
-      return NextResponse.json({ error: 'Invalid, missing, or unauthorized challenge for this wallet' }, { status: 401 })
-    }
-    if (challengeRecord.consumed_at) {
-      return NextResponse.json({ error: 'Challenge already consumed' }, { status: 401 })
-    }
-    if (new Date(challengeRecord.expires_at).getTime() < now) {
-      return NextResponse.json({ error: 'Challenge expired' }, { status: 401 })
-    }
+      const reqHost = getVerifiedDomain(req.headers.get('host'))
+      const expectedRetryMessage = buildCanonicalRetryMessageV2({
+        domain: reqHost,
+        walletAddress,
+        logId,
+        timestamp,
+        challenge,
+      })
 
-    // Atomically consume challenge
-    const { data: consumedChallenge, error: consumeErr } = await supabase
-      .from('signing_challenges')
-      .update({ consumed_at: new Date().toISOString() })
-      .eq('id', challengeRecord.id)
-      .is('consumed_at', null)
-      .select('id')
-      .maybeSingle()
+      const messageBytes = new TextEncoder().encode(expectedRetryMessage)
+      const signatureBytes = decodeBase58(signature)
+      const publicKeyBytes = decodeBase58(walletAddress)
 
-    if (consumeErr || !consumedChallenge) {
-      return NextResponse.json({ error: 'Challenge already consumed or expired during concurrent processing' }, { status: 409 })
-    }
-
-    // 3. Cryptographic Wallet Signature Verification for Retry
-    const reqHost = getVerifiedDomain(req.headers.get('host'))
-
-    const expectedRetryMessage = buildCanonicalRetryMessageV2({
-      domain: reqHost,
-      walletAddress,
-      logId,
-      timestamp,
-      challenge,
-    })
-
-    const messageBytes = new TextEncoder().encode(expectedRetryMessage)
-
-    let signatureBytes: Uint8Array
-    let publicKeyBytes: Uint8Array
-
-    try {
-      signatureBytes = decodeBase58(signature)
-      publicKeyBytes = decodeBase58(walletAddress)
-    } catch {
-      return NextResponse.json({ error: 'Invalid Base58 encoding for signature or wallet address' }, { status: 400 })
-    }
-
-    const isSignatureValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes)
-
-    if (!isSignatureValid) {
-      return NextResponse.json(
-        { error: 'Unauthorized retry signature verification failed. Retry attempt rejected.' },
-        { status: 401 }
-      )
+      const isSignatureValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes)
+      if (!isSignatureValid) {
+        return NextResponse.json(
+          { error: 'Unauthorized retry signature verification failed. Retry attempt rejected.' },
+          { status: 401 }
+        )
+      }
     }
 
     // 4. Atomic Log Reservation & State Check
@@ -127,7 +99,7 @@ export async function POST(req: NextRequest) {
       .update({ archival_state: 'processing' })
       .eq('id', logId)
       .eq('wallet_address', walletAddress)
-      .in('archival_state', ['not_requested', 'failed'])
+      .in('archival_state', ['pending', 'not_requested', 'failed'])
       .select('*')
       .maybeSingle()
 
@@ -167,27 +139,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: walletLimit.error }, { status: 429 })
     }
 
-    // 5. Execute Retry Upload to Irys Node #1
+    // 5. Execute Retry Upload to Irys
     const structuredEnvelope = JSON.stringify({
       app: 'PROVN',
-      version: 2,
+      version: logRow.protocol_version || 2,
       retryAttempt: true,
-      logId: logRow.id,
-      walletAddress,
+      proofId: logRow.id,
+      walletAddress: logRow.wallet_address,
       timestamp: logRow.created_at,
-      challenge,
+      challenge: logRow.challenge || logRow.nonce,
       content: logRow.content.trim(),
       signature: logRow.signature,
+      submissionReceipt: logRow.submission_receipt,
       evidenceUrl: logRow.evidence_url,
       githubUrl: logRow.github_url,
-      canonicalRetryMessage: expectedRetryMessage,
+      category: logRow.category,
+      evidenceType: logRow.evidence_type,
+      provenanceLevel: logRow.provenance_level,
     }, null, 2)
 
     const tags = [
       { name: 'App-Name', value: 'PROVN' },
       { name: 'Content-Type', value: 'application/json' },
       { name: 'Builder-Address', value: walletAddress },
-      { name: 'Proof-Type', value: 'Ed25519-Signed-Log' },
+      { name: 'Proof-Id', value: String(logRow.id) },
+      { name: 'Proof-Type', value: 'Ed25519-Signed-Proof' },
       { name: 'Timestamp', value: logRow.created_at },
       { name: 'Retry-Attempt', value: 'True' },
     ]

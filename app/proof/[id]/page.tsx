@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { reconstructCanonicalSubmitMessage, evaluateProofValidity } from '@/app/lib/canonicalMessage'
 import { WalletLog } from '@/app/lib/types'
+import { PublicKey } from '@solana/web3.js'
+import { deriveProofAnchorPda } from '@/app/lib/solanaAnchor'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -68,10 +70,18 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
     )
   }
 
-  // Authoritative 4-layer protocol evaluation
+  // Authoritative 5-layer protocol evaluation
   const validityReport = evaluateProofValidity(proof)
   const isSignatureValid = validityReport.signatureVerified
   const isProtocolValid = validityReport.protocolVerified
+
+  // Derive on-chain Solana PDA
+  let solanaAnchorPda = 'N/A'
+  try {
+    const pubkey = new PublicKey(proof.wallet_address)
+    const [pda] = deriveProofAnchorPda(pubkey, proof.id)
+    solanaAnchorPda = pda.toBase58()
+  } catch {}
 
   // Unified canonical message reconstruction
   const reconstructedMessage = reconstructCanonicalSubmitMessage(proof) || ''
@@ -175,28 +185,80 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
         </div>
       </div>
 
-      {/* Verification Layer Breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '20px' }}>
-        <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>1. Claim</div>
-          <div style={{ color: '#fff', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>Builder Statement</div>
-        </div>
-        <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>2. Signature & Protocol</div>
-          <div style={{ color: isProtocolValid ? '#00ff88' : isSignatureValid ? '#00e5ff' : '#ff4444', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {isProtocolValid ? 'Protocol Sealed ✓' : isSignatureValid ? 'Signature Only' : 'Invalid'}
+      {/* 5-Link Cryptographic Provenance Chain */}
+      <div className="terminal-card" style={{ padding: '20px', marginBottom: '20px', borderLeft: '3px solid #00e5ff' }}>
+        <h2 style={{ color: '#00e5ff', fontSize: '12px', textTransform: 'uppercase', margin: '0 0 14px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>⛓️</span> 5-Link Cryptographic Provenance Chain
+        </h2>
+
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {/* Link 1: Solana Wallet Signature */}
+          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[1] Solana Wallet Identity (Ed25519)</span>
+              <span style={{ color: isSignatureValid ? '#00ff88' : '#ff4444', fontSize: '10px', fontWeight: 700 }}>
+                {isSignatureValid ? '✓ VERIFIED' : '✗ FAILED'}
+              </span>
+            </div>
+            <div style={{ color: '#888', fontSize: '10px' }}>
+              Authoritatively signed by Solana wallet <code style={{ color: '#ffb800' }}>{walletShort}</code> over the canonical SIWS envelope.
+            </div>
           </div>
-        </div>
-        <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>3. Evidence</div>
-          <div style={{ color: proof.provenance_level === 'source_verified' ? '#00ff88' : proof.provenance_level === 'source_linked' ? '#00e5ff' : '#aaa', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {proof.provenance_level === 'source_verified' ? 'Source API Verified' : proof.provenance_level === 'source_linked' ? 'Source URL Linked' : 'Self-Attested'}
+
+          {/* Link 2: Protocol Epoch Challenge */}
+          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[2] Protocol Epoch Challenge & Anti-Replay</span>
+              <span style={{ color: validityReport.challengeVerified ? '#00ff88' : '#ffb800', fontSize: '10px', fontWeight: 700 }}>
+                {validityReport.challengeVerified ? '✓ VERIFIED' : 'PENDING'}
+              </span>
+            </div>
+            <div style={{ color: '#888', fontSize: '10px' }}>
+              Single-use 15-minute observation epoch window bound to active server key.
+            </div>
           </div>
-        </div>
-        <div className="terminal-card" style={{ padding: '12px 14px' }}>
-          <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>4. Storage</div>
-          <div style={{ color: (proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized') ? '#27c93f' : '#ffb800', fontSize: '12px', fontWeight: 700, marginTop: '2px' }}>
-            {(proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized') ? 'Arweave Confirmed' : 'Database Stored'}
+
+          {/* Link 3: GitHub Identity Attribution */}
+          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[3] GitHub / Source Attribution</span>
+              <span style={{ color: proof.provenance_level === 'source_verified' ? '#00ff88' : (proof.github_url ? '#ab9ff2' : '#888'), fontSize: '10px', fontWeight: 700 }}>
+                {proof.provenance_level === 'source_verified' ? '✓ SOURCE VERIFIED' : (proof.github_url ? 'LINKED' : 'SELF-ATTESTED')}
+              </span>
+            </div>
+            <div style={{ color: '#888', fontSize: '10px' }}>
+              {proof.provenance_level === 'source_verified'
+                ? `Cryptographically bound via SIWS OAuth to repository commit author.`
+                : (proof.github_url ? `Public repository URL linked to claim.` : `Self-attested builder action.`)}
+            </div>
+          </div>
+
+          {/* Link 4: Solana On-Chain Anchor PDA */}
+          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[4] Solana On-Chain Commitment (PDA)</span>
+              <span style={{ color: '#00e5ff', fontSize: '10px', fontWeight: 700 }}>
+                ANCHORABLE (PDA Ready)
+              </span>
+            </div>
+            <div style={{ color: '#888', fontSize: '10px' }}>
+              Deterministic PDA: <code style={{ color: '#00e5ff' }}>{solanaAnchorPda.slice(0, 8)}...{solanaAnchorPda.slice(-6)}</code> on program <code style={{ color: '#888' }}>FZomvFyB...jmZx</code>.
+            </div>
+          </div>
+
+          {/* Link 5: Irys Arweave Permanent Storage */}
+          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[5] Irys / Arweave Decentralized Archival</span>
+              <span style={{ color: proof.irys_tx_id ? '#00ff88' : '#ffb800', fontSize: '10px', fontWeight: 700 }}>
+                {proof.irys_tx_id ? '✓ CONFIRMED (ARWEAVE L1)' : 'AUTOMATIC QUEUE'}
+              </span>
+            </div>
+            <div style={{ color: '#888', fontSize: '10px' }}>
+              {proof.irys_tx_id
+                ? `Permanently archived with Arweave Tx ID: ${proof.irys_tx_id}`
+                : `Automatic background archival queued with retry engine.`}
+            </div>
           </div>
         </div>
       </div>

@@ -5,8 +5,16 @@
  * for PROVN Proof-of-Work Protocol on Solana.
  */
 
-import { verifyLogCryptographically, evaluateProofValidity } from '../app/lib/canonicalMessage'
+import { verifyLogCryptographically, evaluateProofValidity, computeCanonicalProofHash } from '../app/lib/canonicalMessage'
 import { evaluateEligibility } from '../app/lib/policyEngine'
+import {
+  deriveProofAnchorPda,
+  buildAnchorProofInstruction,
+  decodeProofAnchorAccount,
+  PROVN_PROGRAM_ID,
+  AnchorProofParams,
+  DecodedProofAnchor,
+} from '../app/lib/solanaAnchor'
 import {
   BuilderReputation,
   PassportExport,
@@ -16,6 +24,15 @@ import {
   EligibilityEvaluation,
   ProofValidityReport,
 } from '../app/lib/types'
+
+export {
+  deriveProofAnchorPda,
+  buildAnchorProofInstruction,
+  decodeProofAnchorAccount,
+  PROVN_PROGRAM_ID,
+  computeCanonicalProofHash,
+}
+export type { AnchorProofParams, DecodedProofAnchor }
 
 export interface ProvnClientOptions {
   baseUrl?: string

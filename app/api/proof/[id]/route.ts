@@ -67,6 +67,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       verificationState = 'LEGACY'
     }
 
+    let solanaAnchorPda: string | null = null
+    try {
+      const { PublicKey } = await import('@solana/web3.js')
+      const { deriveProofAnchorPda } = await import('@/app/lib/solanaAnchor')
+      const pubkey = new PublicKey(rawLog.wallet_address)
+      const [pda] = deriveProofAnchorPda(pubkey, rawLog.id)
+      solanaAnchorPda = pda.toBase58()
+    } catch {}
+
     const proofDetail: ProofDetail = {
       id: rawLog.id,
       walletAddress: rawLog.wallet_address,
@@ -103,6 +112,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       sourceProvider: rawLog.source_provider,
       sourceVerificationStatus: rawLog.source_verification_status,
       sourceVerifiedAt: rawLog.source_verified_at,
+      solanaAnchorPda,
+      solanaProgramId: 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx',
     }
 
     return NextResponse.json(proofDetail, {

@@ -1,0 +1,25 @@
+[toolchain]
+anchor_version = "0.30.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+provn_anchor = "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+
+[programs.devnet]
+provn_anchor = "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+
+[programs.mainnet]
+provn_anchor = "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "npx tsx tests/protocol.test.ts"

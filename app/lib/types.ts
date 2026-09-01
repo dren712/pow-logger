@@ -168,6 +168,8 @@ export interface ProofDetail {
   sourceProvider?: string | null
   sourceVerificationStatus?: SourceVerificationStatus
   sourceVerifiedAt?: string | null
+  solanaAnchorPda?: string | null
+  solanaProgramId?: string | null
 }
 
 export interface PassportExport {
