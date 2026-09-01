@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         timestamp: event.timestamp,
         parent_event_id: event.parentEventId,
         previous_event_hash: event.previousEventHash,
-        payload_hash: event.payload.payloadHash, // Note: payload must be a pre-computed hash commitment
+        payload_hash: event.payloadHash, // Note: payload must be a pre-computed hash commitment
         event_hash: event.eventHash,
         signature: event.signature,
         protocol_version: 'agent/1'
