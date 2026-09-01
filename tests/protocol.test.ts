@@ -2151,13 +2151,13 @@ async function runProductionTestSuite() {
   // Test 10: Test Fixture Key is Strictly Blocked in Production Environment
   const origNodeEnv = process.env.NODE_ENV
   try {
-    process.env.NODE_ENV = 'production'
+    ;(process.env as Record<string, string | undefined>).NODE_ENV = 'production'
     const testKeyInProd = resolveTrustedKey('provn-server-test-fixture', '2026-09-02T00:00:00Z')
     assert(testKeyInProd === null, 'Test signing key is strictly rejected by resolveTrustedKey when NODE_ENV=production')
     const testPubInProd = getPublishedPublicKey('provn-server-test-fixture')
     assert(testPubInProd === null, 'Test signing key is strictly excluded by getPublishedPublicKey when NODE_ENV=production')
   } finally {
-    process.env.NODE_ENV = origNodeEnv
+    ;(process.env as Record<string, string | undefined>).NODE_ENV = origNodeEnv
   }
 
   // =========================================================================
@@ -2415,7 +2415,8 @@ async function runProductionTestSuite() {
 
   // 2. State transition to 'receipt_obtained'
   const confirmedProof: WalletLog = {
-    ...conformanceScenarios[0].proof,
+    ...(conformanceScenarios[0].proof as WalletLog),
+    id: 101,
     archival_state: 'receipt_obtained',
     irys_tx_id: 'irys_tx_sample_1234567890abcdef',
   }
@@ -2519,7 +2520,8 @@ async function runProductionTestSuite() {
 
   // 1. 5-Link Chain Representation
   const fiveLinkProof: WalletLog = {
-    ...conformanceScenarios[0].proof,
+    ...(conformanceScenarios[0].proof as WalletLog),
+    id: 101,
     provenance_level: 'source_verified',
     archival_state: 'receipt_obtained',
     irys_tx_id: 'arweave_tx_101_xyz',
