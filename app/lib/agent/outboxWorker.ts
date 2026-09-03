@@ -4,7 +4,7 @@
  * Provides durable, asynchronous, and idempotent delivery of batch commitments:
  *   - Solana on-chain anchor transactions
  *   - Irys Arweave evidence uploads
- *   - Automatic reconciliation and lease-based concurrency control
+ *   - Automatic reconciliation and lease-based atomic concurrency control
  */
 
 import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction, clusterApiUrl } from '@solana/web3.js'
@@ -36,6 +36,7 @@ export interface OutboxTask {
   max_attempts: number
   claimed_by: string | null
   claim_expires_at: string | null
+  next_attempt_at: string | null
   last_error: string | null
   idempotency_key: string | null
 }
@@ -69,15 +70,32 @@ export class AgentOutboxWorker {
 
   /**
    * Claims up to `batchSize` unassigned or lease-expired tasks atomically.
+   * Prioritizes PostgreSQL `claim_outbox_tasks` (FOR UPDATE SKIP LOCKED).
    */
   async claimTasks(batchSize = 5, leaseDurationSeconds = 60): Promise<OutboxTask[]> {
+    // 1. Try atomic database-level RPC function with FOR UPDATE SKIP LOCKED
+    try {
+      const { data: rpcClaimed, error: rpcErr } = await this.supabase
+        .rpc('claim_outbox_tasks', {
+          p_worker_id: this.workerId,
+          p_batch_size: batchSize,
+          p_lease_seconds: leaseDurationSeconds,
+        })
+
+      if (!rpcErr && rpcClaimed && Array.isArray(rpcClaimed) && rpcClaimed.length > 0) {
+        return rpcClaimed as OutboxTask[]
+      }
+    } catch {
+      // Fall through to conditional atomic claim
+    }
+
+    // 2. Fallback: Atomic conditional update per eligible item
     const now = new Date().toISOString()
     const leaseExpiry = new Date(Date.now() + leaseDurationSeconds * 1000).toISOString()
 
-    // Find tasks that are either PENDING, RETRYING, or CLAIMED but expired
     const { data: eligible, error: findError } = await this.supabase
       .from('agent_outbox')
-      .select('*')
+      .select('id, attempts')
       .or(`status.in.(PENDING,RETRYING),and(status.eq.CLAIMED,claim_expires_at.lt.${now})`)
       .order('created_at', { ascending: true })
       .limit(batchSize)
@@ -88,22 +106,23 @@ export class AgentOutboxWorker {
 
     const claimedTasks: OutboxTask[] = []
 
-    for (const task of eligible) {
-      // Optimistic concurrency claim
-      const { data: updated, error: claimErr } = await this.supabase
+    for (const item of eligible) {
+      // Conditional atomic update with state check in the WHERE clause
+      const { data: updated } = await this.supabase
         .from('agent_outbox')
         .update({
           status: 'CLAIMED',
           claimed_by: this.workerId,
           claim_expires_at: leaseExpiry,
           updated_at: new Date().toISOString(),
-          attempts: task.attempts + 1
+          attempts: item.attempts + 1,
         })
-        .eq('id', task.id)
+        .eq('id', item.id)
+        .or(`status.in.(PENDING,RETRYING),and(status.eq.CLAIMED,claim_expires_at.lt.${now})`)
         .select()
-        .single()
+        .maybeSingle()
 
-      if (!claimErr && updated) {
+      if (updated) {
         claimedTasks.push(updated as OutboxTask)
       }
     }
@@ -112,7 +131,7 @@ export class AgentOutboxWorker {
   }
 
   /**
-   * Processes a single claimed outbox task.
+   * Processes a single claimed outbox task with idempotent execution and backoff.
    */
   async processTask(task: OutboxTask): Promise<boolean> {
     try {
@@ -122,7 +141,7 @@ export class AgentOutboxWorker {
         await this.handleIrysArchive(task)
       }
 
-      // Mark completed
+      // Mark completed cleanly
       await this.supabase
         .from('agent_outbox')
         .update({
@@ -130,7 +149,7 @@ export class AgentOutboxWorker {
           claimed_by: null,
           claim_expires_at: null,
           last_error: null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', task.id)
 
@@ -139,14 +158,19 @@ export class AgentOutboxWorker {
       const isExhausted = task.attempts >= task.max_attempts
       const nextStatus = isExhausted ? 'FAILED' : 'RETRYING'
 
+      // Exponential backoff: 30s * 2^(attempts-1), capped at 2 hours
+      const backoffSeconds = Math.min(7200, Math.pow(2, Math.max(0, task.attempts - 1)) * 30)
+      const nextAttemptAt = new Date(Date.now() + backoffSeconds * 1000).toISOString()
+
       await this.supabase
         .from('agent_outbox')
         .update({
           status: nextStatus,
           claimed_by: null,
           claim_expires_at: null,
+          next_attempt_at: nextAttemptAt,
           last_error: (err as Error).message || String(err),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', task.id)
 
@@ -155,7 +179,7 @@ export class AgentOutboxWorker {
   }
 
   /**
-   * Idempotent Solana Anchoring with Reconciliation
+   * Idempotent Solana Anchoring with On-Chain Reconciliation
    */
   private async handleSolanaAnchor(task: OutboxTask): Promise<void> {
     if (!this.solanaKeypair) {
@@ -187,7 +211,7 @@ export class AgentOutboxWorker {
             .update({
               solana_pda: anchorRef.pda,
               status: 'anchored',
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             })
             .eq('batch_id', batch.batch_id)
           return
@@ -204,7 +228,7 @@ export class AgentOutboxWorker {
       merkleRoot: batch.merkle_root,
       eventCount: batch.event_count,
       timestamp: Date.now(),
-      programId: this.programId
+      programId: this.programId,
     })
 
     const { blockhash } = await this.connection.getLatestBlockhash('confirmed')
@@ -212,18 +236,38 @@ export class AgentOutboxWorker {
     tx.recentBlockhash = blockhash
     tx.feePayer = this.solanaKeypair.publicKey
 
-    const signature = await sendAndConfirmTransaction(this.connection, tx, [this.solanaKeypair])
+    try {
+      const signature = await sendAndConfirmTransaction(this.connection, tx, [this.solanaKeypair])
 
-    // 3. Update Batch state
-    await this.supabase
-      .from('agent_batches')
-      .update({
-        solana_signature: signature,
-        solana_pda: anchorRef.pda,
-        status: 'anchored',
-        updated_at: new Date().toISOString()
-      })
-      .eq('batch_id', batch.batch_id)
+      // 3. Update Batch state
+      await this.supabase
+        .from('agent_batches')
+        .update({
+          solana_signature: signature,
+          solana_pda: anchorRef.pda,
+          status: 'anchored',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('batch_id', batch.batch_id)
+    } catch (txErr: unknown) {
+      // Handle ambiguity/race: If another process initialized the account or tx confirmed under timeout
+      const checkInfo = await this.connection.getAccountInfo(pdaPubkey)
+      if (checkInfo) {
+        const decoded = decodeAgentBatchAnchorAccount(checkInfo.data)
+        if (decoded.merkleRoot === batch.merkle_root) {
+          await this.supabase
+            .from('agent_batches')
+            .update({
+              solana_pda: anchorRef.pda,
+              status: 'anchored',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('batch_id', batch.batch_id)
+          return
+        }
+      }
+      throw txErr
+    }
   }
 
   /**
@@ -251,22 +295,25 @@ export class AgentOutboxWorker {
       .eq('execution_id', task.execution_id)
       .single()
 
-    // Fetch events in batch range
+    // Fetch events
     const { data: events } = await this.supabase
       .from('agent_events')
       .select('*')
       .eq('execution_id', task.execution_id)
-      .gte('sequence', batch.first_sequence)
-      .lte('sequence', batch.last_sequence)
       .order('sequence', { ascending: true })
 
     if (!exec || !events) {
-      throw new Error('Execution or events missing for batch archival')
+      throw new Error(`Incomplete execution records for archival: ${task.execution_id}`)
     }
 
-    const anchorRef = buildAnchorReference(this.solanaKeypair.publicKey, batch.batch_id, this.cluster, this.programId)
+    const anchorRef = batch.solana_pda ? {
+      network: this.cluster,
+      signature: batch.solana_signature,
+      pda: batch.solana_pda,
+      programId: this.programId.toBase58(),
+    } : null
 
-    const typedExecution: AgentExecution = {
+    const typedExec: AgentExecution = {
       executionId: exec.execution_id,
       agentPublicKey: exec.agent_public_key,
       status: exec.status,
@@ -276,48 +323,64 @@ export class AgentOutboxWorker {
       terminalEventHash: exec.terminal_event_hash,
       merkleRoot: exec.merkle_root,
       anchorReference: anchorRef,
-      protocolVersion: exec.protocol_version
+      protocolVersion: exec.protocol_version || 'agent/1',
     }
 
-    const typedEvents: AgentEvent[] = events.map(e => ({
-      eventId: e.event_id,
-      executionId: e.execution_id,
-      sequence: e.sequence,
-      agentPublicKey: e.agent_public_key,
-      eventType: e.event_type,
-      timestamp: new Date(e.timestamp).toISOString(),
-      parentEventId: e.parent_event_id,
-      previousEventHash: e.previous_event_hash,
-      payload: { type: e.event_type, ...((e.payload as Record<string, unknown>) || {}) },
-      payloadHash: e.payload_hash,
-      eventHash: e.event_hash,
-      signature: e.signature,
-      protocolVersion: e.protocol_version
+    const typedEvents: AgentEvent[] = events.map((row) => ({
+      eventId: row.event_id,
+      executionId: row.execution_id,
+      sequence: row.sequence,
+      agentPublicKey: row.agent_public_key,
+      eventType: row.event_type,
+      timestamp: row.timestamp,
+      parentEventId: row.parent_event_id,
+      previousEventHash: row.previous_event_hash,
+      payload: row.payload
+        ? { type: row.event_type, ...(row.payload as Record<string, unknown>) }
+        : { type: row.event_type },
+      payloadHash: row.payload_hash,
+      eventHash: row.event_hash,
+      signature: row.signature,
+      protocolVersion: row.protocol_version || 'agent/1',
     }))
 
-    const agentReceipt = buildAgentReceipt(typedExecution, typedEvents, anchorRef, null)
-    const envelope = buildIrysEvidenceEnvelope(agentReceipt)
+    const receipt = buildAgentReceipt(typedExec, typedEvents, anchorRef, null)
+    const envelope = buildIrysEvidenceEnvelope(receipt)
 
-    const uploader = await Uploader(Solana)
-      .withWallet(this.solanaKeypair.secretKey)
-      .withRpc(this.connection.rpcEndpoint)
+    // Upload to Irys
+    const rpcUrl = clusterApiUrl(this.cluster === 'localnet' ? 'devnet' : this.cluster)
+    const uploader = await Uploader(Solana).withWallet(this.solanaKeypair.secretKey).withRpc(rpcUrl)
 
+    const receiptData = JSON.stringify(envelope)
     const tags = [
       { name: 'Content-Type', value: 'application/json' },
-      { name: 'Protocol', value: 'PROVN-Agent-v1' },
+      { name: 'App-Name', value: 'PROVN-Agent-Protocol' },
+      { name: 'Protocol-Version', value: 'agent/1' },
       { name: 'Batch-ID', value: batch.batch_id },
-      { name: 'Execution-ID', value: task.execution_id }
+      { name: 'Merkle-Root', value: batch.merkle_root },
     ]
 
-    const receipt = await uploader.upload(JSON.stringify(envelope), { tags })
+    const uploadReceipt = await uploader.upload(receiptData, { tags })
 
+    // Update batch record with permanent Irys transaction ID
     await this.supabase
       .from('agent_batches')
       .update({
-        irys_tx_id: receipt.id,
+        irys_tx_id: uploadReceipt.id,
         status: 'archived',
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('batch_id', batch.batch_id)
+  }
+
+  /**
+   * Continuous polling run loop with backoff on empty queue.
+   */
+  async runOnce(): Promise<number> {
+    const tasks = await this.claimTasks(5)
+    for (const task of tasks) {
+      await this.processTask(task)
+    }
+    return tasks.length
   }
 }

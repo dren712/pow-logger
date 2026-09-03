@@ -40,12 +40,18 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch execution events' }, { status: 500 })
     }
 
-    // 3. Fetch Latest Batch
-    const { data: batch } = await supabase
+    // 3. Fetch Associated Batch (Correctly query by execution_id or batch_id)
+    let batchQuery = supabase
       .from('agent_batches')
       .select('*')
-      .eq('batch_id', executionId)
-      .maybeSingle()
+
+    if (exec.batch_id) {
+      batchQuery = batchQuery.eq('batch_id', exec.batch_id)
+    } else {
+      batchQuery = batchQuery.eq('execution_id', executionId)
+    }
+
+    const { data: batch } = await batchQuery.maybeSingle()
 
     let anchorRef: AnchorReference | null = null
     if (batch?.solana_pda) {
@@ -53,11 +59,11 @@ export async function GET(
         network: 'devnet',
         programId: process.env.NEXT_PUBLIC_PROVN_PROGRAM_ID || 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx',
         pda: batch.solana_pda,
-        signature: batch.solana_signature || null
+        signature: batch.solana_signature || null,
       }
     }
 
-    // 4. Map DB records to Agent Types
+    // 4. Map DB records to Agent Types — preserving safe payload JSONB metadata
     const execution: AgentExecution = {
       executionId: exec.execution_id,
       agentPublicKey: exec.agent_public_key,
@@ -68,10 +74,10 @@ export async function GET(
       terminalEventHash: exec.terminal_event_hash || null,
       merkleRoot: exec.merkle_root || null,
       anchorReference: anchorRef,
-      protocolVersion: exec.protocol_version || 'agent/1'
+      protocolVersion: exec.protocol_version || 'agent/1',
     }
 
-    const typedEvents: AgentEvent[] = events.map(row => ({
+    const typedEvents: AgentEvent[] = events.map((row) => ({
       eventId: row.event_id,
       executionId: row.execution_id,
       sequence: row.sequence,
@@ -80,19 +86,24 @@ export async function GET(
       timestamp: new Date(row.timestamp).toISOString(),
       parentEventId: row.parent_event_id,
       previousEventHash: row.previous_event_hash,
-      payload: { type: row.event_type, ...((row.payload as Record<string, unknown>) || {}) },
+      // Preserve structured metadata if present, fallback to minimal type commitment
+      payload: row.payload
+        ? { type: row.event_type, ...(row.payload as Record<string, unknown>) }
+        : { type: row.event_type },
       payloadHash: row.payload_hash,
       eventHash: row.event_hash,
       signature: row.signature,
-      protocolVersion: row.protocol_version || 'agent/1'
+      protocolVersion: row.protocol_version || 'agent/1',
     }))
 
     let irysRef: IrysArchiveReference | null = null
     if (batch?.irys_tx_id) {
+      const irysNetwork = (process.env.IRYS_NETWORK as 'devnet' | 'mainnet') || 'devnet'
+      const irysBaseUrl = irysNetwork === 'mainnet' ? 'https://gateway.irys.xyz' : 'https://devnet.irys.xyz'
       irysRef = {
         txId: batch.irys_tx_id,
         timestamp: batch.created_at || new Date().toISOString(),
-        url: `https://devnet.irys.xyz/${batch.irys_tx_id}`
+        url: `${irysBaseUrl}/${batch.irys_tx_id}`,
       }
     }
 
@@ -101,8 +112,8 @@ export async function GET(
     return NextResponse.json(receipt, {
       headers: {
         'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     })
   } catch (err: unknown) {
     console.error('Receipt API Error:', err)
