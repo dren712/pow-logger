@@ -50,7 +50,34 @@ A critical conceptual distinction separates standard observability tools from PR
 
 PROVN does not replace application observability; it provides the **cryptographic trust fabric** on top of which verifiable agent actions can be audited by downstream protocols, smart contracts, DAOs, and third parties.
 
+### 1.2 The Five Separated Primitives of Autonomous Action
+
+To maintain cryptographic rigor and prevent conceptual incoherence as agents become economic actors, PROVN permanently decouples five distinct operational dimensions:
+
+```text
+               ┌─────────────────────────┐
+               │  Autonomous Settlement  │ (What value moved?)
+               ├─────────────────────────┤
+               │  Outcome Attestation    │ (What happened because of it?)
+               ├─────────────────────────┤
+               │  Authorization / Policy │ (Were they allowed to do it?)
+               ├─────────────────────────┤
+               │  Cryptographic Provenance│ (What did they actually do?)
+               ├─────────────────────────┤
+               │  Agent Identity         │ (Who is acting?)
+               └─────────────────────────┘
+```
+
+1. **Identity** (*"Who is acting?"*): The cryptographic agent keypair (Ed25519) establishing non-repudiable actor attribution.
+2. **Provenance** (*"What did they actually do?"*): The immutable, monotonically chained, Merkle-batched, and Solana-anchored event log. Provenance does NOT assert that an action was good or authorized; it proves that it definitively happened.
+3. **Authorization** (*"Were they allowed to do it?"*): Deterministic evaluation of execution policies, permission boundaries, and allow/deny constraints.
+4. **Outcome** (*"What happened because of it?"*): The verified result, execution exit state, output hash, and attestation digests.
+5. **Settlement** (*"What value moved because of it?"*): On-chain asset transfers, micropayments, or escrow releases contingent on verified proofs.
+
+PROVN serves as the foundational **Cryptographic Provenance** layer upon which higher-level authorization engines, agent marketplaces, and settlement protocols operate.
+
 ---
+
 
 ## 2. Protocol Versioning
 
@@ -670,7 +697,7 @@ Raw sensitive secrets (API credentials, private tokens, passwords, customer PII,
 
 ## 14. V1 Event Types Specification
 
-The `agent/1` protocol defines a fixed catalog of **11 core event types**. Unrecognized event types are strictly prohibited.
+The `agent/1` protocol defines a catalog of core and extensible action event types. Unrecognized event types are strictly prohibited.
 
 | Event Type | Category | Description | Key Payload Fields |
 | :--- | :--- | :--- | :--- |
@@ -685,6 +712,11 @@ The `agent/1` protocol defines a fixed catalog of **11 core event types**. Unrec
 | `git.operation` | VCS | Version control operation (commit, push, checkout). | `operation`, `ref`, `commitHash` |
 | `deployment.request` | DevOps | Request to deploy code or infrastructure. | `targetEnvironment`, `deploymentConfigHash` |
 | `deployment.result` | DevOps | Outcome of deployment operation. | `targetEnvironment`, `success`, `endpointHash` |
+| `payment.intent` | Economic | Autonomous payment intent declared before settlement. | `recipient`, `amount`, `currency`, `memo` |
+| `payment.executed` | Economic | Payment transaction confirmed on-chain or through gateway. | `txSignature`, `recipient`, `amount`, `currency` |
+| `contract.interaction` | Smart Contract | Call dispatched to an on-chain program or contract. | `programId`, `method`, `instructionHash` |
+| `outcome.attestation` | Attestation | Verifiable attestation of external effect or delivery. | `outcomeType`, `summary`, `success` |
+
 
 ### 14.1 Payload Schemas (TypeScript Reference)
 
@@ -751,7 +783,41 @@ export interface GitOperationPayload extends PayloadCommitment {
   ref?: string
   commitHash?: string
 }
+
+export interface PaymentIntentPayload extends PayloadCommitment {
+  type: 'payment.intent'
+  recipient: string
+  amount: string
+  currency: string
+  memo?: string
+}
+
+export interface PaymentExecutedPayload extends PayloadCommitment {
+  type: 'payment.executed'
+  txSignature: string
+  recipient: string
+  amount: string
+  currency: string
+  status: 'confirmed' | 'failed'
+}
+
+export interface ContractInteractionPayload extends PayloadCommitment {
+  type: 'contract.interaction'
+  programId: string
+  method: string
+  instructionHash: string
+  txSignature?: string
+}
+
+export interface OutcomeAttestationPayload extends PayloadCommitment {
+  type: 'outcome.attestation'
+  outcomeType: string
+  summary: string
+  targetEntity?: string
+  success: boolean
+}
 ```
+
 
 ---
 

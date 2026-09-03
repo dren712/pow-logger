@@ -42,7 +42,12 @@ export const AGENT_EVENT_TYPES = [
   'git.operation',
   'deployment.request',
   'deployment.result',
+  'payment.intent',
+  'payment.executed',
+  'contract.interaction',
+  'outcome.attestation',
 ] as const
+
 
 export type AgentEventType = typeof AGENT_EVENT_TYPES[number]
 
@@ -190,6 +195,40 @@ export interface GitOperationPayload extends PayloadCommitment {
   ref?: string
   commitHash?: string
 }
+
+export interface PaymentIntentPayload extends PayloadCommitment {
+  type: 'payment.intent'
+  recipient: string
+  amount: string
+  currency: string
+  memo?: string
+}
+
+export interface PaymentExecutedPayload extends PayloadCommitment {
+  type: 'payment.executed'
+  txSignature: string
+  recipient: string
+  amount: string
+  currency: string
+  status: 'confirmed' | 'failed'
+}
+
+export interface ContractInteractionPayload extends PayloadCommitment {
+  type: 'contract.interaction'
+  programId: string
+  method: string
+  instructionHash: string
+  txSignature?: string
+}
+
+export interface OutcomeAttestationPayload extends PayloadCommitment {
+  type: 'outcome.attestation'
+  outcomeType: string
+  summary: string
+  targetEntity?: string
+  success: boolean
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Merkle
