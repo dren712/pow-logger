@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'EVENT_HASH_MISMATCH' }, { status: 400 })
     }
 
-    const isValidSig = verifyEventSignature(event)
+    const isValidSig = verifyEventSignature(event.eventHash, event.signature, event.agentPublicKey)
     if (!isValidSig) {
       return NextResponse.json({ error: 'SIGNATURE_INVALID' }, { status: 400 })
     }
@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
     await supabase.rpc('increment_execution_event_count', { exec_id: event.executionId })
 
     return NextResponse.json({ success: true, eventId: event.eventId })
-  } catch (err: any) {
-    console.error('Agent Event API Error:', err.message)
+  } catch (err: unknown) {
+    console.error('Agent Event API Error:', (err as Error).message || String(err))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

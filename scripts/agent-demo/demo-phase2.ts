@@ -154,7 +154,8 @@ async function runDemo() {
   let irysRef = null
   try {
     const irysUploader = await Uploader(Solana).withWallet(solanaSecret).withRpc(clusterApiUrl('devnet'))
-    const evidenceJson = buildIrysEvidenceEnvelope(state.execution, state.events, anchorRef)
+    const tempReceipt = buildAgentReceipt(state.execution, state.events, anchorRef, null)
+    const evidenceJson = JSON.stringify(buildIrysEvidenceEnvelope(tempReceipt))
     const tags = [{ name: 'Content-Type', value: 'application/json' }, { name: 'Protocol', value: 'PROVN-Agent-v1' }]
     
     console.log('  ... Uploading ...')
@@ -162,8 +163,9 @@ async function runDemo() {
     console.log(`  ✓ Irys TX ID: ${irysReceipt.id}`)
     
     irysRef = {
-      network: 'devnet',
-      txId: irysReceipt.id
+      txId: irysReceipt.id,
+      timestamp: new Date().toISOString(),
+      url: `https://devnet.irys.xyz/${irysReceipt.id}`
     }
   } catch (err: any) {
     console.warn(`  ! Irys upload skipped/failed: ${err.message}`)
@@ -245,9 +247,11 @@ async function runDemo() {
     timestamp: new Date(row.timestamp).toISOString(),
     parentEventId: row.parent_event_id,
     previousEventHash: row.previous_event_hash,
-    payload: state.events.find(e => e.eventId === row.event_id)?.payload || {} as any,
+    payload: state.events.find(e => e.eventId === row.event_id)?.payload || { type: row.event_type },
+    payloadHash: row.payload_hash,
     eventHash: row.event_hash,
-    signature: row.signature
+    signature: row.signature,
+    protocolVersion: row.protocol_version || 'agent/1'
   }))
 
   const fetchedExecution: AgentExecution = {
@@ -259,7 +263,8 @@ async function runDemo() {
     eventCount: dbExec.event_count,
     terminalEventHash: dbExec.terminal_event_hash,
     merkleRoot: dbExec.merkle_root,
-    protocolVersion: dbExec.protocol_version
+    anchorReference: anchorRef,
+    protocolVersion: dbExec.protocol_version || 'agent/1'
   }
 
   // Build the receipt representing what the API would serve

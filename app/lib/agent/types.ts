@@ -98,6 +98,8 @@ export interface AgentEvent {
   previousEventHash: string | null
   /** SHA-256 hex digest of the canonicalized payload commitment */
   payloadHash: string
+  /** Optional non-sensitive payload commitment metadata */
+  payload?: PayloadCommitment
   /** SHA-256 hex digest of the canonical event string */
   eventHash: string
   /** Base58-encoded Ed25519 detached signature over eventHash bytes */
@@ -274,7 +276,7 @@ export interface AgentReceipt {
 
 export type VerificationLayerStatus = 'VALID' | 'INVALID' | 'NOT_CHECKED'
 export type AnchorLayerStatus = 'FOUND' | 'NOT_FOUND' | 'MISMATCH' | 'NOT_CHECKED'
-export type ArchiveLayerStatus = 'AVAILABLE' | 'UNAVAILABLE' | 'NOT_CHECKED'
+export type ArchiveLayerStatus = 'AVAILABLE' | 'UNAVAILABLE' | 'CONTENT_MISMATCH' | 'NOT_CHECKED'
 
 export interface VerificationResult {
   /** Overall verification passed (true only if ALL checked layers pass) */

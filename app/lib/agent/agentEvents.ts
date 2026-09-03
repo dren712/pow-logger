@@ -230,6 +230,7 @@ export function createSignedEvent(params: {
     parentEventId: params.parentEventId ?? null,
     previousEventHash: params.previousEventHash,
     payloadHash,
+    payload: params.payload,
     eventHash,
     signature,
     protocolVersion: AGENT_PROTOCOL_VERSION,

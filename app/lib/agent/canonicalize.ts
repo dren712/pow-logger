@@ -14,7 +14,7 @@
  * - undefined, functions, symbols: ignored in objects, translated to null in arrays (standard JSON behavior)
  */
 
-export function canonicalize(val: any): string {
+export function canonicalize(val: unknown): string {
   if (val === null) return 'null'
   if (typeof val === 'boolean') return val ? 'true' : 'false'
   if (typeof val === 'number') {
@@ -34,17 +34,18 @@ export function canonicalize(val: any): string {
     return `[${items.join(',')}]`
   }
   if (typeof val === 'object') {
+    const obj = val as Record<string, unknown>
     // Note: Dates and other complex objects should be serialized to primitives by the caller.
     // For safety, if it has a toJSON method, use it first.
-    if (typeof val.toJSON === 'function') {
-      return canonicalize(val.toJSON())
+    if (typeof (obj as { toJSON?: () => unknown }).toJSON === 'function') {
+      return canonicalize((obj as { toJSON: () => unknown }).toJSON())
     }
 
-    const keys = Object.keys(val).sort()
+    const keys = Object.keys(obj).sort()
     const items: string[] = []
     
     for (const key of keys) {
-      const v = val[key]
+      const v = obj[key]
       if (v === undefined || typeof v === 'function' || typeof v === 'symbol') {
         continue // Skip undefined/functions in objects
       }

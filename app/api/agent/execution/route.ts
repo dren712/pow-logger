@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, executionId: execution.executionId })
-  } catch (err: any) {
-    console.error('Agent Execution API Error:', err.message)
+  } catch (err: unknown) {
+    console.error('Agent Execution API Error:', (err as Error).message || String(err))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

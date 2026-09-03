@@ -26,6 +26,7 @@ export async function verifyAgentReceiptNetwork(
         result.failures.push({
           type: 'SOLANA_ANCHOR_NOT_FOUND',
           eventSequence: null,
+          eventId: null,
           message: `Anchor PDA account not found on Solana Devnet: ${receipt.solana.pda}`,
           expected: 'Account exists',
           computed: 'null'
@@ -37,7 +38,8 @@ export async function verifyAgentReceiptNetwork(
           result.layers.solanaAnchor = 'MISMATCH'
           result.failures.push({
             type: 'SOLANA_ANCHOR_MISMATCH',
-          eventSequence: null,
+            eventSequence: null,
+            eventId: null,
             message: `Solana anchor root does not match receipt root`,
             expected: receipt.merkle.root,
             computed: decoded.merkleRoot
@@ -48,11 +50,12 @@ export async function verifyAgentReceiptNetwork(
           result.layers.solanaAnchor = 'FOUND'
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.failures.push({
         type: 'SOLANA_ANCHOR_NOT_FOUND',
-          eventSequence: null,
-        message: `Failed to fetch Solana PDA: ${err.message}`
+        eventSequence: null,
+        eventId: null,
+        message: `Failed to fetch Solana PDA: ${(err as Error).message || String(err)}`
       })
       result.verified = false
     }
@@ -68,6 +71,8 @@ export async function verifyAgentReceiptNetwork(
         result.layers.irysArchive = 'UNAVAILABLE'
         result.failures.push({
           type: 'IRYS_ARCHIVE_UNAVAILABLE',
+          eventSequence: null,
+          eventId: null,
           message: `Irys archive not found at ${url}`
         })
         result.verified = false
@@ -77,6 +82,8 @@ export async function verifyAgentReceiptNetwork(
           result.layers.irysArchive = 'CONTENT_MISMATCH'
           result.failures.push({
             type: 'IRYS_ARCHIVE_UNAVAILABLE',
+            eventSequence: null,
+            eventId: null,
             message: `Irys archive merkle root does not match receipt root`,
             expected: receipt.merkle.root,
             computed: data.merkle?.root
@@ -86,10 +93,12 @@ export async function verifyAgentReceiptNetwork(
           result.layers.irysArchive = 'AVAILABLE'
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.failures.push({
         type: 'IRYS_ARCHIVE_UNAVAILABLE',
-        message: `Failed to fetch from Irys: ${err.message}`
+        eventSequence: null,
+        eventId: null,
+        message: `Failed to fetch from Irys: ${(err as Error).message || String(err)}`
       })
       result.verified = false
     }

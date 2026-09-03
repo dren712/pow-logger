@@ -266,7 +266,7 @@ export class ProvnAgentRuntime {
    * Performs full offline cryptographic verification PLUS network validation
    * against Solana (Anchor) and Irys (Archive).
    */
-  static async verifyReceiptNetwork(receipt: AgentReceipt, connection: any): Promise<VerificationResult> {
+  static async verifyReceiptNetwork(receipt: AgentReceipt, connection: import('@solana/web3.js').Connection): Promise<VerificationResult> {
     const { verifyAgentReceiptNetwork } = await import('./networkVerifier')
     return verifyAgentReceiptNetwork(receipt, connection)
   }
