@@ -36,6 +36,7 @@ export type { AnchorProofParams, DecodedProofAnchor }
 
 // ─── Track B: Agent Protocol Exports ─────────────────────────────────────────
 
+export { ProvnAgent, ProvnAgentSession } from '../app/lib/agent/provnClient'
 export { ProvnAgentRuntime } from '../app/lib/agent/agentSdk'
 export { verifyAgentReceipt, formatVerificationReport } from '../app/lib/agent/agentVerifier'
 export { buildAgentReceipt, serializeReceipt, deserializeReceipt } from '../app/lib/agent/agentReceipt'

@@ -68,6 +68,9 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
             <Link href="/agent-proof" style={{ color: '#00ff88', fontWeight: 600, textDecoration: 'none', transition: 'color 0.15s' }}>
               Agent Console
             </Link>
+            <Link href="/docs/agent-sdk" style={{ color: '#00e5ff', fontWeight: 600, textDecoration: 'none', transition: 'color 0.15s' }}>
+              Agent SDK
+            </Link>
             <Link href="/docs/api" style={{ color: '#889', textDecoration: 'none', transition: 'color 0.15s' }}>
               API Docs
             </Link>
