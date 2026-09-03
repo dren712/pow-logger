@@ -323,3 +323,78 @@ export interface TamperFailure {
   expected?: string
   computed?: string
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Policy & Audit Engine
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+export type AuditSeverity = 'INFO' | 'WARNING' | 'VIOLATION' | 'CRITICAL'
+export type AuditComplianceStatus = 'COMPLIANT' | 'VIOLATION' | 'WARNING'
+
+export type PolicyRuleType =
+  | 'ALLOW_DENY_EVENT_TYPES'
+  | 'FORBIDDEN_COMMAND_PATTERNS'
+  | 'FILE_PATH_CONSTRAINTS'
+  | 'FORBIDDEN_TOOLS'
+  | 'NETWORK_TARGET_CONSTRAINTS'
+  | 'EXECUTION_BOUNDS'
+  | 'CUSTOM_RULE'
+
+export interface AuditFinding {
+  id: string
+  ruleId: string
+  ruleType: PolicyRuleType
+  severity: AuditSeverity
+  riskLevel: RiskLevel
+  eventSequence: number
+  eventId: string
+  eventType: AgentEventType
+  title: string
+  message: string
+  matchedPattern?: string
+  remediation?: string
+}
+
+export interface ExecutionPolicy {
+  policyId: string
+  policyName: string
+  description: string
+  version: string
+  /** If provided, ONLY these event types are permitted */
+  allowedEventTypes?: AgentEventType[]
+  /** Explicitly forbidden event types */
+  deniedEventTypes?: AgentEventType[]
+  /** Patterns forbidden for file read/write (e.g. .env, id_rsa, /etc/) */
+  forbiddenFilePatterns?: string[]
+  /** Patterns forbidden specifically for file.write operations */
+  readOnlyFilePatterns?: string[]
+  /** Command strings or regex patterns forbidden in shell.execute */
+  forbiddenCommands?: string[]
+  /** If provided, ONLY these tools are allowed in tool.request */
+  allowedTools?: string[]
+  /** Explicitly forbidden tool names (e.g. 'prod.database.*', 'aws.iam.*') */
+  forbiddenTools?: string[]
+  /** Maximum number of events allowed in an execution session before triggering a warning */
+  maxEventCount?: number
+}
+
+export interface ExecutionAuditReport {
+  policyId: string
+  policyName: string
+  evaluatedAt: string
+  executionId: string
+  compliance: AuditComplianceStatus
+  overallRisk: RiskLevel
+  riskScore: number // 0 to 100
+  provenanceIntegrity: 'VALID' | 'INVALID' | 'UNVERIFIED'
+  findings: AuditFinding[]
+  summary: {
+    totalEventsEvaluated: number
+    violationsCount: number
+    warningsCount: number
+    infoCount: number
+    highestSeverity: AuditSeverity
+  }
+}
+
