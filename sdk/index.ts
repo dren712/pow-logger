@@ -45,6 +45,13 @@ export { buildMerkleTree, verifyMerkleProof, recomputeMerkleRoot } from '../app/
 export { createSignedEvent, verifyEventSignature, sha256, generateId } from '../app/lib/agent/agentEvents'
 export { verifyHashChain } from '../app/lib/agent/hashChain'
 export {
+  evaluateExecutionPolicy,
+  SECURE_CODING_AGENT_POLICY,
+  READ_ONLY_AUDITOR_POLICY,
+  STRICT_ZERO_TRUST_POLICY,
+  STANDARD_POLICY_PRESETS,
+} from '../app/lib/agent/agentPolicyEngine'
+export {
   AGENT_PROTOCOL_VERSION,
   DOMAIN_SEPARATION,
   AGENT_EVENT_TYPES,
@@ -61,7 +68,14 @@ export type {
   PayloadCommitment,
   AnchorReference,
   IrysArchiveReference,
+  RiskLevel,
+  AuditSeverity,
+  AuditComplianceStatus,
+  AuditFinding,
+  ExecutionPolicy,
+  ExecutionAuditReport,
 } from '../app/lib/agent/types'
+
 
 export interface ProvnClientOptions {
   baseUrl?: string
