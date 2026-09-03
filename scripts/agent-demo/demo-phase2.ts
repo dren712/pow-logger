@@ -206,21 +206,10 @@ async function runDemo() {
   // STEP 5: VERIFICATION (CLEAN)
   // ========================================================================
   console.log('► STEP 5: Independent Verification (Clean Receipt)')
-  const cleanResult = ProvnAgentRuntime.verifyReceipt(receipt)
+  const cleanResult = await ProvnAgentRuntime.verifyReceiptNetwork(receipt, connection)
   
-  // Simulate Solana PDA fetch verification
-  let pdaMatch = false
-  try {
-    const { PublicKey } = await import('@solana/web3.js')
-    const pdaAccountInfo = await connection.getAccountInfo(new PublicKey(anchorRef.pda))
-    if (pdaAccountInfo) {
-      const decoded = decodeAgentBatchAnchorAccount(pdaAccountInfo.data)
-      pdaMatch = (decoded.merkleRoot === receipt.merkle.root)
-    }
-  } catch (e) {}
-
   console.log(ProvnAgentRuntime.formatReport(receipt, cleanResult))
-  console.log(`  [EXT] Solana Root Match: ${pdaMatch ? 'VALID' : 'INVALID'}\n`)
+  
 
   // ========================================================================
   // STEP 6: HOSTILE DATABASE TAMPERING
@@ -276,7 +265,7 @@ async function runDemo() {
   // Build the receipt representing what the API would serve
   const fetchedReceipt = buildAgentReceipt(fetchedExecution, fetchedEvents, anchorRef, irysRef)
   
-  const tamperedResult = ProvnAgentRuntime.verifyReceipt(fetchedReceipt)
+  const tamperedResult = await ProvnAgentRuntime.verifyReceiptNetwork(fetchedReceipt, connection)
   console.log(ProvnAgentRuntime.formatReport(fetchedReceipt, tamperedResult))
 
   console.log('═════════════════════════════════════════════════════════════════════')

@@ -31,20 +31,15 @@ import {
 // Payload Hashing
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { canonicalize } from './canonicalize'
+
 /**
  * Computes the SHA-256 hex digest of a payload commitment.
- * Uses deterministic key-sorted JSON serialization to ensure
+ * Uses strict deterministic JSON-like recursive serialization to ensure
  * identical payloads always produce identical hashes.
  */
 export function computePayloadHash(payload: PayloadCommitment): string {
-  const sortedKeys = Object.keys(payload).sort()
-  const canonical = sortedKeys.map(k => {
-    const v = payload[k]
-    if (v === null || v === undefined) return `${k}:none`
-    if (typeof v === 'object') return `${k}:${JSON.stringify(v, Object.keys(v as object).sort())}`
-    return `${k}:${String(v)}`
-  }).join('\n')
-
+  const canonical = canonicalize(payload)
   return crypto.createHash('sha256').update(canonical, 'utf-8').digest('hex')
 }
 
