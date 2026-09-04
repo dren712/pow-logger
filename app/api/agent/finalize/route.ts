@@ -181,103 +181,38 @@ export async function POST(req: NextRequest) {
     const finalBatchId = clientBatchId || crypto.randomUUID()
     const batchNetwork = auth.networkTarget || (process.env.NEXT_PUBLIC_SOLANA_NETWORK as 'devnet' | 'mainnet-beta') || 'devnet'
 
-    try {
-      const { data: rpcData, error: rpcErr } = await supabase.rpc('finalize_agent_execution', {
-        p_execution_id: executionId,
-        p_batch_id: finalBatchId,
-        p_merkle_root: authoritativeMerkleRoot,
-        p_terminal_event_hash: authoritativeTerminalHash,
-        p_event_count: authoritativeEventCount,
-        p_first_sequence: typedEvents[0].sequence,
-        p_last_sequence: typedEvents[typedEvents.length - 1].sequence,
-        p_network: batchNetwork,
-      })
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('finalize_agent_execution', {
+      p_execution_id: executionId,
+      p_batch_id: finalBatchId,
+      p_merkle_root: authoritativeMerkleRoot,
+      p_terminal_event_hash: authoritativeTerminalHash,
+      p_event_count: authoritativeEventCount,
+      p_first_sequence: typedEvents[0].sequence,
+      p_last_sequence: typedEvents[typedEvents.length - 1].sequence,
+      p_network: batchNetwork,
+    })
 
-      if (!rpcErr && rpcData && rpcData.success) {
-        return NextResponse.json({
-          success: true,
-          batchId: rpcData.batch_id || finalBatchId,
-          merkleRoot: authoritativeMerkleRoot,
-          terminalEventHash: authoritativeTerminalHash,
-          eventCount: authoritativeEventCount,
-          verified: true,
-          outboxEnqueued: true,
-          alreadyFinalized: rpcData.already_finalized || false,
-        })
-      }
-    } catch (rpcEx) {
-      console.warn('finalize_agent_execution RPC warning (using sequential fallback):', rpcEx)
-    }
-
-    // Fallback: Sequential database persistence
-    const { error: batchError } = await supabase
-      .from('agent_batches')
-      .insert({
-        batch_id: finalBatchId,
-        execution_id: executionId,
-        merkle_root: authoritativeMerkleRoot,
-        event_count: authoritativeEventCount,
-        first_sequence: typedEvents[0].sequence,
-        last_sequence: typedEvents[typedEvents.length - 1].sequence,
-        network: batchNetwork,
-        status: 'pending_solana',
-      })
-
-    if (batchError && batchError.code !== '23505') {
-      console.error('Batch Insertion Error:', batchError)
-      return NextResponse.json({ error: batchError.message }, { status: 500 })
-    }
-
-    // Update agent_executions with server-derived state
-    const { error: execUpdateErr } = await supabase
-      .from('agent_executions')
-      .update({
-        status: 'completed',
-        batch_id: finalBatchId,
-        completed_at: new Date().toISOString(),
-        terminal_event_hash: authoritativeTerminalHash,
-        merkle_root: authoritativeMerkleRoot,
-        event_count: authoritativeEventCount,
-      })
-      .eq('execution_id', executionId)
-
-    if (execUpdateErr) {
-      console.error('Execution Update Error:', execUpdateErr)
-      return NextResponse.json({ error: execUpdateErr.message }, { status: 500 })
-    }
-
-    // Enqueue transactional outbox tasks for asynchronous Solana & Irys delivery
-    let outboxSuccess = false
-    try {
-      const { error: outboxErr } = await supabase.from('agent_outbox').insert([
+    if (rpcErr || !rpcData || !rpcData.success) {
+      console.error('finalize_agent_execution RPC error:', rpcErr || rpcData?.error)
+      return NextResponse.json(
         {
-          batch_id: finalBatchId,
-          execution_id: executionId,
-          task_type: 'SOLANA_ANCHOR',
-          status: 'PENDING',
-          idempotency_key: `solana:${finalBatchId}`,
+          error: 'FINALIZATION_UNAVAILABLE',
+          message: 'Atomic execution finalization could not be completed. Non-atomic fallback is disabled to guarantee transactional consistency.',
+          details: rpcErr?.message || rpcData?.error,
         },
-        {
-          batch_id: finalBatchId,
-          execution_id: executionId,
-          task_type: 'IRYS_ARCHIVE',
-          status: 'PENDING',
-          idempotency_key: `irys:${finalBatchId}`,
-        },
-      ])
-      outboxSuccess = !outboxErr
-    } catch (outboxErr: unknown) {
-      console.warn('Outbox enqueue warning:', (outboxErr as Error)?.message || String(outboxErr))
+        { status: 503 }
+      )
     }
 
     return NextResponse.json({
       success: true,
-      batchId: finalBatchId,
+      batchId: rpcData.batch_id || finalBatchId,
       merkleRoot: authoritativeMerkleRoot,
       terminalEventHash: authoritativeTerminalHash,
       eventCount: authoritativeEventCount,
       verified: true,
-      outboxEnqueued: outboxSuccess,
+      outboxEnqueued: true,
+      alreadyFinalized: rpcData.already_finalized || false,
     })
   } catch (err: unknown) {
     console.error('Agent Finalize API Error:', (err as Error).message || String(err))
