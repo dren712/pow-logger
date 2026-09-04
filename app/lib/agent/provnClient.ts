@@ -189,3 +189,163 @@ export class ProvnAgent {
     return new ProvnAgentSession(this.runtime, state, this.gatewayUrl, this.apiKey)
   }
 }
+
+/**
+ * Ergonomic parameter types for frictionless developer onboarding
+ */
+export interface StartExecutionParams {
+  /** Optional agent identifier/label (e.g. 'coding-agent-01', 'treasury-bot') */
+  agent?: string
+  /** High-level goal or task prompt the agent was assigned to accomplish */
+  intent: string
+  /** Arbitrary context/metadata to commit with the execution */
+  metadata?: Record<string, unknown>
+  /** Parent execution ID for hierarchical multi-agent delegations */
+  parentExecutionId?: string
+}
+
+export interface AgentActionParams {
+  /** Action type (e.g. 'tool_call', 'tool.invoke', 'file.write', 'shell.execute') */
+  type: string
+  /** Specific tool name if applicable (e.g. 'github.create_pull_request') */
+  tool?: string
+  /** Target resource or URI (e.g. 'repo/owner/name', '/src/index.ts') */
+  target?: string
+  /** Invocation arguments or inputs */
+  input?: unknown
+  /** Tool execution result or output */
+  output?: unknown
+  /** Optional extra metadata */
+  metadata?: Record<string, unknown>
+}
+
+export interface AgentOutcomeParams {
+  /** High-level status of the outcome */
+  status: 'success' | 'failure' | 'partial' | string
+  /** Structured result data */
+  result?: unknown
+  /** On-chain transaction signature if value or smart contract was touched */
+  txSignature?: string
+  /** Pull request or Git commit URL if code was changed */
+  prUrl?: string
+  /** Summary explanation */
+  summary?: string
+  /** Optional extra metadata */
+  metadata?: Record<string, unknown>
+}
+
+/**
+ * High-level execution handle representing an active agent session.
+ */
+export class ProvnExecution {
+  public readonly executionId: string
+  public readonly agentPublicKey: string
+  public readonly intent: string
+  private session: ProvnAgentSession
+
+  constructor(session: ProvnAgentSession, params: StartExecutionParams) {
+    this.session = session
+    this.executionId = session.executionId
+    this.agentPublicKey = session.agentPublicKey
+    this.intent = params.intent
+  }
+
+  /**
+   * Records and cryptographically commits a consequential action taken by the agent.
+   */
+  async action(params: AgentActionParams): Promise<AgentEvent> {
+    const rawType = params.type.toLowerCase().trim()
+    let mappedType: AgentEventType = 'tool.request'
+
+    if (rawType === 'tool_call' || rawType === 'tool.request' || rawType === 'tool' || rawType === 'tool.invoke') {
+      mappedType = 'tool.request'
+    } else if (rawType === 'file_read' || rawType === 'file.read') {
+      mappedType = 'file.read'
+    } else if (rawType === 'file_write' || rawType === 'file.write') {
+      mappedType = 'file.write'
+    } else if (rawType === 'shell_exec' || rawType === 'shell.execute' || rawType === 'shell') {
+      mappedType = 'shell.execute'
+    } else if (rawType === 'git' || rawType === 'git.operation') {
+      mappedType = 'git.operation'
+    } else if (rawType === 'deployment' || rawType === 'deployment.request') {
+      mappedType = 'deployment.request'
+    } else if (rawType === 'payment' || rawType === 'payment.executed') {
+      mappedType = 'payment.executed'
+    } else if (rawType === 'outcome' || rawType === 'outcome.attestation') {
+      mappedType = 'outcome.attestation'
+    }
+
+    const payload: PayloadCommitment = {
+      type: mappedType,
+      ...(params.tool ? { tool: params.tool } : {}),
+      ...(params.target ? { target: params.target } : {}),
+      ...(params.input !== undefined ? { input: params.input } : {}),
+      ...(params.output !== undefined ? { output: params.output } : {}),
+      ...(params.metadata || {}),
+    }
+
+    return this.session.record(mappedType, payload)
+  }
+
+  /**
+   * Records the final observed external outcome of the execution.
+   */
+  async outcome(params: AgentOutcomeParams): Promise<AgentEvent> {
+    const payload: PayloadCommitment = {
+      type: 'agent.completed',
+      status: params.status,
+      ...(params.result !== undefined ? { result: params.result } : {}),
+      ...(params.txSignature ? { txSignature: params.txSignature } : {}),
+      ...(params.prUrl ? { prUrl: params.prUrl } : {}),
+      ...(params.summary ? { summary: params.summary } : {}),
+      ...(params.metadata || {}),
+    }
+
+    return this.session.record('agent.completed', payload)
+  }
+
+  /**
+   * Seals the execution, commits the Merkle root to the control plane,
+   * triggers asynchronous Solana & Irys outbox anchoring, and returns the portable receipt.
+   */
+  async complete(summary?: string): Promise<AgentReceipt & { proofUrl: string }> {
+    return this.session.seal(summary || `Execution completed: ${this.intent}`)
+  }
+}
+
+/**
+ * Top-level PROVN client interface for autonomous software.
+ * 
+ * Usage:
+ * ```typescript
+ * const provn = new Provn({ apiKey: process.env.PROVN_KEY })
+ * const execution = await provn.start({ agent: 'my-agent', intent: 'Fix database bug' })
+ * await execution.action({ type: 'tool_call', tool: 'github.create_pr', target: 'repo/123' })
+ * await execution.outcome({ status: 'success', prUrl: 'https://github.com/org/repo/pull/1' })
+ * const receipt = await execution.complete()
+ * ```
+ */
+export class Provn {
+  private agentClient: ProvnAgent
+
+  constructor(config: ProvnClientConfig = {}) {
+    this.agentClient = new ProvnAgent(config)
+  }
+
+  get publicKey(): string {
+    return this.agentClient.publicKey
+  }
+
+  /**
+   * Starts a new verifiable execution with the specified agent identity and task intent.
+   */
+  async start(params: StartExecutionParams): Promise<ProvnExecution> {
+    const session = await this.agentClient.startSession({
+      taskDescription: params.intent,
+      agentName: params.agent,
+      parentExecutionId: params.parentExecutionId,
+    })
+    return new ProvnExecution(session, params)
+  }
+}
+

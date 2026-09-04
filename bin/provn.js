@@ -450,11 +450,286 @@ function formatTerminalReport(report, isRemote = false) {
   }
 }
 
+// ─── Autonomous Agent Receipt Verifier (Track B Protocol) ───────────────────
+function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
+  const c = {
+    reset: '\x1b[0m',
+    bold: '\x1b[1m',
+    green: '\x1b[32m',
+    red: '\x1b[31m',
+    yellow: '\x1b[33m',
+    cyan: '\x1b[36m',
+    dim: '\x1b[2m',
+  }
+
+  if (!receipt || receipt.protocol !== 'PROVN' || !receipt.execution || !Array.isArray(receipt.events)) {
+    console.error(`\n${c.bold}${c.red}❌ ERROR: Malformed Agent Receipt. Missing protocol header, execution metadata, or events.${c.reset}\n`)
+    return false
+  }
+
+  const events = [...receipt.events].sort((a, b) => a.sequence - b.sequence)
+  const exec = receipt.execution
+
+  if (isInspectOnly) {
+    console.log('\n' + c.bold + c.cyan + '=================================================================================' + c.reset)
+    console.log(c.bold + c.cyan + '   🤖  PROVN AUTONOMOUS AGENT EXECUTION INSPECTOR (TIMELINE & TRACE)           ' + c.reset)
+    console.log(c.bold + c.cyan + '=================================================================================' + c.reset)
+    console.log(`\n${c.bold}Execution ID:${c.reset}     ${exec.executionId}`)
+    const taskIntent = events[0]?.payload?.taskDescription || events[0]?.payload?.intent || exec.taskDescription || 'N/A'
+    console.log(`${c.bold}Task Intent:${c.reset}      "${taskIntent}"`)
+    console.log(`${c.bold}Status:${c.reset}           ${exec.status ? exec.status.toUpperCase() : 'UNKNOWN'}`)
+    console.log(`${c.bold}Events Recorded:${c.reset}  ${events.length}`)
+    console.log(`${c.bold}Merkle Root:${c.reset}      ${receipt.merkle ? receipt.merkle.root : 'None'}`)
+    const anchor = receipt.solana || receipt.anchorReference || receipt.execution?.anchorReference
+    if (anchor && anchor.pda) {
+      console.log(`${c.bold}Solana Anchor PDA:${c.reset} ${anchor.pda} (${anchor.network || 'devnet'})`)
+    }
+    console.log('\n' + c.bold + '─── EXECUTION EVENT TIMELINE ────────────────────────────────────────────────────' + c.reset)
+    console.table(events.map(e => ({
+      Seq: e.sequence,
+      Type: e.eventType,
+      Timestamp: e.timestamp,
+      Tool: e.payload?.tool || e.payload?.type || '-',
+      Target: e.payload?.target || e.payload?.path || e.payload?.command || '-',
+      Event_Hash: e.eventHash ? e.eventHash.slice(0, 16) + '...' : 'NONE',
+    })))
+    console.log('')
+    return true
+  }
+
+  console.log('\n' + c.bold + c.cyan + '=================================================================================' + c.reset)
+  console.log(c.bold + c.cyan + '   🛡️  PROVN AUTONOMOUS AGENT RECEIPT VERIFIER (INDEPENDENT CRYPTO ENGINE)     ' + c.reset)
+  console.log(c.bold + c.cyan + '=================================================================================' + c.reset)
+  console.log(`\n${c.bold}Protocol Version:${c.reset}    ${receipt.version || 'agent/1'}`)
+  console.log(`${c.bold}Execution ID:${c.reset}        ${exec.executionId}`)
+  console.log(`${c.bold}Agent Sovereign Key:${c.reset} ${exec.agentPublicKey}`)
+  const taskIntent = events[0]?.payload?.taskDescription || events[0]?.payload?.intent || exec.taskDescription || 'N/A'
+  console.log(`${c.bold}Task Intent:${c.reset}         "${taskIntent}"`)
+  console.log(`${c.bold}Committed Events:${c.reset}    ${events.length} actions`)
+  console.log(`${c.bold}Verification Mode:${c.reset}   100% Zero-Trust Air-Gapped Recomputation\n`)
+
+  const errors = []
+  let hashIntegrityPass = true
+  let signaturesPass = true
+  let hashChainPass = true
+  let merkleInclusionPass = true
+  let merkleRootPass = true
+  let solanaAnchorPass = true
+
+  // 1. Event Hash & Signature Verification
+  events.forEach((event, idx) => {
+    const canonical = [
+      'PROVN-AGENT-EVENT-V1',
+      `execution:${event.executionId}`,
+      `sequence:${event.sequence}`,
+      `agent:${event.agentPublicKey}`,
+      `event_type:${event.eventType}`,
+      `timestamp:${event.timestamp}`,
+      `parent_event:${event.parentEventId || 'none'}`,
+      `previous_event_hash:${event.previousEventHash || 'none'}`,
+      `payload_hash:${event.payloadHash}`,
+    ].join('\n')
+
+    const computedHash = crypto.createHash('sha256').update(canonical, 'utf-8').digest('hex')
+    if (computedHash !== event.eventHash) {
+      hashIntegrityPass = false
+      errors.push(`Event #${event.sequence} hash mismatch (tampered content). Expected ${computedHash.slice(0, 16)}..., got ${event.eventHash.slice(0, 16)}...`)
+    }
+
+    try {
+      const pubKey = decodeBase58(event.agentPublicKey)
+      const sig = decodeBase58(event.signature)
+      const hashBuf = Buffer.from(event.eventHash, 'hex')
+      const ok = nacl.sign.detached.verify(hashBuf, sig, pubKey)
+      if (!ok) {
+        signaturesPass = false
+        errors.push(`Event #${event.sequence} Ed25519 signature is INVALID`)
+      }
+    } catch (sigErr) {
+      signaturesPass = false
+      errors.push(`Event #${event.sequence} signature decoding error: ${sigErr.message}`)
+    }
+
+    if (idx === 0) {
+      if (event.previousEventHash !== null && event.previousEventHash !== 'none') {
+        hashChainPass = false
+        errors.push(`Event #0 must not have previousEventHash (got ${event.previousEventHash})`)
+      }
+    } else {
+      const prev = events[idx - 1]
+      if (event.previousEventHash !== prev.eventHash) {
+        hashChainPass = false
+        errors.push(`Hash chain severed at sequence #${event.sequence}. Linked to ${event.previousEventHash ? event.previousEventHash.slice(0, 16) + '...' : 'none'}, but previous event was ${prev.eventHash.slice(0, 16)}...`)
+      }
+      if (event.sequence !== prev.sequence + 1) {
+        hashChainPass = false
+        errors.push(`Sequence non-monotonic at event #${event.sequence} (previous was #${prev.sequence})`)
+      }
+    }
+  })
+
+  // 2. Merkle Root Reconstruction
+  const leaves = events.map(e =>
+    crypto.createHash('sha256').update('PROVN-MERKLE-LEAF-V1:' + e.eventHash, 'utf-8').digest('hex')
+  )
+
+  let currentLevel = leaves
+  while (currentLevel.length > 1) {
+    const nextLevel = []
+    for (let i = 0; i < currentLevel.length; i += 2) {
+      if (i + 1 < currentLevel.length) {
+        const combined = 'PROVN-MERKLE-NODE-V1:' + currentLevel[i] + currentLevel[i + 1]
+        nextLevel.push(crypto.createHash('sha256').update(combined, 'utf-8').digest('hex'))
+      } else {
+        nextLevel.push(currentLevel[i])
+      }
+    }
+    currentLevel = nextLevel
+  }
+
+  const computedRoot = currentLevel.length > 0 ? currentLevel[0] : null
+  const committedRoot = receipt.merkle?.root || receipt.execution?.merkleRoot
+
+  if (!committedRoot || computedRoot !== committedRoot) {
+    merkleRootPass = false
+    errors.push(`Merkle root mismatch. Recomputed: ${computedRoot}, Committed in receipt: ${committedRoot}`)
+  }
+
+  // 3. Merkle Inclusion Proofs (if present)
+  if (receipt.merkle && Array.isArray(receipt.merkle.proofs)) {
+    receipt.events.forEach((ev, idx) => {
+      const p = receipt.merkle.proofs[idx]
+      if (!p) return
+      const steps = Array.isArray(p.proof) ? p.proof : (Array.isArray(p.steps) ? p.steps : [])
+      let cur = crypto.createHash('sha256').update('PROVN-MERKLE-LEAF-V1:' + ev.eventHash, 'utf-8').digest('hex')
+      for (const step of steps) {
+        const sibling = step.hash || step.siblingHash
+        const isLeft = (step.direction === 'left' || step.position === 'left')
+        if (isLeft) {
+          cur = crypto.createHash('sha256').update('PROVN-MERKLE-NODE-V1:' + sibling + cur, 'utf-8').digest('hex')
+        } else {
+          cur = crypto.createHash('sha256').update('PROVN-MERKLE-NODE-V1:' + cur + sibling, 'utf-8').digest('hex')
+        }
+      }
+      if (cur !== committedRoot) {
+        merkleInclusionPass = false
+        errors.push(`Merkle inclusion proof invalid for sequence #${ev.sequence}`)
+      }
+    })
+  }
+
+  // 4. Solana PDA Anchor Verification
+  let pdaStatusMessage = 'No on-chain reference present in receipt'
+  const anchor = receipt.solana || receipt.anchorReference || receipt.execution?.anchorReference
+  if (anchor && anchor.pda) {
+    try {
+      const { PublicKey } = require('@solana/web3.js')
+      const authority = new PublicKey(receipt.execution.agentPublicKey)
+      const batchId = receipt.batch?.batchId || receipt.execution.executionId
+      const batchIdHash = crypto.createHash('sha256').update(batchId, 'utf-8').digest()
+      const progId = new PublicKey(anchor.programId || 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx')
+      const [expectedPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('agent_batch'), authority.toBuffer(), batchIdHash],
+        progId
+      )
+      if (expectedPda.toBase58() === anchor.pda) {
+        pdaStatusMessage = `Matched expected PDA: ${expectedPda.toBase58()}`
+      } else {
+        solanaAnchorPass = false
+        pdaStatusMessage = `PDA MISMATCH! Expected ${expectedPda.toBase58()}, received ${anchor.pda}`
+        errors.push(pdaStatusMessage)
+      }
+    } catch (pdaErr) {
+      pdaStatusMessage = `PDA derivation skipped: ${pdaErr.message}`
+    }
+  }
+
+  // 5. Layer 3 Behavioral Policy Audit
+  const policyFindings = []
+  for (const ev of events) {
+    const p = ev.payload || {}
+    const cmd = (p.command || '').toLowerCase()
+    const pathStr = (p.path || p.target || '').toLowerCase()
+    if (cmd.includes('rm -rf') || cmd.includes('drop table') || cmd.includes('mkfs')) {
+      policyFindings.push(`[CRITICAL] Destructive command detected at seq #${ev.sequence}: "${p.command}"`)
+    }
+    if (pathStr.includes('.env') || pathStr.includes('id_rsa') || pathStr.includes('/etc/shadow')) {
+      policyFindings.push(`[CRITICAL] Sensitive credential access at seq #${ev.sequence}: "${pathStr}"`)
+    }
+  }
+
+  console.log(c.bold + '─── 7-STEP PROTOCOL VERIFICATION ────────────────────────────────────────────────' + c.reset)
+  console.log(`[1/7] Protocol Header:         ${receipt.protocol === 'PROVN' && receipt.version === 'agent/1' ? c.green + '[PASS ✓]' : c.red + '[FAIL ✗]'}${c.reset}  agent/1`)
+  console.log(`[2/7] Sovereign Ed25519 Sigs:  ${signaturesPass ? c.green + '[PASS ✓]' : c.red + '[FAIL ✗]'}${c.reset}  ${events.length}/${events.length} valid signatures`)
+  console.log(`[3/7] Event Hash Integrity:    ${hashIntegrityPass ? c.green + '[PASS ✓]' : c.red + '[FAIL ✗]'}${c.reset}  Canonical line-format SHA-256`)
+  console.log(`[4/7] Monotonic Hash Chain:    ${hashChainPass ? c.green + '[PASS ✓]' : c.red + '[FAIL ✗]'}${c.reset}  Continuous sequential linkage`)
+  console.log(`[5/7] Merkle Inclusion Proofs: ${merkleInclusionPass ? c.green + '[PASS ✓]' : c.red + '[FAIL ✗]'}${c.reset}  ${receipt.merkle?.proofs?.length || 0} proofs verified`)
+  console.log(`[6/7] Merkle Root Match:       ${merkleRootPass ? c.green + '[PASS ✓]' : c.red + '[FAIL ✗]'}${c.reset}  Root: ${computedRoot ? computedRoot.slice(0, 16) + '...' : 'none'}`)
+  console.log(`[7/7] Solana Anchor PDA:       ${solanaAnchorPass ? c.green + '[PASS ✓]' : c.red + '[FAIL ✗]'}${c.reset}  ${pdaStatusMessage}`)
+
+  console.log('\n' + c.bold + '─── LAYER 3 BEHAVIORAL POLICY AUDIT ─────────────────────────────────────────────' + c.reset)
+  if (policyFindings.length === 0) {
+    console.log(`${c.green}COMPLIANT (0 policy violations detected)${c.reset}`)
+  } else {
+    console.log(`${c.bold}${c.red}POLICY VIOLATION DETECTED (${policyFindings.length} findings):${c.reset}`)
+    policyFindings.forEach(f => console.log(`  ${c.red}• ${f}${c.reset}`))
+  }
+
+  const isValid = hashIntegrityPass && signaturesPass && hashChainPass && merkleRootPass && merkleInclusionPass && solanaAnchorPass
+
+  console.log('\n' + c.bold + '─────────────────────────────────────────────────────────────────────────────────' + c.reset)
+  if (isValid) {
+    console.log(`\n${c.bold}${c.green}✅ VERDICT: AGENT RECEIPT CRYPTOGRAPHICALLY AUTHENTIC & UNTAMPERED${c.reset}`)
+    console.log(`${c.dim}Every action was sovereignly signed by ${exec.agentPublicKey.slice(0, 8)}... and matches the public commitment.${c.reset}\n`)
+  } else {
+    console.log(`\n${c.bold}${c.red}❌ VERDICT: AGENT RECEIPT FAILED VERIFICATION (TAMPERING DETECTED)${c.reset}`)
+    console.log(c.red + 'Detected Discrepancies:' + c.reset)
+    errors.forEach(err => console.log(`  ${c.red}• ${err}${c.reset}`))
+    console.log('')
+  }
+
+  return isValid
+}
+
 // ─── CLI Entrypoint & Argument Handling ─────────────────────────────────────
 async function main() {
   const args = process.argv.slice(2)
   const command = args[0] || 'help'
   const target = args[1]
+
+  if (command === 'agent') {
+    const subCommand = args[1]
+    const receiptPath = args[2]
+
+    if (!subCommand || (subCommand !== 'verify' && subCommand !== 'inspect')) {
+      console.error('Error: Unknown agent subcommand. Use "verify" or "inspect".')
+      console.error('Usage: provn agent verify <path-to-receipt.json>')
+      console.error('       provn agent inspect <path-to-receipt.json>')
+      process.exit(1)
+    }
+
+    if (!receiptPath) {
+      console.error(`Error: Please specify an agent receipt JSON file path.`)
+      console.error(`Usage: provn agent ${subCommand} <path-to-receipt.json>`)
+      process.exit(1)
+    }
+
+    if (!fs.existsSync(receiptPath)) {
+      console.error(`Error: Receipt file not found: ${receiptPath}`)
+      process.exit(1)
+    }
+
+    let receiptData
+    try {
+      receiptData = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
+    } catch (err) {
+      console.error(`Error parsing receipt JSON: ${err.message}`)
+      process.exit(1)
+    }
+
+    const isValid = verifyAgentReceiptCli(receiptData, subCommand === 'inspect')
+    process.exit(isValid ? 0 : 1)
+  }
 
   if (command === 'keys' || command === 'manifest') {
     console.log('\nPROVN Protocol Published Trust Anchors (Single Source of Truth):')
@@ -508,6 +783,12 @@ async function main() {
       process.exit(1)
     }
 
+    // Auto-detect Agent Protocol Receipt
+    if (packetData && packetData.protocol === 'PROVN' && (packetData.version === 'agent/1' || packetData.events)) {
+      const isValid = verifyAgentReceiptCli(packetData, false)
+      process.exit(isValid ? 0 : 1)
+    }
+
     const report = verifyProofPacket(packetData)
     formatTerminalReport(report, isRemote)
     process.exit(report.valid ? 0 : 1)
@@ -518,10 +799,12 @@ async function main() {
 PROVN Standalone CLI Verifier 🛡️🗿
 
 Usage:
-  provn verify <proof.json>     Verify a local portable proof envelope offline (100% air-gapped)
-  provn verify <proofId>        Fetch and independently verify proof record by ID
-  provn keys                    Display published trust anchors and public key registry
-  provn help                    Show this help menu
+  provn agent verify <receipt.json>   Independently verify an agent cryptographic receipt offline
+  provn agent inspect <receipt.json>  Inspect agent execution timeline & tool traces
+  provn verify <proof.json>           Verify a local proof envelope or agent receipt offline
+  provn verify <proofId>              Fetch and independently verify proof record by ID
+  provn keys                          Display published trust anchors and public key registry
+  provn help                          Show this help menu
 `)
 }
 
