@@ -14,7 +14,7 @@
 CREATE TABLE IF NOT EXISTS public.agent_outbox (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     batch_id TEXT NOT NULL REFERENCES public.agent_batches(batch_id) ON DELETE CASCADE,
-    execution_id TEXT NOT NULL REFERENCES public.agent_executions(execution_id) ON DELETE CASCADE,
+    execution_id UUID NOT NULL REFERENCES public.agent_executions(execution_id) ON DELETE CASCADE,
     task_type TEXT NOT NULL CHECK (task_type IN ('SOLANA_ANCHOR', 'IRYS_ARCHIVE', 'RECONCILE')),
     status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'CLAIMED', 'COMPLETED', 'FAILED', 'RETRYING')),
     attempts INT NOT NULL DEFAULT 0,

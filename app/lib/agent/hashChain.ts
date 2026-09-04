@@ -18,7 +18,7 @@
  *   - Sequence gap or duplication
  */
 
-import { recomputeEventHash, verifyEventSignature } from './agentEvents'
+import { recomputeEventHash, verifyEventSignature, computePayloadHash } from './agentEvents'
 import type { AgentEvent, TamperFailure } from './types'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,6 +98,22 @@ export function verifyHashChain(events: AgentEvent[]): ChainVerificationResult {
         computed: recomputedHash,
       })
       eventValid = false
+    }
+
+    // ── 2a. Payload integrity: verify structured payload matches payloadHash ──
+    if (event.payload) {
+      const computedPayloadHash = computePayloadHash(event.payload)
+      if (computedPayloadHash !== event.payloadHash) {
+        failures.push({
+          type: 'EVENT_HASH_MISMATCH',
+          eventSequence: event.sequence,
+          eventId: event.eventId,
+          message: `Payload hash mismatch at sequence ${event.sequence}: payload content does not match committed payloadHash`,
+          expected: event.payloadHash,
+          computed: computedPayloadHash,
+        })
+        eventValid = false
+      }
     }
 
     // ── 3. Signature verification ────────────────────────────────────

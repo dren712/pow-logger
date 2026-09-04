@@ -55,8 +55,9 @@ export async function GET(
 
     let anchorRef: AnchorReference | null = null
     if (batch?.solana_pda) {
+      const solanaNetwork = (batch?.network as 'devnet' | 'mainnet-beta') || (process.env.NEXT_PUBLIC_SOLANA_NETWORK as 'devnet' | 'mainnet-beta') || 'devnet'
       anchorRef = {
-        network: 'devnet',
+        network: solanaNetwork,
         programId: process.env.NEXT_PUBLIC_PROVN_PROGRAM_ID || 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx',
         pda: batch.solana_pda,
         signature: batch.solana_signature || null,

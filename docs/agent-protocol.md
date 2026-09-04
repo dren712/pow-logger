@@ -3,7 +3,7 @@
 **Protocol Identifier**: `PROVN`  
 **Protocol Version**: `agent/1`  
 **Document Version**: `1.0.0`  
-**Status**: `Final / Active`  
+**Status**: `Draft / Reference Implementation`  
 **Architecture Track**: `Track B — Verifiable Agent Action Infrastructure`  
 **Reference Implementation**: `app/lib/agent/`  
 
@@ -214,25 +214,32 @@ payload_hash:<sha256>
 
 ### 5.3 Deterministic Payload Commitment Hashing
 
-The `payload_hash` commits to action-specific metadata without leaking raw secrets or sensitive data. The payload is canonicalized by sorting all object keys lexicographically:
+The `payload_hash` commits to action-specific metadata without leaking raw secrets or sensitive data. Because payloads are arbitrary structured JSON objects, PROVN mandates a recursive deterministic serialization specification (aligned with RFC 8785 JSON Canonicalization Scheme principles):
 
-$$\text{CanonicalPayload} = \operatorname{join}\Big(\text{"\textbackslash n"}, \big[ k + \text{":"} + \text{serialize}(v) \mid k \in \operatorname{sort}(\operatorname{keys}(\text{payload})) \big]\Big)$$
-
-$$\text{payload\_hash} = \operatorname{SHA-256}(\text{CanonicalPayload})$$
+1. **Primitives**:
+   - `null` serializes as `"null"`.
+   - `boolean` serializes as `"true"` or `"false"`.
+   - `number`: finite IEEE-754 decimal string representation. Non-finite values (`NaN`, `Infinity`, `-Infinity`) are strictly rejected. `-0` is normalized to `"0"`.
+   - `string`: standard JSON string escaping with UTF-8 character encoding (`"..."`).
+2. **Arrays**:
+   - Encased in `[` and `]`, elements separated by `,`.
+   - `undefined`, functions, or symbols inside arrays normalize to `null`.
+3. **Objects**:
+   - Encased in `{` and `}`, key-value pairs separated by `,`.
+   - Object keys are sorted strictly lexicographically by UTF-16 code units.
+   - Keys and values are joined with `:`.
+   - Properties whose values are `undefined`, functions, or symbols are omitted.
+4. **Digest Computation**:
+   $$\text{payload\_hash} = \operatorname{SHA-256}\big(\operatorname{UTF-8}(\operatorname{canonicalize}(\text{payload}))\big)$$
 
 ```typescript
 export function computePayloadHash(payload: PayloadCommitment): string {
-  const sortedKeys = Object.keys(payload).sort()
-  const canonical = sortedKeys.map(k => {
-    const v = payload[k]
-    if (v === null || v === undefined) return `${k}:none`
-    if (typeof v === 'object') return `${k}:${JSON.stringify(v, Object.keys(v as object).sort())}`
-    return `${k}:${String(v)}`
-  }).join('\n')
-
+  const canonical = canonicalize(payload)
   return crypto.createHash('sha256').update(canonical, 'utf-8').digest('hex')
 }
 ```
+
+Cross-language reference implementations (Python, Rust, Go) must produce identical SHA-256 hashes for all standardized test vectors defined in [`tests/canonicalizationVectors.test.ts`](file:///Users/darshangaikwad/pow-logger/tests/canonicalizationVectors.test.ts).
 
 ---
 

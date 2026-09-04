@@ -21,10 +21,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Malformed agent event' }, { status: 400 })
     }
 
-    // 2. Tenant Isolation Check: Verify execution exists and belongs to this project
+    // 2. Tenant Isolation & Identity Check: Verify execution exists and belongs to this project
     const { data: exec, error: execErr } = await supabase
       .from('agent_executions')
-      .select('execution_id, project_id')
+      .select('execution_id, project_id, agent_public_key')
       .eq('execution_id', event.executionId)
       .maybeSingle()
 
@@ -42,6 +42,38 @@ export async function POST(req: NextRequest) {
         { error: 'TENANT_MISMATCH: Execution belongs to a different project' },
         { status: 403 }
       )
+    }
+
+    // Invariant: Event signer must match execution agent identity
+    if (exec.agent_public_key && event.agentPublicKey !== exec.agent_public_key) {
+      return NextResponse.json(
+        {
+          error: 'AGENT_PUBLIC_KEY_MISMATCH: Event signer does not match execution agent identity',
+          expected: exec.agent_public_key,
+          provided: event.agentPublicKey,
+        },
+        { status: 400 }
+      )
+    }
+
+    // Atomic quota consumption if project ID is available
+    if (auth.projectId) {
+      try {
+        const { data: quotaRows, error: quotaErr } = await supabase.rpc(
+          'consume_agent_event_quota',
+          { p_project_id: auth.projectId, p_count: 1 }
+        )
+        if (!quotaErr && quotaRows && quotaRows[0] && !quotaRows[0].allowed) {
+          return NextResponse.json(
+            {
+              error: `Monthly event quota exceeded (${quotaRows[0].monthly_events_used}/${quotaRows[0].monthly_event_limit}). Upgrade tier for more capacity.`,
+            },
+            { status: 403 }
+          )
+        }
+      } catch (qErr) {
+        console.warn('Atomic quota check warning:', qErr)
+      }
     }
 
     // 3. Server-side Cryptographic Verification (Zero Trust)

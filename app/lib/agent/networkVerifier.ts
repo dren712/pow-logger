@@ -5,6 +5,14 @@ import { sha256 } from './agentEvents'
 import type { AgentReceipt, VerificationResult } from './types'
 
 /**
+ * Authoritative PROVN Agent Anchor program IDs pinned per network.
+ */
+export const AUTHORITATIVE_PROGRAM_IDS: Record<string, string> = {
+  devnet: 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx',
+  'mainnet-beta': 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx',
+}
+
+/**
  * Independently verifies a PROVN Agent Receipt against live network infrastructure (Solana & Irys).
  *
  * ZERO-TRUST NETWORK INVARIANTS:
@@ -34,9 +42,14 @@ export async function verifyAgentReceiptNetwork(
   if (receipt.solana) {
     try {
       const declaredPda = new PublicKey(receipt.solana.pda)
-      const expectedProgramId = new PublicKey(
-        receipt.solana.programId || process.env.NEXT_PUBLIC_PROVN_PROGRAM_ID || 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx'
-      )
+      const networkKey = receipt.solana.network || 'devnet'
+      const pinnedProgramId = AUTHORITATIVE_PROGRAM_IDS[networkKey]
+      const targetProgramIdStr =
+        receipt.solana.programId ||
+        pinnedProgramId ||
+        process.env.NEXT_PUBLIC_PROVN_PROGRAM_ID ||
+        'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx'
+      const expectedProgramId = new PublicKey(targetProgramIdStr)
 
       const accountInfo = await connection.getAccountInfo(declaredPda)
 
