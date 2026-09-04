@@ -205,11 +205,23 @@ export class AgentOutboxWorker {
       if (accountInfo) {
         const decoded = decodeAgentBatchAnchorAccount(accountInfo.data)
         if (decoded.merkleRoot === batch.merkle_root) {
-          // Already anchored! Reconcile database state idempotently
+          // Already anchored! Reconcile database state idempotently & recover transaction signature from chain
+          let recoveredSig = batch.solana_signature
+          if (!recoveredSig) {
+            try {
+              const sigs = await this.connection.getSignaturesForAddress(pdaPubkey, { limit: 1 })
+              if (sigs.length > 0 && sigs[0].signature) {
+                recoveredSig = sigs[0].signature
+              }
+            } catch (sigErr) {
+              console.warn(`Could not recover transaction signature for PDA ${anchorRef.pda}:`, (sigErr as Error).message)
+            }
+          }
           await this.supabase
             .from('agent_batches')
             .update({
               solana_pda: anchorRef.pda,
+              ...(recoveredSig ? { solana_signature: recoveredSig } : {}),
               status: 'anchored',
               updated_at: new Date().toISOString(),
             })
@@ -255,10 +267,22 @@ export class AgentOutboxWorker {
       if (checkInfo) {
         const decoded = decodeAgentBatchAnchorAccount(checkInfo.data)
         if (decoded.merkleRoot === batch.merkle_root) {
+          let recoveredSig = batch.solana_signature
+          if (!recoveredSig) {
+            try {
+              const sigs = await this.connection.getSignaturesForAddress(pdaPubkey, { limit: 1 })
+              if (sigs.length > 0 && sigs[0].signature) {
+                recoveredSig = sigs[0].signature
+              }
+            } catch (sigErr) {
+              console.warn(`Could not recover transaction signature for PDA ${anchorRef.pda}:`, (sigErr as Error).message)
+            }
+          }
           await this.supabase
             .from('agent_batches')
             .update({
               solana_pda: anchorRef.pda,
+              ...(recoveredSig ? { solana_signature: recoveredSig } : {}),
               status: 'anchored',
               updated_at: new Date().toISOString(),
             })

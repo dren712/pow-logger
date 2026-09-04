@@ -234,35 +234,99 @@ export default function AgentProofConsole({
             </div>
           </div>
 
-          {/* System Pipeline Bar */}
+          {/* Visual Cryptographic Proof Chain */}
           <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #1a1e28' }}>
-            <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.8px' }}>
-              DURABLE CONTROL/DATA PLANE PIPELINE
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ fontSize: '11px', color: '#00e5ff', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 700 }}>
+                VERIFIABLE CRYPTOGRAPHIC PROOF CHAIN
+              </div>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                End-to-End Non-Repudiable Settlement Pipeline
+              </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-              <div style={{ backgroundColor: '#131720', padding: '10px 14px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                <div style={{ fontSize: '11px', color: '#00ff88', fontWeight: 600 }}>✓ 1. Ingested</div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Ed25519 Validated</div>
-              </div>
-              <div style={{ backgroundColor: '#131720', padding: '10px 14px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                <div style={{ fontSize: '11px', color: '#00ff88', fontWeight: 600 }}>✓ 2. Hash Chained</div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Monotonic Linkage</div>
-              </div>
-              <div style={{ backgroundColor: '#131720', padding: '10px 14px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                <div style={{ fontSize: '11px', color: '#00ff88', fontWeight: 600 }}>✓ 3. Merkle Batched</div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Odd-Leaf Promoted</div>
-              </div>
-              <div style={{ backgroundColor: '#131720', padding: '10px 14px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                <div style={{ fontSize: '11px', color: receipt.irys ? '#00ff88' : '#ffb800', fontWeight: 600 }}>
-                  {receipt.irys ? '✓ 4. Archived (Irys)' : '⟳ 4. Archival Outbox'}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '10px' }}>
+              {/* Node 1: Agent Key */}
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.agentSignature === 'VALID' ? '#1e2430' : '#ff4444'}`, position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>1. AGENT KEY</span>
+                  <span style={{ fontSize: '10px', color: verification.layers.agentSignature === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: 'rgba(0,255,136,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
+                    {verification.layers.agentSignature === 'VALID' ? 'ED25519' : 'FAIL'}
+                  </span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Permanent Arweave</div>
-              </div>
-              <div style={{ backgroundColor: '#131720', padding: '10px 14px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                <div style={{ fontSize: '11px', color: receipt.solana ? '#00ff88' : '#ffb800', fontWeight: 600 }}>
-                  {receipt.solana ? '✓ 5. Anchored (Solana)' : '⟳ 5. Solana Outbox'}
+                <div style={{ fontSize: '11px', color: '#f0f3f8', marginTop: '6px', fontFamily: 'monospace' }}>
+                  {receipt.execution.agentPublicKey.slice(0, 10)}...
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Anchor PDA Commitment</div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>Sovereign Signer</div>
+              </div>
+
+              {/* Node 2: Payload Hash */}
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.eventHash === 'VALID' ? '#1e2430' : '#ff4444'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>2. PAYLOAD AUTH</span>
+                  <span style={{ fontSize: '10px', color: verification.layers.eventHash === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: verification.layers.eventHash === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
+                    {verification.layers.eventHash === 'VALID' ? 'AUTHENTIC' : 'MISMATCH'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#f0f3f8', marginTop: '6px', fontFamily: 'monospace' }}>
+                  RFC 8785 Canonical
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>SHA-256 Payload Hash</div>
+              </div>
+
+              {/* Node 3: Hash Chain */}
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.hashChain === 'VALID' ? '#1e2430' : '#ff4444'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>3. HASH CHAIN</span>
+                  <span style={{ fontSize: '10px', color: verification.layers.hashChain === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: verification.layers.hashChain === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
+                    {verification.layers.hashChain === 'VALID' ? 'LINKED' : 'SEVERED'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#f0f3f8', marginTop: '6px', fontFamily: 'monospace' }}>
+                  Seq 0 ➔ {receipt.events.length - 1}
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>Monotonic Linkage</div>
+              </div>
+
+              {/* Node 4: Merkle Root */}
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.merkleRoot === 'VALID' ? '#1e2430' : '#ff4444'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>4. MERKLE ROOT</span>
+                  <span style={{ fontSize: '10px', color: verification.layers.merkleRoot === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: verification.layers.merkleRoot === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
+                    {verification.layers.merkleRoot === 'VALID' ? 'ROOT PASS' : 'FAIL'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#f0f3f8', marginTop: '6px', fontFamily: 'monospace' }}>
+                  {receipt.merkle.root.slice(0, 10)}...
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>Log₂(N) Inclusions</div>
+              </div>
+
+              {/* Node 5: Solana Anchor */}
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>5. SOLANA PDA</span>
+                  <span style={{ fontSize: '10px', color: receipt.solana ? '#00ff88' : '#ffb800', fontWeight: 700, backgroundColor: receipt.solana ? 'rgba(0,255,136,0.1)' : 'rgba(255,184,0,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
+                    {receipt.solana ? 'ANCHORED' : 'QUEUED'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#f0f3f8', marginTop: '6px', fontFamily: 'monospace' }}>
+                  {receipt.solana ? `${receipt.solana.pda.slice(0, 10)}...` : 'Pending'}
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>On-Chain Batch Root</div>
+              </div>
+
+              {/* Node 6: Irys Archival */}
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>6. IRYS STORAGE</span>
+                  <span style={{ fontSize: '10px', color: receipt.irys ? '#00ff88' : '#ffb800', fontWeight: 700, backgroundColor: receipt.irys ? 'rgba(0,255,136,0.1)' : 'rgba(255,184,0,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
+                    {receipt.irys ? 'ARWEAVE' : 'QUEUED'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#f0f3f8', marginTop: '6px', fontFamily: 'monospace' }}>
+                  {receipt.irys ? `${receipt.irys.txId.slice(0, 10)}...` : 'Pending'}
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>Permanent Evidence</div>
               </div>
             </div>
           </div>
@@ -444,8 +508,8 @@ export default function AgentProofConsole({
         {/* TAB CONTENT: PROVENANCE */}
         {activeTab === 'PROVENANCE' && (
           <>
-            {/* 5-Link Provenance Checklist */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+            {/* 6-Link Provenance Checklist */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '24px' }}>
               <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.agentSignature === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>1. AGENT SIGNATURES</span>
@@ -456,9 +520,19 @@ export default function AgentProofConsole({
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Ed25519 detached per event</div>
               </div>
 
+              <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.eventHash === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>2. EVENT & PAYLOAD</span>
+                  <span style={{ color: verification.layers.eventHash === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700 }}>
+                    {verification.layers.eventHash === 'VALID' ? '✓ VALID' : '✗ INVALID'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Canonical SHA-256 integrity</div>
+              </div>
+
               <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.hashChain === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>2. HASH CHAIN</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>3. HASH CHAIN</span>
                   <span style={{ color: verification.layers.hashChain === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700 }}>
                     {verification.layers.hashChain === 'VALID' ? '✓ VALID' : '✗ INVALID'}
                   </span>
@@ -468,7 +542,7 @@ export default function AgentProofConsole({
 
               <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.merkleInclusion === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>3. MERKLE INCLUSION</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>4. MERKLE INCLUSION</span>
                   <span style={{ color: verification.layers.merkleInclusion === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700 }}>
                     {verification.layers.merkleInclusion === 'VALID' ? '✓ VALID' : '✗ INVALID'}
                   </span>
@@ -478,7 +552,7 @@ export default function AgentProofConsole({
 
               <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: '1px solid #1a1e28' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>4. SOLANA ANCHOR</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>5. SOLANA ANCHOR</span>
                   <span style={{ color: '#00ff88', fontWeight: 700 }}>
                     {receipt.solana ? '✓ COMMITTED' : '○ PENDING'}
                   </span>
@@ -488,7 +562,7 @@ export default function AgentProofConsole({
 
               <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: '1px solid #1a1e28' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>5. IRYS ARCHIVAL</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>6. IRYS ARCHIVAL</span>
                   <span style={{ color: '#00ff88', fontWeight: 700 }}>
                     {receipt.irys ? '✓ AVAILABLE' : '○ PENDING'}
                   </span>

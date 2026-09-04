@@ -691,14 +691,39 @@ Output: VerificationResult { verified: Boolean, layers: Map, failures: List }
 
 Protocol implementers and consumers MUST account for the following security constraints:
 
-### 13.1 Agent Key Lifecycle & Rotation
-In Protocol Version `agent/1`, an agent keypair is bound to an execution lifecycle. Key rotation within a running execution chain is not supported. If an agent keypair is compromised during an active execution, all events signed by that key up to the compromise point are cryptographically valid, but operator trustworthiness cannot be established retroactively.
+### 13.1 Agent Identity Architecture: Persistent Identity vs. Ephemeral Keys
+In Protocol Version `agent/1`, an agent identity is defined by an Ed25519 public key.
+- **Ephemeral Keys (Demo / Sandbox Only)**: Instantiating the SDK without an explicit keypair generates an ephemeral keypair in memory. While convenient for rapid prototyping, a process restart creates a completely new identity, breaking identity continuity across runs.
+- **Persistent Identity (Production Requirement)**: Enterprise and production autonomous software **MUST** initialize the agent with a persistent Ed25519 keypair loaded from an encrypted secrets manager, environment variable (`AGENT_PRIVATE_KEY_BASE58`), or hardware security module (HSM / KMS):
+  ```typescript
+  import nacl from 'tweetnacl'
+  import bs58 from 'bs58'
+  import { Provn } from '@provn/sdk'
+
+  const secretKey = bs58.decode(process.env.AGENT_SOVEREIGN_SECRET_KEY!)
+  const persistentKeypair = nacl.sign.keyPair.fromSecretKey(secretKey)
+
+  const provn = new Provn({
+    keypair: persistentKeypair,
+    agentName: 'production-treasury-bot-01',
+  })
+  ```
+Key rotation within a single running execution chain is not supported in `agent/1`. If an agent keypair is compromised during an active execution, all events signed by that key up to the compromise point remain mathematically valid, but operator trustworthiness cannot be established retroactively.
 
 ### 13.2 Delegation & Sub-Identities
-Protocol Version `agent/1` does not include on-chain delegation trees or capability-based attenuation certificates (e.g., UCANs / Macaroons). A single Ed25519 identity signs all events within the execution. Sub-delegation across swarms of sub-agents is reserved for future protocol revisions (`agent/2`).
+Protocol Version `agent/1` provides structural parent/child linkage via `parentExecutionId`, allowing child executions to reference parent sessions. However, `agent/1` does not yet enforce on-chain capability attenuation certificates (e.g., UCANs / Macaroons). A single Ed25519 identity signs all events within each execution session. Cryptographic delegation verification is reserved for future protocol revisions (`agent/2`).
 
-### 13.3 Privacy & Data Commitment Policy
-Raw sensitive secrets (API credentials, private tokens, passwords, customer PII, raw source files) **MUST NEVER** be placed in payload commitments. Payloads MUST commit exclusively to cryptographic SHA-256 hashes of sensitive assets (`contentHash`, `commandHash`, `stdoutHash`).
+### 13.3 Data Model & Privacy Architecture: The 3-Tier Commitment Rule
+PROVN operational databases store event `payload` as JSONB to enable Layer 3 deterministic policy audits and forensic timeline exploration. To balance audit transparency with enterprise data privacy, agents MUST adhere to the **3-Tier Data Model**:
+
+1. **Tier 1: Public Action Metadata (Committed Directly in `payload`)**
+   - High-level, observable execution context: tool name (`vault.get_reserves`), target URI (`solana:mainnet-beta`), HTTP status codes, exit codes (`0`), timestamps, execution intent, and completion summaries.
+2. **Tier 2: Off-Chain Content Commitments (Committed as SHA-256 Hashes)**
+   - Heavy payloads, source code diffs, database query records, and detailed tool inputs/outputs **MUST NOT** be embedded raw. Instead, compute and commit their SHA-256 hex digests into standard fields: `contentHash`, `inputCommitment`, `outputCommitment`, and `diffHash`.
+   - The verifier validates the hashes without exposing underlying proprietary business data.
+3. **Tier 3: Strictly Forbidden Sensitive Data (Zero Ingestion)**
+   - Raw enterprise credentials, private API keys (`sk-...`), passwords, database passwords, session tokens, cookie headers, and unencrypted customer PII **MUST NEVER** be placed in payload commitments.
+   - The PROVN SDK includes a recursive sensitive data scanner (`scanForSensitiveData`) enabled by default. Any payload containing secret-like keys throws `SENSITIVE_DATA_DETECTED` at runtime.
 
 ---
 

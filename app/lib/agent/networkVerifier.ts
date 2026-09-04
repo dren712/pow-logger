@@ -1,7 +1,8 @@
 import { Connection, PublicKey } from '@solana/web3.js'
 import { verifyAgentReceipt } from './agentVerifier'
 import { decodeAgentBatchAnchorAccount, deriveAgentBatchAnchorPda } from './solanaAgentAnchor'
-import { sha256, computePayloadHash } from './agentEvents'
+import { sha256, computePayloadHash, recomputeEventHash, verifyEventSignature } from './agentEvents'
+import { buildMerkleTree } from './merkleBatch'
 import type { AgentReceipt, VerificationResult } from './types'
 
 /**
@@ -183,39 +184,91 @@ export async function verifyAgentReceiptNetwork(
         result.verified = false
       } else {
         const data = await response.json()
-        if (data.merkle?.root !== receipt.merkle.root) {
+        if (!data || !data.events || !Array.isArray(data.events)) {
           result.layers.irysArchive = 'CONTENT_MISMATCH'
           result.failures.push({
             type: 'IRYS_ARCHIVE_UNAVAILABLE',
             eventSequence: null,
             eventId: null,
-            message: `Irys archive merkle root does not match receipt root`,
-            expected: receipt.merkle.root,
-            computed: data.merkle?.root,
+            message: `Irys archive payload is missing valid events array`,
           })
           result.verified = false
         } else {
-          // Verify individual event payload hashes if events are present in archive
-          if (data.events && Array.isArray(data.events)) {
-            for (const ev of data.events) {
-              if (ev.payload) {
-                const computedPHash = computePayloadHash(ev.payload)
-                if (computedPHash !== ev.payloadHash) {
-                  result.layers.irysArchive = 'CONTENT_MISMATCH'
-                  result.failures.push({
-                    type: 'PAYLOAD_HASH_MISMATCH',
-                    eventSequence: ev.sequence,
-                    eventId: ev.eventId,
-                    message: `Irys archived event sequence ${ev.sequence} payload mismatch`,
-                    expected: ev.payloadHash,
-                    computed: computedPHash,
-                  })
-                  result.verified = false
-                }
+          let irysEventsValid = true
+          const archivedEventHashes: string[] = []
+
+          // Independently verify each archived event
+          for (const ev of data.events) {
+            // Check payload integrity if payload object is present
+            if (ev.payload) {
+              const computedPHash = computePayloadHash(ev.payload)
+              if (computedPHash !== ev.payloadHash) {
+                irysEventsValid = false
+                result.layers.irysArchive = 'CONTENT_MISMATCH'
+                result.failures.push({
+                  type: 'PAYLOAD_HASH_MISMATCH',
+                  eventSequence: ev.sequence,
+                  eventId: ev.eventId,
+                  message: `Irys archived event sequence ${ev.sequence} payload mismatch`,
+                  expected: ev.payloadHash,
+                  computed: computedPHash,
+                })
+                result.verified = false
               }
             }
+
+            // Recompute canonical event hash
+            const recomputedEHash = recomputeEventHash(ev)
+            if (recomputedEHash !== ev.eventHash) {
+              irysEventsValid = false
+              result.layers.irysArchive = 'CONTENT_MISMATCH'
+              result.failures.push({
+                type: 'EVENT_HASH_MISMATCH',
+                eventSequence: ev.sequence,
+                eventId: ev.eventId,
+                message: `Irys archived event sequence ${ev.sequence} canonical hash mismatch`,
+                expected: ev.eventHash,
+                computed: recomputedEHash,
+              })
+              result.verified = false
+            }
+
+            // Verify Ed25519 signature of archived event
+            const isSigValid = verifyEventSignature(ev.eventHash, ev.signature, receipt.execution.agentPublicKey)
+            if (!isSigValid) {
+              irysEventsValid = false
+              result.layers.irysArchive = 'CONTENT_MISMATCH'
+              result.failures.push({
+                type: 'SIGNATURE_INVALID',
+                eventSequence: ev.sequence,
+                eventId: ev.eventId,
+                message: `Irys archived event sequence ${ev.sequence} Ed25519 signature invalid`,
+              })
+              result.verified = false
+            }
+
+            archivedEventHashes.push(ev.eventHash)
           }
-          if (result.layers.irysArchive !== 'CONTENT_MISMATCH') {
+
+          // Independently reconstruct Merkle root from downloaded events
+          const reconstructedTree = buildMerkleTree(archivedEventHashes)
+          const reconstructedRoot = reconstructedTree.root
+
+          if (reconstructedRoot !== receipt.merkle.root) {
+            irysEventsValid = false
+            result.layers.irysArchive = 'CONTENT_MISMATCH'
+            result.failures.push({
+              type: 'MERKLE_ROOT_MISMATCH',
+              eventSequence: null,
+              eventId: null,
+              message: `Irys reconstructed Merkle root does not match receipt Merkle root`,
+              expected: receipt.merkle.root,
+              computed: reconstructedRoot,
+            })
+            result.verified = false
+          }
+
+          if (irysEventsValid && result.layers.irysArchive !== 'CONTENT_MISMATCH') {
             result.layers.irysArchive = 'AVAILABLE'
           }
         }

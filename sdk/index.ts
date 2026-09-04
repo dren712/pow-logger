@@ -54,7 +54,7 @@ export { verifyAgentReceipt, formatVerificationReport } from '../app/lib/agent/a
 export { buildAgentReceipt, serializeReceipt, deserializeReceipt } from '../app/lib/agent/agentReceipt'
 export { deriveAgentBatchAnchorPda, buildAnchorAgentBatchInstruction, buildAnchorReference } from '../app/lib/agent/solanaAgentAnchor'
 export { buildMerkleTree, verifyMerkleProof, recomputeMerkleRoot } from '../app/lib/agent/merkleBatch'
-export { createSignedEvent, verifyEventSignature, sha256, generateId } from '../app/lib/agent/agentEvents'
+export { createSignedEvent, verifyEventSignature, sha256, generateId, computePayloadHash, recomputeEventHash } from '../app/lib/agent/agentEvents'
 export { verifyHashChain } from '../app/lib/agent/hashChain'
 export {
   evaluateExecutionPolicy,
