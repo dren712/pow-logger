@@ -34,6 +34,61 @@ export {
 }
 export type { AnchorProofParams, DecodedProofAnchor }
 
+export { 
+  Provn, 
+  ProvnExecution, 
+  ProvnAgent, 
+  ProvnAgentSession,
+  DEFAULT_GATEWAY_URL,
+  scanForSensitiveData,
+} from '../app/lib/agent/provnClient'
+export type {
+  StartExecutionParams,
+  AgentActionParams,
+  AgentOutcomeParams,
+  ProvnClientConfig,
+  StartSessionParams,
+} from '../app/lib/agent/provnClient'
+export { ProvnAgentRuntime } from '../app/lib/agent/agentSdk'
+export { verifyAgentReceipt, formatVerificationReport } from '../app/lib/agent/agentVerifier'
+export { buildAgentReceipt, serializeReceipt, deserializeReceipt } from '../app/lib/agent/agentReceipt'
+export { deriveAgentBatchAnchorPda, buildAnchorAgentBatchInstruction, buildAnchorReference } from '../app/lib/agent/solanaAgentAnchor'
+export { buildMerkleTree, verifyMerkleProof, recomputeMerkleRoot } from '../app/lib/agent/merkleBatch'
+export { createSignedEvent, verifyEventSignature, sha256, generateId, computePayloadHash, recomputeEventHash } from '../app/lib/agent/agentEvents'
+export { verifyHashChain } from '../app/lib/agent/hashChain'
+export {
+  evaluateExecutionPolicy,
+  SECURE_CODING_AGENT_POLICY,
+  READ_ONLY_AUDITOR_POLICY,
+  STRICT_ZERO_TRUST_POLICY,
+  STANDARD_POLICY_PRESETS,
+} from '../app/lib/agent/agentPolicyEngine'
+export {
+  AGENT_PROTOCOL_VERSION,
+  DOMAIN_SEPARATION,
+  AGENT_EVENT_TYPES,
+} from '../app/lib/agent/types'
+export type {
+  AgentEvent,
+  AgentExecution,
+  AgentBatch,
+  AgentReceipt,
+  MerkleTree,
+  MerkleInclusionProof,
+  VerificationResult,
+  TamperFailure,
+  PayloadCommitment,
+  AnchorReference,
+  IrysArchiveReference,
+  RiskLevel,
+  AuditSeverity,
+  AuditComplianceStatus,
+  AuditFinding,
+  ExecutionPolicy,
+  ExecutionAuditReport,
+} from '../app/lib/agent/types'
+
+
 export interface ProvnClientOptions {
   baseUrl?: string
 }

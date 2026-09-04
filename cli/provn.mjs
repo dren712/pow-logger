@@ -32,6 +32,8 @@ Usage:
   provn anchor <proofId> <wallet>         Compute and display Solana On-Chain Anchor PDA
   provn verify <proofId>                  Fetch and inspect an individual proof
   provn eligibility <wallet> [options]    Evaluate wallet against community evidence policy
+  provn agent verify <receipt.json>       Independently verify a PROVN Agent Receipt
+  provn agent inspect <receipt.json>      Inspect agent receipt with detailed event audit
 
 Options:
   --policy <path>                         Path to local JSON policy file
@@ -41,6 +43,73 @@ Options:
   }
 
   try {
+    // ── Agent Protocol Subcommands ─────────────────────────────────────
+    if (command === 'agent') {
+      const subcommand = target
+      const receiptPath = args[2]
+
+      if (!receiptPath) {
+        console.error('Usage: provn agent verify <receipt.json>')
+        process.exit(1)
+      }
+
+      if (!fs.existsSync(receiptPath)) {
+        console.error(`Receipt file not found: ${receiptPath}`)
+        process.exit(1)
+      }
+
+      const receiptJson = fs.readFileSync(receiptPath, 'utf-8')
+
+      // Dynamic import for TypeScript agent modules via tsx
+      const { deserializeReceipt } = await import('../app/lib/agent/agentReceipt.ts')
+      const { verifyAgentReceipt, formatVerificationReport } = await import('../app/lib/agent/agentVerifier.ts')
+
+      const receipt = deserializeReceipt(receiptJson)
+
+      if (subcommand === 'verify') {
+        console.log(`\nVerifying PROVN Agent Receipt: ${receiptPath}\n`)
+        const result = verifyAgentReceipt(receipt)
+        const report = formatVerificationReport(receipt, result)
+        console.log(report)
+        process.exit(result.verified ? 0 : 1)
+      } else if (subcommand === 'inspect') {
+        console.log(`\nInspecting PROVN Agent Receipt: ${receiptPath}\n`)
+        console.log('══════════════════════════════════════════════════════')
+        console.log(` PROVN AGENT RECEIPT — DETAILED AUDIT`)
+        console.log('══════════════════════════════════════════════════════')
+        console.log(` Protocol:     ${receipt.protocol} ${receipt.version}`)
+        console.log(` Generated:    ${receipt.generatedAt}`)
+        console.log(` Execution:    ${receipt.execution.executionId}`)
+        console.log(` Agent:        ${receipt.execution.agentPublicKey}`)
+        console.log(` Status:       ${receipt.execution.status}`)
+        console.log(` Events:       ${receipt.events.length}`)
+        console.log(` Merkle Root:  ${receipt.merkle.root}`)
+        if (receipt.solana) {
+          console.log(` Solana PDA:   ${receipt.solana.pda}`)
+          console.log(` Network:      ${receipt.solana.network}`)
+        }
+        if (receipt.irys) {
+          console.log(` Irys TX:      ${receipt.irys.txId}`)
+        }
+        console.log('')
+        console.log(' EVENT CHAIN:')
+        receipt.events.forEach((e, i) => {
+          const chainIcon = (i === 0 && e.previousEventHash === null) || (i > 0 && e.previousEventHash === receipt.events[i-1].eventHash) ? '✓' : '✗'
+          console.log(`  [${i}] ${chainIcon} ${e.eventType.padEnd(20)} seq=${e.sequence}  hash=${e.eventHash.slice(0, 16)}...`)
+        })
+        console.log('')
+
+        const result = verifyAgentReceipt(receipt)
+        const report = formatVerificationReport(receipt, result)
+        console.log(report)
+      } else {
+        console.error(`Unknown agent subcommand: ${subcommand}`)
+        console.error('Usage: provn agent verify|inspect <receipt.json>')
+        process.exit(1)
+      }
+      return
+    }
+
     if (command === 'profile' || command === 'passport') {
       console.log(`\nFetching Builder Passport for: ${target}...\n`)
       const res = await fetch(`${BASE_URL}/api/passport/${target}`)
