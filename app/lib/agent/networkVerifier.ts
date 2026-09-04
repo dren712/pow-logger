@@ -1,7 +1,7 @@
 import { Connection, PublicKey } from '@solana/web3.js'
 import { verifyAgentReceipt } from './agentVerifier'
 import { decodeAgentBatchAnchorAccount, deriveAgentBatchAnchorPda } from './solanaAgentAnchor'
-import { sha256 } from './agentEvents'
+import { sha256, computePayloadHash } from './agentEvents'
 import type { AgentReceipt, VerificationResult } from './types'
 
 /**
@@ -195,7 +195,29 @@ export async function verifyAgentReceiptNetwork(
           })
           result.verified = false
         } else {
-          result.layers.irysArchive = 'AVAILABLE'
+          // Verify individual event payload hashes if events are present in archive
+          if (data.events && Array.isArray(data.events)) {
+            for (const ev of data.events) {
+              if (ev.payload) {
+                const computedPHash = computePayloadHash(ev.payload)
+                if (computedPHash !== ev.payloadHash) {
+                  result.layers.irysArchive = 'CONTENT_MISMATCH'
+                  result.failures.push({
+                    type: 'PAYLOAD_HASH_MISMATCH',
+                    eventSequence: ev.sequence,
+                    eventId: ev.eventId,
+                    message: `Irys archived event sequence ${ev.sequence} payload mismatch`,
+                    expected: ev.payloadHash,
+                    computed: computedPHash,
+                  })
+                  result.verified = false
+                }
+              }
+            }
+          }
+          if (result.layers.irysArchive !== 'CONTENT_MISMATCH') {
+            result.layers.irysArchive = 'AVAILABLE'
+          }
         }
       }
     } catch (err: unknown) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { recomputeEventHash, verifyEventSignature } from '@/app/lib/agent/agentEvents'
+import { recomputeEventHash, verifyEventSignature, computePayloadHash } from '@/app/lib/agent/agentEvents'
 import { authenticateAgentRequest } from '@/app/lib/agent/apiKeyAuth'
 import type { AgentEvent } from '@/app/lib/agent/types'
 
@@ -77,6 +77,20 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Server-side Cryptographic Verification (Zero Trust)
+    if (event.payload) {
+      const computedPayloadHash = computePayloadHash(event.payload)
+      if (computedPayloadHash !== event.payloadHash) {
+        return NextResponse.json(
+          {
+            error: 'PAYLOAD_HASH_MISMATCH: Provided payload does not match signed payloadHash',
+            expected: event.payloadHash,
+            computed: computedPayloadHash,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     const expectedHash = recomputeEventHash(event)
     if (expectedHash !== event.eventHash) {
       return NextResponse.json({ error: 'EVENT_HASH_MISMATCH' }, { status: 400 })

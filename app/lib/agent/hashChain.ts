@@ -105,7 +105,7 @@ export function verifyHashChain(events: AgentEvent[]): ChainVerificationResult {
       const computedPayloadHash = computePayloadHash(event.payload)
       if (computedPayloadHash !== event.payloadHash) {
         failures.push({
-          type: 'EVENT_HASH_MISMATCH',
+          type: 'PAYLOAD_HASH_MISMATCH',
           eventSequence: event.sequence,
           eventId: event.eventId,
           message: `Payload hash mismatch at sequence ${event.sequence}: payload content does not match committed payloadHash`,

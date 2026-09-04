@@ -98,7 +98,12 @@ export class ProvnAgentRuntime {
    * @param taskMeta - Optional metadata about the task being executed
    * @returns The execution state (pass this to logAction and finalizeExecution)
    */
-  startExecution(taskMeta?: { taskDescription?: string; agentName?: string }): ExecutionState {
+  startExecution(taskMeta?: {
+    taskDescription?: string
+    agentName?: string
+    parentExecutionId?: string | null
+    metadata?: Record<string, unknown>
+  }): ExecutionState {
     const executionId = generateId()
     const now = new Date().toISOString()
 
@@ -113,6 +118,8 @@ export class ProvnAgentRuntime {
       merkleRoot: null,
       anchorReference: null,
       protocolVersion: AGENT_PROTOCOL_VERSION,
+      parentExecutionId: taskMeta?.parentExecutionId ?? null,
+      metadata: taskMeta?.metadata,
     }
 
     const state: ExecutionState = {
@@ -130,6 +137,8 @@ export class ProvnAgentRuntime {
         type: 'agent.started',
         taskDescription: taskMeta.taskDescription ?? 'Execution started',
         agentName: taskMeta.agentName,
+        ...(taskMeta.parentExecutionId ? { parentExecutionId: taskMeta.parentExecutionId } : {}),
+        ...(taskMeta.metadata ? { metadata: taskMeta.metadata } : {}),
       })
     }
 

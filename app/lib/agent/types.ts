@@ -78,6 +78,10 @@ export interface AgentExecution {
   anchorReference: AnchorReference | null
   /** Protocol version identifier */
   protocolVersion: typeof AGENT_PROTOCOL_VERSION
+  /** Optional parent execution ID for multi-agent delegations */
+  parentExecutionId?: string | null
+  /** Optional initial session context metadata */
+  metadata?: Record<string, unknown>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -342,6 +346,7 @@ export interface VerificationResult {
 
 export type TamperFailureType =
   | 'EVENT_HASH_MISMATCH'
+  | 'PAYLOAD_HASH_MISMATCH'
   | 'SIGNATURE_INVALID'
   | 'CHAIN_SEVERED'
   | 'SEQUENCE_GAP'

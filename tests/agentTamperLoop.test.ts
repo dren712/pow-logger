@@ -117,10 +117,10 @@ async function runTamperLoop() {
   assert.strictEqual(verifyResultA.verified, false, 'Tampered event payload must fail verification')
   assert.strictEqual(verifyResultA.layers.eventHash, 'INVALID', 'Event hash layer must detect mutation')
   assert.ok(
-    verifyResultA.failures.some(f => f.type === 'EVENT_HASH_MISMATCH' && f.eventSequence === 2),
-    'Verifier must pinpoint sequence 2 as the exact corrupted event'
+    verifyResultA.failures.some(f => f.type === 'PAYLOAD_HASH_MISMATCH' && f.eventSequence === 2),
+    'Verifier must pinpoint sequence 2 as PAYLOAD_HASH_MISMATCH'
   )
-  console.log('  ✓ [PASS] Payload mutation caught instantly: EVENT_HASH_MISMATCH at sequence 2')
+  console.log('  ✓ [PASS] Stored payload mutation caught: PAYLOAD_HASH_MISMATCH at sequence 2')
 
   // If attacker updates payloadHash and recomputes eventHash to conceal mutation, Ed25519 signature fails
   tamperedReceiptA.events[2].payloadHash = computePayloadHash(tamperedReceiptA.events[2].payload!)

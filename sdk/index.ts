@@ -38,7 +38,9 @@ export {
   Provn, 
   ProvnExecution, 
   ProvnAgent, 
-  ProvnAgentSession 
+  ProvnAgentSession,
+  DEFAULT_GATEWAY_URL,
+  scanForSensitiveData,
 } from '../app/lib/agent/provnClient'
 export type {
   StartExecutionParams,
