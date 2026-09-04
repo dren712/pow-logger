@@ -47,6 +47,28 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Idempotency check: If execution has already been finalized and sealed, return existing batch/roots
+    if (exec.status === 'completed' && exec.merkle_root) {
+      let existingBatchId = exec.batch_id
+      if (!existingBatchId) {
+        const { data: b } = await supabase
+          .from('agent_batches')
+          .select('batch_id')
+          .eq('execution_id', executionId)
+          .maybeSingle()
+        existingBatchId = b?.batch_id || null
+      }
+      return NextResponse.json({
+        success: true,
+        batchId: existingBatchId,
+        merkleRoot: exec.merkle_root,
+        terminalEventHash: exec.terminal_event_hash,
+        eventCount: exec.event_count,
+        verified: true,
+        alreadyFinalized: true,
+      })
+    }
+
     // 3. Fetch all events for this execution from the database
     const { data: dbEvents, error: eventsErr } = await supabase
       .from('agent_events')
@@ -144,6 +166,7 @@ export async function POST(req: NextRequest) {
 
     // 7. Insert authoritative batch record (linking execution_id explicitly!)
     const finalBatchId = clientBatchId || crypto.randomUUID()
+    const batchNetwork = auth.networkTarget || (process.env.NEXT_PUBLIC_SOLANA_NETWORK as 'devnet' | 'mainnet-beta') || 'devnet'
 
     const { error: batchError } = await supabase
       .from('agent_batches')
@@ -154,6 +177,7 @@ export async function POST(req: NextRequest) {
         event_count: authoritativeEventCount,
         first_sequence: typedEvents[0].sequence,
         last_sequence: typedEvents[typedEvents.length - 1].sequence,
+        network: batchNetwork,
         status: 'pending_solana',
       })
 

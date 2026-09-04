@@ -66,6 +66,26 @@ export function buildAgentReceipt(
   // Sort events by sequence for deterministic Merkle tree construction
   const sortedEvents = [...events].sort((a, b) => a.sequence - b.sequence)
 
+  // Defensive integrity assertions: verify execution, identity binding, and sequence continuity
+  for (let i = 0; i < sortedEvents.length; i++) {
+    const e = sortedEvents[i]
+    if (e.executionId !== execution.executionId) {
+      throw new Error(
+        `RECEIPT_INTEGRITY_ERROR: Event ${e.eventId} executionId (${e.executionId}) does not match execution (${execution.executionId})`
+      )
+    }
+    if (e.agentPublicKey !== execution.agentPublicKey) {
+      throw new Error(
+        `RECEIPT_INTEGRITY_ERROR: Event ${e.eventId} agentPublicKey (${e.agentPublicKey}) does not match execution (${execution.agentPublicKey})`
+      )
+    }
+    if (e.sequence !== i) {
+      throw new Error(
+        `RECEIPT_INTEGRITY_ERROR: Non-contiguous sequence: expected ${i}, found ${e.sequence}`
+      )
+    }
+  }
+
   // Build Merkle tree from event hashes (in sequence order)
   const eventHashes = sortedEvents.map(e => e.eventHash)
   const merkleTree = buildMerkleTree(eventHashes)

@@ -20,11 +20,12 @@
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
 import { ProvnAgentRuntime, type ExecutionState } from './agentSdk'
-import type { 
-  AgentEventType, 
-  PayloadCommitment, 
-  AgentReceipt, 
-  AgentEvent 
+import { 
+  AGENT_EVENT_TYPES,
+  type AgentEventType, 
+  type PayloadCommitment, 
+  type AgentReceipt, 
+  type AgentEvent 
 } from './types'
 
 export interface ProvnClientConfig {
@@ -255,10 +256,12 @@ export class ProvnExecution {
    */
   async action(params: AgentActionParams): Promise<AgentEvent> {
     const rawType = params.type.toLowerCase().trim()
-    let mappedType: AgentEventType = 'tool.request'
+    let mappedType: AgentEventType | undefined
 
     if (rawType === 'tool_call' || rawType === 'tool.request' || rawType === 'tool' || rawType === 'tool.invoke') {
       mappedType = 'tool.request'
+    } else if (rawType === 'tool_response' || rawType === 'tool.response') {
+      mappedType = 'tool.response'
     } else if (rawType === 'file_read' || rawType === 'file.read') {
       mappedType = 'file.read'
     } else if (rawType === 'file_write' || rawType === 'file.write') {
@@ -269,10 +272,24 @@ export class ProvnExecution {
       mappedType = 'git.operation'
     } else if (rawType === 'deployment' || rawType === 'deployment.request') {
       mappedType = 'deployment.request'
+    } else if (rawType === 'deployment.result') {
+      mappedType = 'deployment.result'
     } else if (rawType === 'payment' || rawType === 'payment.executed') {
       mappedType = 'payment.executed'
+    } else if (rawType === 'payment.intent') {
+      mappedType = 'payment.intent'
+    } else if (rawType === 'contract' || rawType === 'contract.interaction') {
+      mappedType = 'contract.interaction'
     } else if (rawType === 'outcome' || rawType === 'outcome.attestation') {
       mappedType = 'outcome.attestation'
+    } else if ((AGENT_EVENT_TYPES as readonly string[]).includes(rawType)) {
+      mappedType = rawType as AgentEventType
+    }
+
+    if (!mappedType) {
+      throw new Error(
+        `UNSUPPORTED_ACTION_TYPE: "${params.type}" is not a valid agent action type. Supported types: ${AGENT_EVENT_TYPES.join(', ')}`
+      )
     }
 
     const payload: PayloadCommitment = {

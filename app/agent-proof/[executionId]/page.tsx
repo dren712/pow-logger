@@ -68,16 +68,19 @@ export default async function AgentProofPage({ params }: AgentProofPageProps) {
     .eq('execution_id', executionId)
     .order('sequence', { ascending: true })
 
-  const { data: batch } = await supabase
-    .from('agent_batches')
-    .select('*')
-    .eq('batch_id', executionId)
-    .maybeSingle()
+  let batchQuery = supabase.from('agent_batches').select('*')
+  if (exec.batch_id) {
+    batchQuery = batchQuery.eq('batch_id', exec.batch_id)
+  } else {
+    batchQuery = batchQuery.eq('execution_id', executionId)
+  }
+  const { data: batch } = await batchQuery.maybeSingle()
 
   let anchorRef: AnchorReference | null = null
   if (batch?.solana_pda) {
+    const solanaNetwork = (batch?.network as 'devnet' | 'mainnet-beta') || (process.env.NEXT_PUBLIC_SOLANA_NETWORK as 'devnet' | 'mainnet-beta') || 'devnet'
     anchorRef = {
-      network: 'devnet',
+      network: solanaNetwork,
       programId: process.env.NEXT_PUBLIC_PROVN_PROGRAM_ID || 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx',
       pda: batch.solana_pda,
       signature: batch.solana_signature || null
