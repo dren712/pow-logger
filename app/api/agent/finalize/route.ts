@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import { authenticateAgentRequest } from '@/app/lib/agent/apiKeyAuth'
-import { recomputeEventHash, verifyEventSignature } from '@/app/lib/agent/agentEvents'
+import { recomputeEventHash, verifyEventSignature, computePayloadHash } from '@/app/lib/agent/agentEvents'
 import { verifyHashChain } from '@/app/lib/agent/hashChain'
 import { buildMerkleTree } from '@/app/lib/agent/merkleBatch'
 import type { AgentEvent } from '@/app/lib/agent/types'
@@ -96,18 +96,30 @@ export async function POST(req: NextRequest) {
       parentEventId: row.parent_event_id,
       previousEventHash: row.previous_event_hash,
       payloadHash: row.payload_hash,
-      payload: row.payload
-        ? { type: row.event_type, ...(row.payload as Record<string, unknown>) }
-        : { type: row.event_type },
+      payload: row.payload ? (row.payload as Record<string, unknown> & { type: typeof row.event_type }) : undefined,
       eventHash: row.event_hash,
       signature: row.signature,
       protocolVersion: row.protocol_version || 'agent/1',
     }))
 
-
     // 5. Server-Authoritative Cryptographic Verification
-    // A. Verify every single event hash and signature independently
+    // A. Verify every single event hash, payload integrity, and signature independently
     for (const ev of typedEvents) {
+      if (ev.payload) {
+        const computedPayloadHash = computePayloadHash(ev.payload)
+        if (computedPayloadHash !== ev.payloadHash) {
+          return NextResponse.json(
+            {
+              error: 'PAYLOAD_HASH_CORRUPTED_IN_DB',
+              sequence: ev.sequence,
+              expected: ev.payloadHash,
+              actual: computedPayloadHash,
+            },
+            { status: 400 }
+          )
+        }
+      }
+
       const computedHash = recomputeEventHash(ev)
       if (computedHash !== ev.eventHash) {
         return NextResponse.json(
@@ -165,9 +177,39 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Insert authoritative batch record (linking execution_id explicitly!)
+    // 7. Atomic Server-Authoritative Finalization via RPC (Transactional)
     const finalBatchId = clientBatchId || crypto.randomUUID()
     const batchNetwork = auth.networkTarget || (process.env.NEXT_PUBLIC_SOLANA_NETWORK as 'devnet' | 'mainnet-beta') || 'devnet'
 
+    try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('finalize_agent_execution', {
+        p_execution_id: executionId,
+        p_batch_id: finalBatchId,
+        p_merkle_root: authoritativeMerkleRoot,
+        p_terminal_event_hash: authoritativeTerminalHash,
+        p_event_count: authoritativeEventCount,
+        p_first_sequence: typedEvents[0].sequence,
+        p_last_sequence: typedEvents[typedEvents.length - 1].sequence,
+        p_network: batchNetwork,
+      })
+
+      if (!rpcErr && rpcData && rpcData.success) {
+        return NextResponse.json({
+          success: true,
+          batchId: rpcData.batch_id || finalBatchId,
+          merkleRoot: authoritativeMerkleRoot,
+          terminalEventHash: authoritativeTerminalHash,
+          eventCount: authoritativeEventCount,
+          verified: true,
+          outboxEnqueued: true,
+          alreadyFinalized: rpcData.already_finalized || false,
+        })
+      }
+    } catch (rpcEx) {
+      console.warn('finalize_agent_execution RPC warning (using sequential fallback):', rpcEx)
+    }
+
+    // Fallback: Sequential database persistence
     const { error: batchError } = await supabase
       .from('agent_batches')
       .insert({
@@ -181,12 +223,12 @@ export async function POST(req: NextRequest) {
         status: 'pending_solana',
       })
 
-    if (batchError) {
+    if (batchError && batchError.code !== '23505') {
       console.error('Batch Insertion Error:', batchError)
       return NextResponse.json({ error: batchError.message }, { status: 500 })
     }
 
-    // 8. Update agent_executions with server-derived state
+    // Update agent_executions with server-derived state
     const { error: execUpdateErr } = await supabase
       .from('agent_executions')
       .update({
@@ -204,9 +246,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: execUpdateErr.message }, { status: 500 })
     }
 
-    // 9. Enqueue transactional outbox tasks for asynchronous Solana & Irys delivery
+    // Enqueue transactional outbox tasks for asynchronous Solana & Irys delivery
+    let outboxSuccess = false
     try {
-      await supabase.from('agent_outbox').insert([
+      const { error: outboxErr } = await supabase.from('agent_outbox').insert([
         {
           batch_id: finalBatchId,
           execution_id: executionId,
@@ -222,6 +265,7 @@ export async function POST(req: NextRequest) {
           idempotency_key: `irys:${finalBatchId}`,
         },
       ])
+      outboxSuccess = !outboxErr
     } catch (outboxErr: unknown) {
       console.warn('Outbox enqueue warning:', (outboxErr as Error)?.message || String(outboxErr))
     }
@@ -233,7 +277,7 @@ export async function POST(req: NextRequest) {
       terminalEventHash: authoritativeTerminalHash,
       eventCount: authoritativeEventCount,
       verified: true,
-      outboxEnqueued: true,
+      outboxEnqueued: outboxSuccess,
     })
   } catch (err: unknown) {
     console.error('Agent Finalize API Error:', (err as Error).message || String(err))

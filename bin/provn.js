@@ -83,6 +83,47 @@ function resolveTrustedKey(kid, timestamp) {
   }
 }
 
+// ─── Agent Protocol Canonicalization ────────────────────────────────────────
+function canonicalizePayload(val) {
+  if (val === null) return 'null'
+  if (typeof val === 'boolean') return val ? 'true' : 'false'
+  if (typeof val === 'number') {
+    if (!Number.isFinite(val)) throw new Error('Non-finite numbers are not supported in canonical payloads')
+    if (val === 0) return '0'
+    return String(val)
+  }
+  if (typeof val === 'string') {
+    return JSON.stringify(val)
+  }
+  if (Array.isArray(val)) {
+    const items = val.map(v => {
+      if (v === undefined || typeof v === 'function' || typeof v === 'symbol') return 'null'
+      return canonicalizePayload(v)
+    })
+    return `[${items.join(',')}]`
+  }
+  if (typeof val === 'object') {
+    const obj = val
+    if (typeof obj.toJSON === 'function') {
+      return canonicalizePayload(obj.toJSON())
+    }
+    const keys = Object.keys(obj).sort()
+    const items = []
+    for (const key of keys) {
+      const v = obj[key]
+      if (v === undefined || typeof v === 'function' || typeof v === 'symbol') continue
+      items.push(`${JSON.stringify(key)}:${canonicalizePayload(v)}`)
+    }
+    return `{${items.join(',')}}`
+  }
+  throw new Error(`Unsupported type for canonicalization: ${typeof val}`)
+}
+
+function computePayloadHash(payload) {
+  const canonical = canonicalizePayload(payload)
+  return crypto.createHash('sha256').update(canonical, 'utf-8').digest('hex')
+}
+
 // ─── Protocol Canonicalization Standard ─────────────────────────────────────
 function validateAndNormalizeUrl(urlInput, type) {
   if (!urlInput || typeof urlInput !== 'string') return null
@@ -534,6 +575,20 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
     if (computedHash !== event.eventHash) {
       hashIntegrityPass = false
       errors.push(`Event #${event.sequence} hash mismatch (tampered content). Expected ${computedHash.slice(0, 16)}..., got ${event.eventHash.slice(0, 16)}...`)
+    }
+
+    // Payload hash integrity check (if payload is present)
+    if (event.payload !== undefined && event.payload !== null) {
+      try {
+        const computedPayloadHash = computePayloadHash(event.payload)
+        if (computedPayloadHash !== event.payloadHash) {
+          hashIntegrityPass = false
+          errors.push(`Event #${event.sequence} PAYLOAD_HASH_MISMATCH: stored payload does not match committed payloadHash. Stored payload was modified after signing. Expected ${event.payloadHash.slice(0, 16)}..., got ${computedPayloadHash.slice(0, 16)}...`)
+        }
+      } catch (err) {
+        hashIntegrityPass = false
+        errors.push(`Event #${event.sequence} PAYLOAD_HASH_MISMATCH: failed to canonicalize payload (${err.message})`)
+      }
     }
 
     try {

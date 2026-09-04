@@ -33,7 +33,7 @@ async function runDemo() {
 
   // ─── STEP 1: Autonomous Agent Receives Intent & Starts Execution ───────────
   console.log(`${c.bold}► STEP 1: Agent Initialization & Sovereign Identity${c.reset}`)
-  const provn = new Provn({ agentName: 'treasury-rebalance-bot-04' })
+  const provn = new Provn({ agentName: 'treasury-rebalance-bot-04', gatewayUrl: '' })
   console.log(`  Agent Public Key: ${c.green}${provn.publicKey}${c.reset}`)
 
   const execution = await provn.start({
@@ -47,35 +47,33 @@ async function runDemo() {
   // ─── STEP 2: Agent Takes Consequential Actions ──────────────────────────────
   console.log(`${c.bold}► STEP 2: Autonomous Execution & Cryptographic Event Ingestion${c.reset}`)
 
-  // Action 1: Read Vault balance
-  const act1 = await execution.action({
-    type: 'tool_call',
+  // Action 1: Read Vault balance (Typed Tool Request)
+  const act1 = await execution.toolRequest({
     tool: 'vault.get_reserves',
     target: 'orca-whirlpool-yield-vault',
     input: { asset: 'USDC' },
-    output: { availableLiquidity: 250000 },
   })
-  console.log(`  [Seq 1] Action: ${c.bold}tool.invoke${c.reset} → vault.get_reserves (Signed Event: ${act1.eventHash.slice(0, 16)}...)`)
+  console.log(`  [Seq 1] Action: ${c.bold}tool.request${c.reset} → vault.get_reserves (Signed Event: ${act1.eventHash.slice(0, 16)}...)`)
 
-  // Action 2: Check Policy Compliance
-  const act2 = await execution.action({
-    type: 'policy_check',
+  // Action 2: Check Policy Compliance (Typed Tool Request)
+  const act2 = await execution.toolRequest({
     tool: 'treasury.policy.eval',
     target: 'policy://rules/max-transfer-limit',
     input: { amount: 5000, maxAuthorized: 10000 },
-    output: { authorized: true, reason: 'Amount below $10,000 threshold' },
   })
-  console.log(`  [Seq 2] Action: ${c.bold}policy.check${c.reset} → treasury.policy.eval (Signed Event: ${act2.eventHash.slice(0, 16)}...)`)
+  console.log(`  [Seq 2] Action: ${c.bold}tool.request${c.reset} → treasury.policy.eval (Signed Event: ${act2.eventHash.slice(0, 16)}...)`)
 
-  // Action 3: Consequential Tool Call (Fund Transfer)
-  const act3 = await execution.action({
-    type: 'tool_call',
-    tool: 'solana.transfer_spl',
-    target: 'solana:mainnet-beta',
+  // Action 3: Consequential Value Transfer [DEVNET / SIMULATED EXTERNAL SETTLEMENT]
+  const act3 = await execution.paymentExecuted({
+    recipient: 'OpWallet8Fj3Lp2Kq9X1mZ7yVb4nCwRt5eYu8iO0pAsD',
+    amount: 5000,
+    mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC mint
+    chain: 'solana:mainnet-beta',
+    txSignature: '4zMMC9...ConfirmedOnChainSignature',
     input: {
       recipient: 'OpWallet8Fj3Lp2Kq9X1mZ7yVb4nCwRt5eYu8iO0pAsD',
       amount: 5000,
-      token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC mint
+      token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
     },
     output: {
       txSignature: '4zMMC9...ConfirmedOnChainSignature',
@@ -83,22 +81,22 @@ async function runDemo() {
       confirmations: 32,
     },
   })
-  console.log(`  [Seq 3] Action: ${c.bold}tool.invoke${c.reset} → solana.transfer_spl (5,000 USDC) (Signed Event: ${act3.eventHash.slice(0, 16)}...)`)
+  console.log(`  [Seq 3] Action: ${c.bold}payment.executed${c.reset} → 5,000 USDC transfer [DEVNET / SIMULATED EXTERNAL SETTLEMENT] (Signed Event: ${act3.eventHash.slice(0, 16)}...)`)
 
-  // Action 4: Outcome Attestation
+  // Action 4: Outcome Attestation (Typed Outcome Attestation)
   const outcomeAct = await execution.outcome({
     status: 'success',
     txSignature: '4zMMC9...ConfirmedOnChainSignature',
     summary: 'Successfully rebalanced 5,000 USDC into operational wallet',
     result: { finalVaultBalance: 245000, finalOpBalance: 15200 },
   })
-  console.log(`  [Seq 4] Outcome: ${c.bold}agent.completed${c.reset} → Status: SUCCESS (Signed Event: ${outcomeAct.eventHash.slice(0, 16)}...)\n`)
+  console.log(`  [Seq 4] Outcome: ${c.bold}outcome.attestation${c.reset} → Status: SUCCESS (Signed Event: ${outcomeAct.eventHash.slice(0, 16)}...)\n`)
 
   // ─── STEP 3: Execution Sealing & Solana Anchor Commitment ───────────────────
-  console.log(`${c.bold}► STEP 3: Server-Authoritative Sealing & Solana Merkle Anchoring${c.reset}`)
+  console.log(`${c.bold}► STEP 3: Server-Authoritative Sealing & Solana Merkle Anchoring [DEVNET / SIMULATED EXTERNAL SETTLEMENT]${c.reset}`)
   const receipt = await execution.complete('Treasury rebalance executed cleanly within policy bounds')
 
-  // Bind real Solana Anchor Reference for the demo
+  // Bind real Solana Anchor Reference [DEVNET / SIMULATED EXTERNAL SETTLEMENT]
   const anchorRef = buildAnchorReference(
     new PublicKey(receipt.execution.agentPublicKey),
     receipt.batch.batchId,
@@ -131,18 +129,22 @@ async function runDemo() {
   console.log(`${c.bold}► STEP 5: Adversarial Simulation — Malicious Database Modification${c.reset}`)
   console.log(`${c.dim}  Scenario: A rogue administrator or attacker with DB access modifies the transfer${c.reset}`)
   console.log(`${c.dim}  record (Sequence #3), claiming the agent sent 50,000 USDC instead of 5,000 USDC.${c.reset}`)
+  console.log(`${c.dim}  Crucially: The attacker leaves payloadHash untouched because modifying payloadHash${c.reset}`)
+  console.log(`${c.dim}  would immediately break the agent's cryptographic signature.${c.reset}`)
 
   // Create a tampered copy of the receipt simulating a mutated database record
   const tamperedReceipt = JSON.parse(JSON.stringify(receipt))
   tamperedReceipt.events[3].payload = {
     ...tamperedReceipt.events[3].payload,
+    amount: '50000',
     input: {
       ...tamperedReceipt.events[3].payload.input,
       amount: 50000, // MALICIOUS MODIFICATION: $5,000 -> $50,000
     },
   }
-  // Attacker recalculates event payload hash to try to fake consistency
-  tamperedReceipt.events[3].payloadHash = 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+  // Attacker does NOT alter payloadHash, eventHash, or signature
+  // In legacy systems, this database row modification would pass unnoticed.
+  // PROVN's stored payload authentication catches PAYLOAD_HASH_MISMATCH immediately!
 
   const tamperedPath = path.join(receiptDir, 'tampered-treasury-receipt.json')
   fs.writeFileSync(tamperedPath, JSON.stringify(tamperedReceipt, null, 2))
@@ -155,10 +157,10 @@ async function runDemo() {
   }
 
   console.log(`${c.bold}► SUMMARY OF PROOF-OF-VALUE:${c.reset}`)
-  console.log(`  1. Operational Database:  ${c.red}COMPROMISED ❌ (Row #3 maliciously altered)${c.reset}`)
+  console.log(`  1. Operational Database:  ${c.red}COMPROMISED ❌ (Row #3 maliciously altered: $5k -> $50k)${c.reset}`)
   console.log(`  2. Public Commitment:     ${c.green}INTACT ✅ (Solana PDA & Merkle Root remain unchanged)${c.reset}`)
   console.log(`  3. Cryptographic Receipt: ${c.green}INDEPENDENTLY VERIFIABLE ✅ (Zero central trust required)${c.reset}`)
-  console.log(`  4. Fraudulent Tampering:  ${c.green}INSTANTLY DETECTED ✅ (Sequence #3 mismatch isolated)${c.reset}\n`)
+  console.log(`  4. Fraudulent Tampering:  ${c.green}INSTANTLY DETECTED ✅ (PAYLOAD_HASH_MISMATCH at Sequence #3)${c.reset}\n`)
 }
 
 runDemo().catch(err => {

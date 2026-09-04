@@ -86,7 +86,7 @@ export function verifyAgentReceipt(
     if (failure.type === 'SIGNATURE_INVALID') {
       agentSigStatus = 'INVALID'
     }
-    if (failure.type === 'EVENT_HASH_MISMATCH') {
+    if (failure.type === 'EVENT_HASH_MISMATCH' || failure.type === 'PAYLOAD_HASH_MISMATCH') {
       eventHashStatus = 'INVALID'
     }
     if (failure.type === 'CHAIN_SEVERED' || failure.type === 'SEQUENCE_GAP' || failure.type === 'SEQUENCE_DUPLICATE') {
