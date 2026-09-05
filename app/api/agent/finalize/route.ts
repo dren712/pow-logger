@@ -47,8 +47,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Idempotency check: If execution has already been finalized and sealed, return existing batch/roots
+    // Idempotency check: If execution has already been finalized and sealed, verify non-conflict
     if (exec.status === 'completed' && exec.merkle_root) {
+      if (expectedMerkleRoot && expectedMerkleRoot !== exec.merkle_root) {
+        return NextResponse.json(
+          {
+            error: 'CONFLICTING_FINALIZATION_REJECTED',
+            message: 'Execution has already been finalized with a conflicting Merkle root.',
+            existingMerkleRoot: exec.merkle_root,
+            requestedMerkleRoot: expectedMerkleRoot,
+            existingTerminalHash: exec.terminal_event_hash,
+            batchId: exec.batch_id,
+          },
+          { status: 409 }
+        )
+      }
+
       let existingBatchId = exec.batch_id
       if (!existingBatchId) {
         const { data: b } = await supabase
@@ -191,6 +205,19 @@ export async function POST(req: NextRequest) {
       p_last_sequence: typedEvents[typedEvents.length - 1].sequence,
       p_network: batchNetwork,
     })
+
+    if (rpcData && rpcData.error === 'CONFLICTING_FINALIZATION_REJECTED') {
+      return NextResponse.json(
+        {
+          error: 'CONFLICTING_FINALIZATION_REJECTED',
+          message: rpcData.message || 'Execution was already finalized with conflicting cryptographic parameters.',
+          existingMerkleRoot: rpcData.existing_merkle_root,
+          existingTerminalHash: rpcData.existing_terminal_event_hash,
+          existingBatchId: rpcData.existing_batch_id,
+        },
+        { status: 409 }
+      )
+    }
 
     if (rpcErr || !rpcData || !rpcData.success) {
       console.error('finalize_agent_execution RPC error:', rpcErr || rpcData?.error)

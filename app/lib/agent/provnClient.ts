@@ -310,7 +310,7 @@ export interface AgentOutcomeParams {
   /** Structured result data */
   result?: unknown
   /** On-chain transaction signature if value or smart contract was touched */
-  txSignature?: string
+  txSignature?: string | null
   /** Pull request or Git commit URL if code was changed */
   prUrl?: string
   /** Summary explanation */
@@ -564,9 +564,10 @@ export class ProvnExecution {
   async paymentExecuted(params: {
     recipient: string
     amount: string | number
-    txSignature: string
+    txSignature?: string | null
     mint?: string
     chain?: string
+    simulationMode?: boolean
     input?: unknown
     output?: unknown
     metadata?: Record<string, unknown>

@@ -48,7 +48,7 @@ PROVN does not attempt to build autonomous payments, autonomous coding agents, o
 
 | Invariant | Cryptographic Mechanism | Attack Defeated |
 | :--- | :--- | :--- |
-| **1. Identity Binding** | Ed25519 detached signatures over RFC 8785 canonical event representations | An attacker cannot impersonate an agent or sign actions without the agent's private key. |
+| **1. Identity Binding** | Ed25519 detached signatures over PROVN agent/1 canonical line-oriented event representations | An attacker cannot impersonate an agent or sign actions without the agent's private key. |
 | **2. Payload Integrity** | Double-hash commitment: `computePayloadHash(payload) === payloadHash` | A compromised database administrator cannot alter event arguments ($5k $\rightarrow$ $50k) without invalidating the receipt. |
 | **3. Causal Continuity** | SHA-256 previous event hash chaining: `ev[n].previousEventHash === hash(ev[n-1])` | An adversary cannot delete, reorder, or inject actions without breaking the chain. |
 | **4. Tamper-Proof Sealing** | Domain-separated Merkle root: `SHA256("PROVN-MERKLE-LEAF-V1:" \|\| eventHash)` | Individual actions are cryptographically proven members of a sealed batch via inclusion proofs. |
@@ -75,7 +75,7 @@ To ensure absolute credibility with grant evaluators and security reviewers, PRO
 - **Transactional Outbox Worker**: Polling worker with lease locking (`FOR UPDATE SKIP LOCKED`) and exponential backoff for Solana anchoring and Irys uploads.
 
 ### B. Client SDK & CLI
-- **`Provn` / `ProvnExecution`**: Ergonomic TypeScript SDK with 11 typed action helpers (`toolRequest`, `toolResponse`, `fileRead`, `fileWrite`, `shell`, `git`, `deploymentRequest`, `deploymentResult`, `paymentIntent`, `paymentExecuted`, `contractInteraction`, `outcome`).
+- **`Provn` / `ProvnExecution`**: Ergonomic TypeScript SDK with 12 typed action helpers (`toolRequest`, `toolResponse`, `fileRead`, `fileWrite`, `shell`, `git`, `deploymentRequest`, `deploymentResult`, `paymentIntent`, `paymentExecuted`, `contractInteraction`, `outcome`).
 - **Sensitive Data Scanner**: Blocks accidental leakage of raw credentials (`api_key`, `secret`, `private_key`).
 - **Standalone Air-Gapped CLI**: `npx provn verify <receipt.json>` verifies all cryptographic layers offline without database or network dependency.
 
