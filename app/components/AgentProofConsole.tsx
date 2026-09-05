@@ -268,7 +268,7 @@ export default function AgentProofConsole({
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#f0f3f8', marginTop: '6px', fontFamily: 'monospace' }}>
-                  RFC 8785 Canonical
+                  agent/1 Canonical
                 </div>
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>SHA-256 Payload Hash</div>
               </div>

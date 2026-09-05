@@ -138,8 +138,8 @@ async function runDemo() {
     solanaSignature = await sendAndConfirmTransaction(connection, tx, [operatorKeypair])
     console.log(`  ✓ Solana Signature: ${solanaSignature}`)
   } catch (err: any) {
-    console.warn(`  ! Solana transaction failed (likely because program deploy is still finishing): ${err.message}`)
-    console.warn(`  ! Simulating transaction success for demo continuation.`)
+    console.error(`  ✖ DEMO FAILED: SOLANA_ANCHOR_UNAVAILABLE: ${err.message}`)
+    process.exit(1)
   }
   
   const anchorRef = buildAnchorReference(operatorKeypair.publicKey, batchId)
@@ -168,8 +168,8 @@ async function runDemo() {
       url: `https://devnet.irys.xyz/${irysReceipt.id}`
     }
   } catch (err: any) {
-    console.warn(`  ! Irys upload skipped/failed: ${err.message}`)
-    // Continue anyway for the demo
+    console.error(`  ✖ DEMO FAILED: IRYS_ARCHIVE_UNAVAILABLE: ${err.message}`)
+    process.exit(1)
   }
   
   console.log('')

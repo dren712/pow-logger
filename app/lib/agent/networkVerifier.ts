@@ -39,6 +39,8 @@ export async function verifyAgentReceiptNetwork(
     return result
   }
 
+  let solanaOnChainRoot: string | null = null
+
   // 2. Network Phase: Deep Solana Anchor Verification
   if (receipt.solana) {
     try {
@@ -104,8 +106,9 @@ export async function verifyAgentReceiptNetwork(
           result.verified = false
         }
 
-        // D. Verify On-Chain Merkle Root
-        if (decoded.merkleRoot !== receipt.merkle.root) {
+      // D. Verify On-Chain Merkle Root
+      solanaOnChainRoot = decoded.merkleRoot
+      if (decoded.merkleRoot !== receipt.merkle.root) {
           result.layers.solanaAnchor = 'MISMATCH'
           result.failures.push({
             type: 'SOLANA_ANCHOR_MISMATCH',
@@ -263,6 +266,21 @@ export async function verifyAgentReceiptNetwork(
               eventId: null,
               message: `Irys reconstructed Merkle root does not match receipt Merkle root`,
               expected: receipt.merkle.root,
+              computed: reconstructedRoot,
+            })
+            result.verified = false
+          }
+
+          // Cross-layer verification: Irys reconstructed root vs on-chain Solana PDA root
+          if (solanaOnChainRoot && reconstructedRoot !== solanaOnChainRoot) {
+            irysEventsValid = false
+            result.layers.irysArchive = 'CONTENT_MISMATCH'
+            result.failures.push({
+              type: 'SOLANA_ANCHOR_MISMATCH',
+              eventSequence: null,
+              eventId: null,
+              message: `Irys reconstructed Merkle root does not match on-chain Solana PDA root`,
+              expected: solanaOnChainRoot,
               computed: reconstructedRoot,
             })
             result.verified = false

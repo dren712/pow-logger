@@ -37,8 +37,19 @@ BEGIN
         );
     END IF;
 
-    -- Idempotency: If already finalized, return existing state
+    -- Idempotency: If already finalized, verify non-conflict and return existing state
     IF v_exec.status = 'completed' AND v_exec.merkle_root IS NOT NULL THEN
+        IF v_exec.merkle_root != p_merkle_root OR v_exec.terminal_event_hash != p_terminal_event_hash THEN
+            RETURN jsonb_build_object(
+                'success', false,
+                'error', 'CONFLICTING_FINALIZATION_REJECTED',
+                'message', 'Execution was already finalized with a conflicting Merkle root or terminal event hash.',
+                'existing_merkle_root', v_exec.merkle_root,
+                'existing_terminal_event_hash', v_exec.terminal_event_hash,
+                'existing_batch_id', v_exec.batch_id
+            );
+        END IF;
+
         RETURN jsonb_build_object(
             'success', true,
             'already_finalized', true,
