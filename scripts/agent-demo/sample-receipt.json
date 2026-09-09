@@ -1,221 +1,255 @@
 {
   "protocol": "PROVN",
   "version": "agent/1",
-  "generatedAt": "2026-09-01T22:10:25.728Z",
+  "generatedAt": "2026-09-09T22:27:42.768Z",
   "execution": {
-    "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
-    "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
-    "startedAt": "2026-09-01T22:10:25.714Z",
-    "completedAt": "2026-09-01T22:10:25.728Z",
+    "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
+    "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
     "status": "completed",
+    "startedAt": "2026-09-09T22:27:42.753Z",
+    "completedAt": "2026-09-09T22:27:42.767Z",
     "eventCount": 5,
-    "terminalEventHash": "edcb87717804304c2fc2b349d5596c407657fecac7b8f3e3600a99e0928d91fa",
-    "merkleRoot": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17",
+    "terminalEventHash": "a90c6f9e5831187e7031f80be0a416f539d34202da45ef8ee6cf9fbdaf28f966",
+    "merkleRoot": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b",
     "anchorReference": {
       "network": "devnet",
-      "signature": null,
-      "pda": "7To9GeP2aXSw56KJcdM5hvzQzo6feo6WQDWfqa5Q8Rf",
-      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx",
+      "pda": "CYhRgpzZ1srSPrkwfueVv4wqrtTa2MWQm1uMKRtMT5Au",
+      "signature": null
     },
     "protocolVersion": "agent/1"
   },
   "events": [
     {
-      "eventId": "f84d7888-f52a-4e01-99da-a82e7a9a1088",
-      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "eventId": "15ac33ec-0607-44b8-919c-b8867995a7a7",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
       "sequence": 0,
-      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
       "eventType": "agent.started",
-      "timestamp": "2026-09-01T22:10:25.715Z",
+      "timestamp": "2026-09-09T22:27:42.754Z",
       "parentEventId": null,
       "previousEventHash": null,
-      "payloadHash": "9ba0a2537fa2472fcf4a549b505ed64bbff29d5823e86d9e21e61518fe0f1f58",
-      "eventHash": "1b74186ab3ec53a91cf1292eb4b48c9900aaed652b22bee770ef70e8e2940bbd",
-      "signature": "5gCZeyFcWfFxomjAq5MrW2o3reJAFuoUQMRWVLSqactPtkEho3fa81Q82zwZq3STKWA5FTURGxSLd7DmSXNKp1sV",
+      "payload": {
+        "type": "agent.started",
+        "taskDescription": "Autonomous Liquidity Rebalance: Transfer 5,000 USDC from yield vault to operational wallet",
+        "agentName": "treasury-sentinel-v2"
+      },
+      "payloadHash": "37bdae1770f82d394eb5bd677eab27b0dd9ed9738aa35aab0765fb486f9c8798",
+      "eventHash": "28b1d5f6256f2bc612ca6007a6e962029652a7c9753160b9e1b309ece9bc871a",
+      "signature": "BrGav8d18SZVZFbn1xQuM3ViuAbgK536sDwjZ3zEwgyVorB9jMcqdHwGDdaS3YBKeosU5AFsn6r5TTaL4Gtm3YJ",
       "protocolVersion": "agent/1"
     },
     {
-      "eventId": "6d4b6a6a-ee76-4bc3-9296-c992dc9dd266",
-      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "eventId": "c8da0926-790d-402e-b76b-07ada3900b53",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
       "sequence": 1,
-      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
-      "eventType": "file.read",
-      "timestamp": "2026-09-01T22:10:25.718Z",
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "tool.request",
+      "timestamp": "2026-09-09T22:27:42.757Z",
       "parentEventId": null,
-      "previousEventHash": "1b74186ab3ec53a91cf1292eb4b48c9900aaed652b22bee770ef70e8e2940bbd",
-      "payloadHash": "034cfcd293b3ce56d65bf82bcb39447f9a44c876dc689478794953b34443e0bd",
-      "eventHash": "45d37d6281427b724282df72caa8821ff498f66965129e094724a80ee6544874",
-      "signature": "2NdZgYKazwxUaHuP5cz2wRW1iA4TtHB5vXnUxhFVfexQxZsERgMx6P6FJ5C3GdZpnzhhd1vWZBvqkG9MnpPvDxYF",
+      "previousEventHash": "28b1d5f6256f2bc612ca6007a6e962029652a7c9753160b9e1b309ece9bc871a",
+      "payload": {
+        "type": "tool.request",
+        "tool": "vault.get_reserves",
+        "target": "vault://usdc-yield-v2",
+        "input": {
+          "asset": "USDC",
+          "minLiquidity": 100000
+        }
+      },
+      "payloadHash": "1c0c2c666a4b5baeeec14a5b54576a390e3c442fca2dcfe7ee06bb1ea0b6c397",
+      "eventHash": "b83e941f46422356ecc644816e67237be074899b4934e97f585938e1c28e6d37",
+      "signature": "aETs8UtxgLffsbpc3ALsz5e4KEtyao9XnTwtocpY214PtjynzfFTKF7YbjqStkvJcCtmh5cvhHFJvXDZNPjaCWT",
       "protocolVersion": "agent/1"
     },
     {
-      "eventId": "5f357e0a-cda0-4e8b-9acc-d0bade7acfa5",
-      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "eventId": "87b5c250-4704-41cd-b436-e2687bb47561",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
       "sequence": 2,
-      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
-      "eventType": "file.write",
-      "timestamp": "2026-09-01T22:10:25.721Z",
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "payment.executed",
+      "timestamp": "2026-09-09T22:27:42.760Z",
       "parentEventId": null,
-      "previousEventHash": "45d37d6281427b724282df72caa8821ff498f66965129e094724a80ee6544874",
-      "payloadHash": "fa5f45003391b0814e68c1a500fbcf67076027d5bcf08a90b049c9c17b054844",
-      "eventHash": "0a2584cafbdfc8bec4ed73196547470c6f6420ebfa0dbfd3ebd46cfa387a2091",
-      "signature": "3MANrkd8LEmqL37gHHmR19swM11mTHmj8ZDzVzjAyfVQ1DyRhQFCH2umMnT6BVZzkRWMtvGZLUhsNs35NJBMdDsZ",
+      "previousEventHash": "b83e941f46422356ecc644816e67237be074899b4934e97f585938e1c28e6d37",
+      "payload": {
+        "type": "payment.executed",
+        "recipient": "OpWallet8Fj3Lp2Kq9X1mZ7yVb4nCwRt5eYu8iO0pAsD",
+        "amount": 5000,
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      },
+      "payloadHash": "879be63f1e1bddfa75b86045db3d6758e682d5a0eaa47e8e167e16cc1814466f",
+      "eventHash": "53108cb4530eb0967b26f27ec2d1c2ef547a46c7d2ac4de9fe141956642fdf4a",
+      "signature": "3K4oLtJrFymQxJVjknHjgBanbX4J8qvKfgSBsvUVhBWDSkkSCr1JMqYy4aQJQns3iBbUJNxfbLMTnCBi9djoGbSb",
       "protocolVersion": "agent/1"
     },
     {
-      "eventId": "ad58d7c9-aec6-4294-b4b6-89008ac16cf1",
-      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "eventId": "7ab340f9-8750-450e-abb9-92bb41abee6d",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
       "sequence": 3,
-      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
-      "eventType": "shell.execute",
-      "timestamp": "2026-09-01T22:10:25.723Z",
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "outcome.attestation",
+      "timestamp": "2026-09-09T22:27:42.763Z",
       "parentEventId": null,
-      "previousEventHash": "0a2584cafbdfc8bec4ed73196547470c6f6420ebfa0dbfd3ebd46cfa387a2091",
-      "payloadHash": "c5437456f9d01ca07091572e13dab2d66a9de7c0e75228ab51cf6c7b63bfe7f2",
-      "eventHash": "c85ce479022939dbe8b67662b3dd7ed628caef5b13a863676d67e29158df31dc",
-      "signature": "5eTaygkzTTGhv59yUWqEv86ZvwPofj7i4QGLpwda6BfZQxbtDFUrCbKfx8ADkQvxhyxY8S1rcbnbsebo2jMGU2Q3",
+      "previousEventHash": "53108cb4530eb0967b26f27ec2d1c2ef547a46c7d2ac4de9fe141956642fdf4a",
+      "payload": {
+        "type": "outcome.attestation",
+        "status": "success",
+        "summary": "Successfully transferred 5,000 USDC into operational vault",
+        "result": {
+          "finalVaultBalance": 245000,
+          "finalOpBalance": 15200
+        }
+      },
+      "payloadHash": "a1952a3fa3bd2ff12086230e92277753fe886020eefc8c34d19f2515799838c7",
+      "eventHash": "60338691ee0a5ac995485111eb36d639bbe35a1401685b8e638ac103d614f7c7",
+      "signature": "5zn3xn9t5RQ9dnGKEL3gLmToWxsFiN6FERsRZrKGM4VVqLrgMjZuwRB1FQhj2hfraazEvJYsKthaPDio8zEe5fyt",
       "protocolVersion": "agent/1"
     },
     {
-      "eventId": "ab87602c-115a-40e6-b952-53d9c4fd635a",
-      "executionId": "8d328231-a521-4ed4-847a-2d4d5778e5d2",
+      "eventId": "e2980009-16c3-418a-8eec-2f99422e16c1",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
       "sequence": 4,
-      "agentPublicKey": "4X8eiyYDfd2FwnQt7tbojnAuxDxeKRbuMSjHYj7EksMf",
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
       "eventType": "agent.completed",
-      "timestamp": "2026-09-01T22:10:25.726Z",
+      "timestamp": "2026-09-09T22:27:42.765Z",
       "parentEventId": null,
-      "previousEventHash": "c85ce479022939dbe8b67662b3dd7ed628caef5b13a863676d67e29158df31dc",
-      "payloadHash": "9de724ebd7d9d18031d72bb6839eb4222bdf09d5e98db1e73f5d0d347abfd519",
-      "eventHash": "edcb87717804304c2fc2b349d5596c407657fecac7b8f3e3600a99e0928d91fa",
-      "signature": "21yChCb5dtsVcc5sShRDVX9qYu7jAKD4xtos8Ck7EeVZTQ8AfMG9orJVVgmMptVnYQn13tPA4fWQyU8s6eDwCc8v",
+      "previousEventHash": "60338691ee0a5ac995485111eb36d639bbe35a1401685b8e638ac103d614f7c7",
+      "payload": {
+        "type": "agent.completed",
+        "summary": "Treasury rebalance executed cleanly within policy bounds",
+        "eventCount": 5
+      },
+      "payloadHash": "0f42f98dc2a5d7c5ca83ab508df2cbf95ee66587780bed93e2d9ee299595cba6",
+      "eventHash": "a90c6f9e5831187e7031f80be0a416f539d34202da45ef8ee6cf9fbdaf28f966",
+      "signature": "2LAFfXY7uNVM2seesGRuS5x6JcPNYRBxG73rTdsVJqYkere9z7jPmPixp1ZnkfKyrtHXfXwtNjCQ3u4XzEWuQmme",
       "protocolVersion": "agent/1"
     }
   ],
   "batch": {
-    "batchId": "592c4a8d-decf-4fbb-98c7-701f51b79f66",
+    "batchId": "cddba536-4cd8-49ca-b339-4fd77bc22bc6",
     "protocolVersion": "agent/1",
-    "createdAt": "2026-09-01T22:10:25.728Z",
+    "createdAt": "2026-09-09T22:27:42.768Z",
     "eventCount": 5,
     "firstSequence": 0,
     "lastSequence": 4,
-    "merkleRoot": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17",
+    "merkleRoot": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b",
     "executionIds": [
-      "8d328231-a521-4ed4-847a-2d4d5778e5d2"
+      "075204aa-15cc-4c93-864d-4e57369e03ac"
     ],
     "solanaAnchor": {
       "network": "devnet",
-      "signature": null,
-      "pda": "7To9GeP2aXSw56KJcdM5hvzQzo6feo6WQDWfqa5Q8Rf",
-      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx",
+      "pda": "CYhRgpzZ1srSPrkwfueVv4wqrtTa2MWQm1uMKRtMT5Au",
+      "signature": null
     },
     "irysArchive": null,
     "status": "anchored"
   },
   "merkle": {
-    "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17",
+    "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b",
     "leafCount": 5,
     "leaves": [
-      "f2c60e3b4303927fd6c731c75151518c49b5e04f49481d6f11c98f65d6b83ce5",
-      "562eacd6de9fdcedc38f60ff974d7509322f1f0a851c8be62945f927c232b53e",
-      "920fd9aff577438234234d29a03705b83b6b78ba0b0674b4fc05201eaab47067",
-      "d902776d92a018742912a41e349d27b5456dfcf95491d3c033acfc08d09c2f74",
-      "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e"
+      "84f33c77ddadd25c21eb556b7811065769712674aeefa76ce370826937676561",
+      "ff1ec1937fc12179a6bac82a5a4047f4e3ca2ab7b82d84d973255e6b9da62396",
+      "b8f312755cf5cd763085fa44bace6350cb1d926ed589e5c06c5f0ab1522b7616",
+      "2e9ec866b168af1f746358f9c72f521f6805f0aaad93e0048f5c2ae4729c73e4",
+      "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e"
     ],
     "proofs": [
       {
         "leafIndex": 0,
-        "leafHash": "f2c60e3b4303927fd6c731c75151518c49b5e04f49481d6f11c98f65d6b83ce5",
+        "leafHash": "84f33c77ddadd25c21eb556b7811065769712674aeefa76ce370826937676561",
         "proof": [
           {
-            "hash": "562eacd6de9fdcedc38f60ff974d7509322f1f0a851c8be62945f927c232b53e",
+            "hash": "ff1ec1937fc12179a6bac82a5a4047f4e3ca2ab7b82d84d973255e6b9da62396",
             "direction": "right"
           },
           {
-            "hash": "f4fe39df16741788133d7ea1291207ae8bdb1384c9ea01f4e698ee64d9ff5671",
+            "hash": "014128a7ae3fd1793e7c990f86befe178ea2d458c2c09967577a6a2c7f74cd93",
             "direction": "right"
           },
           {
-            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
             "direction": "right"
           }
         ],
-        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
       },
       {
         "leafIndex": 1,
-        "leafHash": "562eacd6de9fdcedc38f60ff974d7509322f1f0a851c8be62945f927c232b53e",
+        "leafHash": "ff1ec1937fc12179a6bac82a5a4047f4e3ca2ab7b82d84d973255e6b9da62396",
         "proof": [
           {
-            "hash": "f2c60e3b4303927fd6c731c75151518c49b5e04f49481d6f11c98f65d6b83ce5",
+            "hash": "84f33c77ddadd25c21eb556b7811065769712674aeefa76ce370826937676561",
             "direction": "left"
           },
           {
-            "hash": "f4fe39df16741788133d7ea1291207ae8bdb1384c9ea01f4e698ee64d9ff5671",
+            "hash": "014128a7ae3fd1793e7c990f86befe178ea2d458c2c09967577a6a2c7f74cd93",
             "direction": "right"
           },
           {
-            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
             "direction": "right"
           }
         ],
-        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
       },
       {
         "leafIndex": 2,
-        "leafHash": "920fd9aff577438234234d29a03705b83b6b78ba0b0674b4fc05201eaab47067",
+        "leafHash": "b8f312755cf5cd763085fa44bace6350cb1d926ed589e5c06c5f0ab1522b7616",
         "proof": [
           {
-            "hash": "d902776d92a018742912a41e349d27b5456dfcf95491d3c033acfc08d09c2f74",
+            "hash": "2e9ec866b168af1f746358f9c72f521f6805f0aaad93e0048f5c2ae4729c73e4",
             "direction": "right"
           },
           {
-            "hash": "047a7e242532d3aaf01d545bb0cba8f72358a5a9e6a14ec039690ee83e4d56ad",
+            "hash": "64e403b1d80653b535bfb1fff65fde7474a33ca6a6157c16da59a2830598e466",
             "direction": "left"
           },
           {
-            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
             "direction": "right"
           }
         ],
-        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
       },
       {
         "leafIndex": 3,
-        "leafHash": "d902776d92a018742912a41e349d27b5456dfcf95491d3c033acfc08d09c2f74",
+        "leafHash": "2e9ec866b168af1f746358f9c72f521f6805f0aaad93e0048f5c2ae4729c73e4",
         "proof": [
           {
-            "hash": "920fd9aff577438234234d29a03705b83b6b78ba0b0674b4fc05201eaab47067",
+            "hash": "b8f312755cf5cd763085fa44bace6350cb1d926ed589e5c06c5f0ab1522b7616",
             "direction": "left"
           },
           {
-            "hash": "047a7e242532d3aaf01d545bb0cba8f72358a5a9e6a14ec039690ee83e4d56ad",
+            "hash": "64e403b1d80653b535bfb1fff65fde7474a33ca6a6157c16da59a2830598e466",
             "direction": "left"
           },
           {
-            "hash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
             "direction": "right"
           }
         ],
-        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
       },
       {
         "leafIndex": 4,
-        "leafHash": "6608cd130597eac46a876039f7b58ec672991c33a6cccab47a23953dc618571e",
+        "leafHash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
         "proof": [
           {
-            "hash": "ab93003fddf26395793f1ef3fc48a11f10082e6fbde82f418cd8206ccf831979",
+            "hash": "330aef8034df0d1e6310fa748c85bb0c19e6a82c960909c795bfdb036a261c05",
             "direction": "left"
           }
         ],
-        "root": "c42a5f63be4500b7f01aae516fec48f211fff9d93fa389ebd841ad2ce404ab17"
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
       }
     ]
   },
   "solana": {
     "network": "devnet",
-    "signature": null,
-    "pda": "7To9GeP2aXSw56KJcdM5hvzQzo6feo6WQDWfqa5Q8Rf",
-    "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+    "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx",
+    "pda": "CYhRgpzZ1srSPrkwfueVv4wqrtTa2MWQm1uMKRtMT5Au",
+    "signature": null
   },
   "irys": null
 }
