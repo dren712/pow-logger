@@ -359,6 +359,7 @@ export type TamperFailureType =
   | 'IRYS_ARCHIVE_UNAVAILABLE'
   | 'EVENT_MISSING'
   | 'EVENT_INSERTED'
+  | 'EXECUTION_IDENTITY_INVALID'
 
 export interface TamperFailure {
   type: TamperFailureType
