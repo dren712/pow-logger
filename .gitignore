@@ -50,4 +50,6 @@ app/lib/canonicalMessage.js
 
 # scratch
 scratch/
+scripts/agent-demo/output/
+scratch-test-receipts/
 

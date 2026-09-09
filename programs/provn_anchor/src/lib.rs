@@ -67,6 +67,36 @@ pub mod provn_anchor {
 
         Ok(())
     }
+
+    /// Anchors an agent execution batch on Solana.
+    pub fn anchor_agent_batch(
+        ctx: Context<AnchorAgentBatch>,
+        batch_id_hash: [u8; 32],
+        merkle_root: [u8; 32],
+        event_count: u32,
+        timestamp: i64,
+        protocol_version: u8,
+    ) -> Result<()> {
+        let anchor = &mut ctx.accounts.agent_batch_anchor;
+        anchor.batch_id_hash = batch_id_hash;
+        anchor.authority = ctx.accounts.authority.key();
+        anchor.merkle_root = merkle_root;
+        anchor.event_count = event_count;
+        anchor.timestamp = timestamp;
+        anchor.protocol_version = protocol_version;
+        anchor.bump = ctx.bumps.agent_batch_anchor;
+
+        emit!(AgentBatchAnchoredEvent {
+            batch_id_hash,
+            authority: anchor.authority,
+            merkle_root,
+            event_count,
+            timestamp,
+            protocol_version,
+        });
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -101,6 +131,24 @@ pub struct UpdateArchiveTx<'info> {
     pub authority: Signer<'info>,
 }
 
+#[derive(Accounts)]
+#[instruction(batch_id_hash: [u8; 32])]
+pub struct AnchorAgentBatch<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + AgentBatchAnchor::INIT_SPACE,
+        seeds = [b"agent_batch", authority.key().as_ref(), batch_id_hash.as_ref()],
+        bump
+    )]
+    pub agent_batch_anchor: Account<'info, AgentBatchAnchor>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct ProofAnchor {
@@ -110,6 +158,18 @@ pub struct ProofAnchor {
     pub timestamp: i64,
     pub protocol_version: u8,
     pub archive_tx_id: [u8; 43],
+    pub bump: u8,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct AgentBatchAnchor {
+    pub batch_id_hash: [u8; 32],
+    pub authority: Pubkey,
+    pub merkle_root: [u8; 32],
+    pub event_count: u32,
+    pub timestamp: i64,
+    pub protocol_version: u8,
     pub bump: u8,
 }
 
@@ -126,6 +186,16 @@ pub struct ProofAnchoredEvent {
 pub struct ArchiveConfirmedEvent {
     pub proof_id: u64,
     pub archive_tx_id: String,
+}
+
+#[event]
+pub struct AgentBatchAnchoredEvent {
+    pub batch_id_hash: [u8; 32],
+    pub authority: Pubkey,
+    pub merkle_root: [u8; 32],
+    pub event_count: u32,
+    pub timestamp: i64,
+    pub protocol_version: u8,
 }
 
 #[error_code]
