@@ -14,6 +14,17 @@ export const AUTHORITATIVE_PROGRAM_IDS: Record<string, string> = {
 }
 
 /**
+ * Resolves the authoritative Solana program ID for a given network.
+ * Defaults to devnet program ID if unconfigured or unrecognized.
+ */
+export function getAuthoritativeProgramId(network?: string): string {
+  if (network && AUTHORITATIVE_PROGRAM_IDS[network]) {
+    return AUTHORITATIVE_PROGRAM_IDS[network]
+  }
+  return AUTHORITATIVE_PROGRAM_IDS.devnet
+}
+
+/**
  * Authoritative Irys gateway base URLs pinned per network.
  * Untrusted URLs in receipts are strictly ignored to prevent SSRF attacks.
  */
@@ -64,16 +75,45 @@ export async function verifyAgentReceiptNetwork(
   // 2. Network Phase: Deep Solana Anchor Verification
   if (receipt.solana) {
     try {
-      const declaredPda = new PublicKey(receipt.solana.pda)
       const networkKey = receipt.solana.network || 'devnet'
-      const pinnedProgramId = AUTHORITATIVE_PROGRAM_IDS[networkKey]
-      const targetProgramIdStr =
-        receipt.solana.programId ||
-        pinnedProgramId ||
-        process.env.NEXT_PUBLIC_PROVN_PROGRAM_ID ||
-        'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx'
-      const expectedProgramId = new PublicKey(targetProgramIdStr)
+      const authoritativeProgramIdStr = getAuthoritativeProgramId(networkKey)
+      const expectedProgramId = new PublicKey(authoritativeProgramIdStr)
 
+      // Security Invariant: The selected network strictly determines the authoritative program ID.
+      // A receipt-provided programId must NEVER override this authoritative value.
+      // If the receipt specifies a conflicting program ID, fail verification immediately.
+      if (receipt.solana.programId && receipt.solana.programId !== authoritativeProgramIdStr) {
+        result.layers.solanaAnchor = 'MISMATCH'
+        result.failures.push({
+          type: 'SOLANA_PROGRAM_ID_MISMATCH',
+          eventSequence: null,
+          eventId: null,
+          message: `Solana program ID in receipt (${receipt.solana.programId}) does not match authoritative program ID (${authoritativeProgramIdStr}) for network '${networkKey}'`,
+          expected: authoritativeProgramIdStr,
+          computed: receipt.solana.programId,
+        })
+        result.verified = false
+        return result
+      }
+
+      if (
+        receipt.batch?.solanaAnchor?.programId &&
+        receipt.batch.solanaAnchor.programId !== authoritativeProgramIdStr
+      ) {
+        result.layers.solanaAnchor = 'MISMATCH'
+        result.failures.push({
+          type: 'SOLANA_PROGRAM_ID_MISMATCH',
+          eventSequence: null,
+          eventId: null,
+          message: `Solana program ID in batch anchor (${receipt.batch.solanaAnchor.programId}) does not match authoritative program ID (${authoritativeProgramIdStr}) for network '${networkKey}'`,
+          expected: authoritativeProgramIdStr,
+          computed: receipt.batch.solanaAnchor.programId,
+        })
+        result.verified = false
+        return result
+      }
+
+      const declaredPda = new PublicKey(receipt.solana.pda)
       const accountInfo = await connection.getAccountInfo(declaredPda)
 
       if (!accountInfo) {
