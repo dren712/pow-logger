@@ -14,6 +14,26 @@ export const AUTHORITATIVE_PROGRAM_IDS: Record<string, string> = {
 }
 
 /**
+ * Authoritative Irys gateway base URLs pinned per network.
+ * Untrusted URLs in receipts are strictly ignored to prevent SSRF attacks.
+ */
+export const AUTHORITATIVE_IRYS_GATEWAYS: Record<string, string> = {
+  devnet: 'https://devnet.irys.xyz',
+  'mainnet-beta': 'https://gateway.irys.xyz',
+}
+
+/**
+ * Resolves the authoritative Irys gateway base URL for a given network.
+ * Defaults to devnet gateway if unconfigured or unrecognized.
+ */
+export function getAuthoritativeIrysGateway(network?: string): string {
+  if (network && AUTHORITATIVE_IRYS_GATEWAYS[network]) {
+    return AUTHORITATIVE_IRYS_GATEWAYS[network]
+  }
+  return AUTHORITATIVE_IRYS_GATEWAYS.devnet
+}
+
+/**
  * Independently verifies a PROVN Agent Receipt against live network infrastructure (Solana & Irys).
  *
  * ZERO-TRUST NETWORK INVARIANTS:
@@ -168,11 +188,23 @@ export async function verifyAgentReceiptNetwork(
   // 3. Network Phase: Dynamic Network-Aware Irys Archival Verification
   if (receipt.irys) {
     try {
-      const targetUrl =
-        receipt.irys.url ||
-        (receipt.solana?.network === 'mainnet-beta'
-          ? `https://gateway.irys.xyz/${receipt.irys.txId}`
-          : `https://devnet.irys.xyz/${receipt.irys.txId}`)
+      if (!receipt.irys.txId || typeof receipt.irys.txId !== 'string') {
+        result.layers.irysArchive = 'UNAVAILABLE'
+        result.failures.push({
+          type: 'IRYS_ARCHIVE_UNAVAILABLE',
+          eventSequence: null,
+          eventId: null,
+          message: 'Irys archive reference missing valid txId',
+        })
+        result.verified = false
+        return result
+      }
+
+      // Security Invariant (SSRF Prevention): receipt.irys.url is display metadata ONLY.
+      // The server-side fetch destination is derived exclusively from the authoritative network gateway.
+      const networkKey = receipt.solana?.network || receipt.batch?.solanaAnchor?.network || 'devnet'
+      const gateway = getAuthoritativeIrysGateway(networkKey)
+      const targetUrl = `${gateway}/${encodeURIComponent(receipt.irys.txId)}`
 
       const response = await fetch(targetUrl)
 
