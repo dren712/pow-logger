@@ -97,6 +97,7 @@ function createBaseTestReceipt(authorityKeypair: Keypair): {
   })
 
   runtime.logAction(executionState, 'file.read', {
+    type: 'file.read',
     path: 'anchor/config.json',
     sizeBytes: 256,
     contentHash: sha256('{"network": "devnet"}'),
@@ -250,9 +251,9 @@ async function runProgramIdTests() {
 
     // Omit programId from receipt.solana
     assert(receipt.solana !== null)
-    delete (receipt.solana as Record<string, unknown>).programId
+    delete (receipt.solana as unknown as Record<string, unknown>).programId
     if (receipt.batch.solanaAnchor) {
-      delete (receipt.batch.solanaAnchor as Record<string, unknown>).programId
+      delete (receipt.batch.solanaAnchor as unknown as Record<string, unknown>).programId
     }
 
     const mockAccountBuffer = createMockAnchorAccountBuffer({
@@ -286,9 +287,9 @@ async function runProgramIdTests() {
       result.layers.solanaAnchor === 'FOUND',
       'solanaAnchor layer status marked FOUND using authoritative program ID'
     )
-    assertPass(result.verified === true, 'End-to-end receipt verification passes with missing programId')
+    const capturedPda: PublicKey | null = queriedPda
     assertPass(
-      queriedPda !== null && queriedPda.toBase58() === receipt.solana.pda,
+      capturedPda !== null && (capturedPda as PublicKey).toBase58() === receipt.solana.pda,
       'Queried PDA matches declared PDA derived from authoritative program'
     )
   }

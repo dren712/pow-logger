@@ -55,6 +55,7 @@ function createBaseTestReceipt(): AgentReceipt {
   })
 
   runtime.logAction(executionState, 'file.read', {
+    type: 'file.read',
     path: 'safe/config.json',
     sizeBytes: 128,
     contentHash: sha256('{"safe": true}'),

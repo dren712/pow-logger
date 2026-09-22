@@ -16,6 +16,7 @@
 import { PublicKey, TransactionInstruction, SystemProgram } from '@solana/web3.js'
 import crypto from 'crypto'
 import { PROVN_PROGRAM_ID } from '../solanaAnchor'
+export { PROVN_PROGRAM_ID }
 import type { AnchorReference } from './types'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,7 +67,7 @@ export interface AgentBatchAnchorParams {
  * Computes the 8-byte Anchor instruction discriminator for a given instruction name.
  * discriminator = SHA256("global:<ix_name>")[0..8]
  */
-function getDiscriminator(ixName: string): Buffer {
+export function getDiscriminator(ixName: string): Buffer {
   return crypto.createHash('sha256').update(`global:${ixName}`).digest().subarray(0, 8)
 }
 

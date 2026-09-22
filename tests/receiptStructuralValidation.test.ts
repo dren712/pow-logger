@@ -59,6 +59,7 @@ function createValidBaseReceipt(): {
   })
 
   runtime.logAction(executionState, 'file.read', {
+    type: 'file.read',
     path: 'package.json',
     sizeBytes: 512,
     contentHash: sha256('{"name": "pow-logger"}'),

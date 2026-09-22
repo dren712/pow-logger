@@ -34,24 +34,28 @@ async function runTamperLoop() {
 
   // Agent records sequential consequential actions
   runtime.logAction(executionState, 'file.read', {
+    type: 'file.read',
     path: 'config/contracts.json',
     sizeBytes: 1024,
     contentHash: sha256('{"token": "USDC", "program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}'),
   })
 
   runtime.logAction(executionState, 'shell.execute', {
+    type: 'shell.execute',
     command: 'anchor test --provider.cluster devnet',
     exitCode: 0,
     stdoutHash: sha256('All 14 smart contract integration tests passed cleanly.'),
   })
 
   runtime.logAction(executionState, 'git.operation', {
+    type: 'git.operation',
     action: 'commit',
     commitHash: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678',
     message: 'release: ship verifiable agent settlement v2',
   })
 
   runtime.logAction(executionState, 'payment.executed', {
+    type: 'payment.executed',
     recipient: '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin',
     amount: '5000000',
     mint: 'USDC',
@@ -109,7 +113,8 @@ async function runTamperLoop() {
   
   // Adversary alters the payload in database row #2 (shell command)
   tamperedReceiptA.events[2].payload = {
-    ...tamperedReceiptA.events[2].payload,
+    type: 'shell.execute',
+    ...(tamperedReceiptA.events[2].payload || {}),
     command: 'rm -rf / --no-preserve-root',
   }
 
@@ -157,7 +162,7 @@ async function runTamperLoop() {
   const fakeKeypair = nacl.sign.keyPair()
   const fakeRuntime = new ProvnAgentRuntime(fakeKeypair)
   const fakeState = fakeRuntime.startExecution({ taskDescription: 'Fake execution' })
-  fakeRuntime.logAction(fakeState, 'shell.execute', { command: 'echo sanitized' })
+  fakeRuntime.logAction(fakeState, 'shell.execute', { type: 'shell.execute', command: 'echo sanitized' })
   const fakeReceipt = fakeRuntime.finalizeExecution(fakeState, 'Tampered summary')
 
   // Attacker points receipt to real execution's Solana anchor PDA

@@ -106,7 +106,7 @@ async function runSecuritySuites() {
 
   // Verify that structured metadata survives persistence
   const preservedPayload = {
-    type: 'file.read',
+    type: 'file.read' as const,
     path: '.env.production', // sensitive target
     contentHash: 'abc123hash',
     sizeBytes: 256,

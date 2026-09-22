@@ -194,6 +194,8 @@ export function verifyMerkleProof(eventHash: string, proof: MerkleInclusionProof
   return currentHash === proof.root
 }
 
+export { verifyMerkleProof as verifyInclusionProof }
+
 /**
  * Independently reconstructs the Merkle root from ALL event hashes.
  * Used by the verifier to confirm that the committed root matches
