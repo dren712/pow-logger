@@ -1,0 +1,255 @@
+{
+  "protocol": "PROVN",
+  "version": "agent/1",
+  "generatedAt": "2026-09-09T22:27:42.768Z",
+  "execution": {
+    "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
+    "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+    "status": "completed",
+    "startedAt": "2026-09-09T22:27:42.753Z",
+    "completedAt": "2026-09-09T22:27:42.767Z",
+    "eventCount": 5,
+    "terminalEventHash": "a90c6f9e5831187e7031f80be0a416f539d34202da45ef8ee6cf9fbdaf28f966",
+    "merkleRoot": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b",
+    "anchorReference": {
+      "network": "devnet",
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx",
+      "pda": "CYhRgpzZ1srSPrkwfueVv4wqrtTa2MWQm1uMKRtMT5Au",
+      "signature": null
+    },
+    "protocolVersion": "agent/1"
+  },
+  "events": [
+    {
+      "eventId": "15ac33ec-0607-44b8-919c-b8867995a7a7",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
+      "sequence": 0,
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "agent.started",
+      "timestamp": "2026-09-09T22:27:42.754Z",
+      "parentEventId": null,
+      "previousEventHash": null,
+      "payload": {
+        "type": "agent.started",
+        "taskDescription": "Autonomous Liquidity Rebalance: Transfer 5,000 USDC from yield vault to operational wallet",
+        "agentName": "treasury-sentinel-v2"
+      },
+      "payloadHash": "37bdae1770f82d394eb5bd677eab27b0dd9ed9738aa35aab0765fb486f9c8798",
+      "eventHash": "28b1d5f6256f2bc612ca6007a6e962029652a7c9753160b9e1b309ece9bc871a",
+      "signature": "BrGav8d18SZVZFbn1xQuM3ViuAbgK536sDwjZ3zEwgyVorB9jMcqdHwGDdaS3YBKeosU5AFsn6r5TTaL4Gtm3YJ",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "c8da0926-790d-402e-b76b-07ada3900b53",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
+      "sequence": 1,
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "tool.request",
+      "timestamp": "2026-09-09T22:27:42.757Z",
+      "parentEventId": null,
+      "previousEventHash": "28b1d5f6256f2bc612ca6007a6e962029652a7c9753160b9e1b309ece9bc871a",
+      "payload": {
+        "type": "tool.request",
+        "tool": "vault.get_reserves",
+        "target": "vault://usdc-yield-v2",
+        "input": {
+          "asset": "USDC",
+          "minLiquidity": 100000
+        }
+      },
+      "payloadHash": "1c0c2c666a4b5baeeec14a5b54576a390e3c442fca2dcfe7ee06bb1ea0b6c397",
+      "eventHash": "b83e941f46422356ecc644816e67237be074899b4934e97f585938e1c28e6d37",
+      "signature": "aETs8UtxgLffsbpc3ALsz5e4KEtyao9XnTwtocpY214PtjynzfFTKF7YbjqStkvJcCtmh5cvhHFJvXDZNPjaCWT",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "87b5c250-4704-41cd-b436-e2687bb47561",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
+      "sequence": 2,
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "payment.executed",
+      "timestamp": "2026-09-09T22:27:42.760Z",
+      "parentEventId": null,
+      "previousEventHash": "b83e941f46422356ecc644816e67237be074899b4934e97f585938e1c28e6d37",
+      "payload": {
+        "type": "payment.executed",
+        "recipient": "OpWallet8Fj3Lp2Kq9X1mZ7yVb4nCwRt5eYu8iO0pAsD",
+        "amount": 5000,
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      },
+      "payloadHash": "879be63f1e1bddfa75b86045db3d6758e682d5a0eaa47e8e167e16cc1814466f",
+      "eventHash": "53108cb4530eb0967b26f27ec2d1c2ef547a46c7d2ac4de9fe141956642fdf4a",
+      "signature": "3K4oLtJrFymQxJVjknHjgBanbX4J8qvKfgSBsvUVhBWDSkkSCr1JMqYy4aQJQns3iBbUJNxfbLMTnCBi9djoGbSb",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "7ab340f9-8750-450e-abb9-92bb41abee6d",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
+      "sequence": 3,
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "outcome.attestation",
+      "timestamp": "2026-09-09T22:27:42.763Z",
+      "parentEventId": null,
+      "previousEventHash": "53108cb4530eb0967b26f27ec2d1c2ef547a46c7d2ac4de9fe141956642fdf4a",
+      "payload": {
+        "type": "outcome.attestation",
+        "status": "success",
+        "summary": "Successfully transferred 5,000 USDC into operational vault",
+        "result": {
+          "finalVaultBalance": 245000,
+          "finalOpBalance": 15200
+        }
+      },
+      "payloadHash": "a1952a3fa3bd2ff12086230e92277753fe886020eefc8c34d19f2515799838c7",
+      "eventHash": "60338691ee0a5ac995485111eb36d639bbe35a1401685b8e638ac103d614f7c7",
+      "signature": "5zn3xn9t5RQ9dnGKEL3gLmToWxsFiN6FERsRZrKGM4VVqLrgMjZuwRB1FQhj2hfraazEvJYsKthaPDio8zEe5fyt",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "e2980009-16c3-418a-8eec-2f99422e16c1",
+      "executionId": "075204aa-15cc-4c93-864d-4e57369e03ac",
+      "sequence": 4,
+      "agentPublicKey": "Cj4yMavYU7N5Wgf4jxFhxoW9oQYxP4M11ZfbA4iVVigY",
+      "eventType": "agent.completed",
+      "timestamp": "2026-09-09T22:27:42.765Z",
+      "parentEventId": null,
+      "previousEventHash": "60338691ee0a5ac995485111eb36d639bbe35a1401685b8e638ac103d614f7c7",
+      "payload": {
+        "type": "agent.completed",
+        "summary": "Treasury rebalance executed cleanly within policy bounds",
+        "eventCount": 5
+      },
+      "payloadHash": "0f42f98dc2a5d7c5ca83ab508df2cbf95ee66587780bed93e2d9ee299595cba6",
+      "eventHash": "a90c6f9e5831187e7031f80be0a416f539d34202da45ef8ee6cf9fbdaf28f966",
+      "signature": "2LAFfXY7uNVM2seesGRuS5x6JcPNYRBxG73rTdsVJqYkere9z7jPmPixp1ZnkfKyrtHXfXwtNjCQ3u4XzEWuQmme",
+      "protocolVersion": "agent/1"
+    }
+  ],
+  "batch": {
+    "batchId": "cddba536-4cd8-49ca-b339-4fd77bc22bc6",
+    "protocolVersion": "agent/1",
+    "createdAt": "2026-09-09T22:27:42.768Z",
+    "eventCount": 5,
+    "firstSequence": 0,
+    "lastSequence": 4,
+    "merkleRoot": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b",
+    "executionIds": [
+      "075204aa-15cc-4c93-864d-4e57369e03ac"
+    ],
+    "solanaAnchor": {
+      "network": "devnet",
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx",
+      "pda": "CYhRgpzZ1srSPrkwfueVv4wqrtTa2MWQm1uMKRtMT5Au",
+      "signature": null
+    },
+    "irysArchive": null,
+    "status": "anchored"
+  },
+  "merkle": {
+    "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b",
+    "leafCount": 5,
+    "leaves": [
+      "84f33c77ddadd25c21eb556b7811065769712674aeefa76ce370826937676561",
+      "ff1ec1937fc12179a6bac82a5a4047f4e3ca2ab7b82d84d973255e6b9da62396",
+      "b8f312755cf5cd763085fa44bace6350cb1d926ed589e5c06c5f0ab1522b7616",
+      "2e9ec866b168af1f746358f9c72f521f6805f0aaad93e0048f5c2ae4729c73e4",
+      "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e"
+    ],
+    "proofs": [
+      {
+        "leafIndex": 0,
+        "leafHash": "84f33c77ddadd25c21eb556b7811065769712674aeefa76ce370826937676561",
+        "proof": [
+          {
+            "hash": "ff1ec1937fc12179a6bac82a5a4047f4e3ca2ab7b82d84d973255e6b9da62396",
+            "direction": "right"
+          },
+          {
+            "hash": "014128a7ae3fd1793e7c990f86befe178ea2d458c2c09967577a6a2c7f74cd93",
+            "direction": "right"
+          },
+          {
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
+            "direction": "right"
+          }
+        ],
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
+      },
+      {
+        "leafIndex": 1,
+        "leafHash": "ff1ec1937fc12179a6bac82a5a4047f4e3ca2ab7b82d84d973255e6b9da62396",
+        "proof": [
+          {
+            "hash": "84f33c77ddadd25c21eb556b7811065769712674aeefa76ce370826937676561",
+            "direction": "left"
+          },
+          {
+            "hash": "014128a7ae3fd1793e7c990f86befe178ea2d458c2c09967577a6a2c7f74cd93",
+            "direction": "right"
+          },
+          {
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
+            "direction": "right"
+          }
+        ],
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
+      },
+      {
+        "leafIndex": 2,
+        "leafHash": "b8f312755cf5cd763085fa44bace6350cb1d926ed589e5c06c5f0ab1522b7616",
+        "proof": [
+          {
+            "hash": "2e9ec866b168af1f746358f9c72f521f6805f0aaad93e0048f5c2ae4729c73e4",
+            "direction": "right"
+          },
+          {
+            "hash": "64e403b1d80653b535bfb1fff65fde7474a33ca6a6157c16da59a2830598e466",
+            "direction": "left"
+          },
+          {
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
+            "direction": "right"
+          }
+        ],
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
+      },
+      {
+        "leafIndex": 3,
+        "leafHash": "2e9ec866b168af1f746358f9c72f521f6805f0aaad93e0048f5c2ae4729c73e4",
+        "proof": [
+          {
+            "hash": "b8f312755cf5cd763085fa44bace6350cb1d926ed589e5c06c5f0ab1522b7616",
+            "direction": "left"
+          },
+          {
+            "hash": "64e403b1d80653b535bfb1fff65fde7474a33ca6a6157c16da59a2830598e466",
+            "direction": "left"
+          },
+          {
+            "hash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
+            "direction": "right"
+          }
+        ],
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
+      },
+      {
+        "leafIndex": 4,
+        "leafHash": "6267f1e26b670f93b7219f135dc1cfad20fe25e3185c9ccf56d3f20278a1940e",
+        "proof": [
+          {
+            "hash": "330aef8034df0d1e6310fa748c85bb0c19e6a82c960909c795bfdb036a261c05",
+            "direction": "left"
+          }
+        ],
+        "root": "881b575366f31a64446915f12fcc3fd8e4493276d1059e680fd149981448ab3b"
+      }
+    ]
+  },
+  "solana": {
+    "network": "devnet",
+    "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx",
+    "pda": "CYhRgpzZ1srSPrkwfueVv4wqrtTa2MWQm1uMKRtMT5Au",
+    "signature": null
+  },
+  "irys": null
+}

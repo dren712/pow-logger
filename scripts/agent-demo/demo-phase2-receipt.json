@@ -1,0 +1,179 @@
+{
+  "protocol": "PROVN",
+  "version": "agent/1",
+  "generatedAt": "2026-09-03T23:16:35.452Z",
+  "execution": {
+    "executionId": "4c22f247-3ed4-4824-9f70-5009794c6fa2",
+    "agentPublicKey": "DsQpu3bbPCdrPeyaJzfAgV1gJuQvhhHUTvR8Ha3Ky6Qp",
+    "startedAt": "2026-09-03T23:16:32.856Z",
+    "completedAt": "2026-09-03T23:16:34.431Z",
+    "status": "completed",
+    "eventCount": 4,
+    "terminalEventHash": "7acd4e1f51434248b5b697569ac808df8c2af2eab6eaedf7643cdf86a4709138",
+    "merkleRoot": "44608a26d46a11d9fa03a8ad4f7591832f84360e7a92de28a2508a9c461337dd",
+    "anchorReference": {
+      "network": "devnet",
+      "signature": "simulated_sig_pending_deployment",
+      "pda": "6EcbixijUjDQ3iEo9i4ASgYrSzX8MchpHzMLAk9r8NXL",
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+    },
+    "protocolVersion": "agent/1"
+  },
+  "events": [
+    {
+      "eventId": "99021971-4836-4874-8a26-461871e66381",
+      "executionId": "4c22f247-3ed4-4824-9f70-5009794c6fa2",
+      "sequence": 0,
+      "agentPublicKey": "DsQpu3bbPCdrPeyaJzfAgV1gJuQvhhHUTvR8Ha3Ky6Qp",
+      "eventType": "agent.started",
+      "timestamp": "2026-09-03T23:16:32.857Z",
+      "parentEventId": null,
+      "previousEventHash": null,
+      "payloadHash": "534960fafd10170844c4ae7576473216c7bc78936b8e4cdf92e69bb6ee164a52",
+      "eventHash": "ce80d70128db8fd0a67a5f03f12d2612477c92fd9acc522079b2e0b4c1c5387e",
+      "signature": "5j4MsYdRzpjWfqpPz73GGYu9Ws8zSSRtxconAf9iEq9Tkx7pCy7TYffvtkQ1FNKnjybD3bLeZGA5DUJkY2T2fZoM",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "0fb45394-23f8-4df3-ac94-5033e94d1418",
+      "executionId": "4c22f247-3ed4-4824-9f70-5009794c6fa2",
+      "sequence": 1,
+      "agentPublicKey": "DsQpu3bbPCdrPeyaJzfAgV1gJuQvhhHUTvR8Ha3Ky6Qp",
+      "eventType": "file.write",
+      "timestamp": "2026-09-03T23:16:33.878Z",
+      "parentEventId": null,
+      "previousEventHash": "ce80d70128db8fd0a67a5f03f12d2612477c92fd9acc522079b2e0b4c1c5387e",
+      "payloadHash": "d3234bdcf5918a6645b8b19a15b869edd8d07920fb714df8d561aa3e10961926",
+      "eventHash": "a1e7a817a4964268def13663c2ecb7acc145c6d453e97f8e40ca6884135bb0a5",
+      "signature": "5jsDwzhBCvrz8dyHTJaKAHzWSgm6FDUsW1GumkhQMRS49FHyFV4p4HPczxDaaZdJJ164JpVbGsac5T3wDRoosz4",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "4d06da18-fd9c-4f5e-9bc8-2e1f74b0f0f0",
+      "executionId": "4c22f247-3ed4-4824-9f70-5009794c6fa2",
+      "sequence": 2,
+      "agentPublicKey": "DsQpu3bbPCdrPeyaJzfAgV1gJuQvhhHUTvR8Ha3Ky6Qp",
+      "eventType": "shell.execute",
+      "timestamp": "2026-09-03T23:16:34.064Z",
+      "parentEventId": null,
+      "previousEventHash": "a1e7a817a4964268def13663c2ecb7acc145c6d453e97f8e40ca6884135bb0a5",
+      "payloadHash": "fc0b88e806d0164dffa137d4a7d553bd5d28ae409d4bc31b799f1d7701cf2818",
+      "eventHash": "1b3f611079d73f09db916c70d17d957c35be9fdf0537b0017b64703fa1e7ab50",
+      "signature": "3xCFYHC55AU4ZRmgpT5GUj4Fv4DACD7VshwoqCc12hYpAzmnS6qPjX89waeEaCdxhab8DhFpVozAppvTcyXBH7kC",
+      "protocolVersion": "agent/1"
+    },
+    {
+      "eventId": "92b6b922-b1a5-486a-a457-25af4c297aab",
+      "executionId": "4c22f247-3ed4-4824-9f70-5009794c6fa2",
+      "sequence": 3,
+      "agentPublicKey": "DsQpu3bbPCdrPeyaJzfAgV1gJuQvhhHUTvR8Ha3Ky6Qp",
+      "eventType": "agent.completed",
+      "timestamp": "2026-09-03T23:16:34.250Z",
+      "parentEventId": null,
+      "previousEventHash": "1b3f611079d73f09db916c70d17d957c35be9fdf0537b0017b64703fa1e7ab50",
+      "payloadHash": "78b92ea13e494b12ac42cfd159f097335658e9143e2a1dd9e9c99623d9a73235",
+      "eventHash": "7acd4e1f51434248b5b697569ac808df8c2af2eab6eaedf7643cdf86a4709138",
+      "signature": "44HakSp4kb8qZZv3EEKV7SRGC74QsnR5eTehpWSN1G8pVe1UJpxV8QF8iX7tJd9Hg4951yfi5akqoxBEiktGx77i",
+      "protocolVersion": "agent/1"
+    }
+  ],
+  "batch": {
+    "batchId": "4a392cd8-4299-4749-917f-915244175117",
+    "protocolVersion": "agent/1",
+    "createdAt": "2026-09-03T23:16:35.452Z",
+    "eventCount": 4,
+    "firstSequence": 0,
+    "lastSequence": 3,
+    "merkleRoot": "44608a26d46a11d9fa03a8ad4f7591832f84360e7a92de28a2508a9c461337dd",
+    "executionIds": [
+      "4c22f247-3ed4-4824-9f70-5009794c6fa2"
+    ],
+    "solanaAnchor": {
+      "network": "devnet",
+      "signature": "simulated_sig_pending_deployment",
+      "pda": "6EcbixijUjDQ3iEo9i4ASgYrSzX8MchpHzMLAk9r8NXL",
+      "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+    },
+    "irysArchive": null,
+    "status": "anchored"
+  },
+  "merkle": {
+    "root": "44608a26d46a11d9fa03a8ad4f7591832f84360e7a92de28a2508a9c461337dd",
+    "leafCount": 4,
+    "leaves": [
+      "c727bd18b7066c6c6a1c6943375944615cb7b1c84792d1a0428d531aee95cfa0",
+      "478d077a65833793e3d3904c313870147e8e3889160466357733dc5268cf42b7",
+      "0eb99ff48a7cc24a303bf88a52cf3c2bd052ef62a16a75f927db70f95e42b5f4",
+      "991af3f2b79849a1532470e6c82d3645c0aa1798c556d96cd4f70c4ce8ff962a"
+    ],
+    "proofs": [
+      {
+        "leafIndex": 0,
+        "leafHash": "c727bd18b7066c6c6a1c6943375944615cb7b1c84792d1a0428d531aee95cfa0",
+        "proof": [
+          {
+            "hash": "478d077a65833793e3d3904c313870147e8e3889160466357733dc5268cf42b7",
+            "direction": "right"
+          },
+          {
+            "hash": "1fb99e9ec1073432a67c07d7ce87b6bfe3d084b26ddea2494e4a2cd78baadf56",
+            "direction": "right"
+          }
+        ],
+        "root": "44608a26d46a11d9fa03a8ad4f7591832f84360e7a92de28a2508a9c461337dd"
+      },
+      {
+        "leafIndex": 1,
+        "leafHash": "478d077a65833793e3d3904c313870147e8e3889160466357733dc5268cf42b7",
+        "proof": [
+          {
+            "hash": "c727bd18b7066c6c6a1c6943375944615cb7b1c84792d1a0428d531aee95cfa0",
+            "direction": "left"
+          },
+          {
+            "hash": "1fb99e9ec1073432a67c07d7ce87b6bfe3d084b26ddea2494e4a2cd78baadf56",
+            "direction": "right"
+          }
+        ],
+        "root": "44608a26d46a11d9fa03a8ad4f7591832f84360e7a92de28a2508a9c461337dd"
+      },
+      {
+        "leafIndex": 2,
+        "leafHash": "0eb99ff48a7cc24a303bf88a52cf3c2bd052ef62a16a75f927db70f95e42b5f4",
+        "proof": [
+          {
+            "hash": "991af3f2b79849a1532470e6c82d3645c0aa1798c556d96cd4f70c4ce8ff962a",
+            "direction": "right"
+          },
+          {
+            "hash": "3e3b378d3f2c17d8b6b0628a563da5b8b6a6627be26fc3e11d64c4768144705b",
+            "direction": "left"
+          }
+        ],
+        "root": "44608a26d46a11d9fa03a8ad4f7591832f84360e7a92de28a2508a9c461337dd"
+      },
+      {
+        "leafIndex": 3,
+        "leafHash": "991af3f2b79849a1532470e6c82d3645c0aa1798c556d96cd4f70c4ce8ff962a",
+        "proof": [
+          {
+            "hash": "0eb99ff48a7cc24a303bf88a52cf3c2bd052ef62a16a75f927db70f95e42b5f4",
+            "direction": "left"
+          },
+          {
+            "hash": "3e3b378d3f2c17d8b6b0628a563da5b8b6a6627be26fc3e11d64c4768144705b",
+            "direction": "left"
+          }
+        ],
+        "root": "44608a26d46a11d9fa03a8ad4f7591832f84360e7a92de28a2508a9c461337dd"
+      }
+    ]
+  },
+  "solana": {
+    "network": "devnet",
+    "signature": "simulated_sig_pending_deployment",
+    "pda": "6EcbixijUjDQ3iEo9i4ASgYrSzX8MchpHzMLAk9r8NXL",
+    "programId": "FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx"
+  },
+  "irys": null
+}
