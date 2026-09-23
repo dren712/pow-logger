@@ -53,3 +53,7 @@ scratch/
 scripts/agent-demo/output/
 scratch-test-receipts/
 
+# solana/anchor build artifacts
+**/target/
+programs/provn_anchor/target/
+target/
