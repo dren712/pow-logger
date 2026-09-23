@@ -127,13 +127,13 @@ export default function AgentProofConsole({
   const selectedEvent = receipt.events[selectedEventIndex] || receipt.events[0]
 
   return (
-    <div style={{ minHeight: '100dvh', backgroundColor: '#08090d', color: '#f0f4fc', padding: '24px 20px', fontFamily: 'var(--font-sans), sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#060709', color: '#f0f3f8', padding: '32px 24px', fontFamily: 'var(--font-geist-mono, monospace)' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
 
         {/* Navigation Breadcrumb */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #1a1e28' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Link href="/" style={{ color: '#10b981', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>
+            <Link href="/" style={{ color: '#00ff88', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>
               PROVN // CONSOLE
             </Link>
             <span style={{ color: '#4a5568' }}>/</span>
@@ -142,14 +142,14 @@ export default function AgentProofConsole({
             <span style={{ color: '#f0f3f8', fontSize: '13px', fontWeight: 600 }}>EXECUTION #{receipt.execution.executionId.slice(0, 8)}</span>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', backgroundColor: isLiveDbRecord ? 'rgba(0, 229, 255, 0.1)' : 'rgba(255, 184, 0, 0.1)', color: isLiveDbRecord ? '#06b6d4' : '#f59e0b', border: `1px solid ${isLiveDbRecord ? 'rgba(0, 229, 255, 0.3)' : 'rgba(255, 184, 0, 0.3)'}` }}>
+            <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', backgroundColor: isLiveDbRecord ? 'rgba(0, 229, 255, 0.1)' : 'rgba(255, 184, 0, 0.1)', color: isLiveDbRecord ? '#00e5ff' : '#ffb800', border: `1px solid ${isLiveDbRecord ? 'rgba(0, 229, 255, 0.3)' : 'rgba(255, 184, 0, 0.3)'}` }}>
               {isLiveDbRecord ? '● POSTGRES DATA PLANE' : '● SIMULATED WORKLOAD'}
             </span>
             <a
               href={`/api/agent/receipt/${receipt.execution.executionId}`}
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '4px', backgroundColor: '#141822', color: '#10b981', border: '1px solid #1a1e28', textDecoration: 'none' }}
+              style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '4px', backgroundColor: '#131720', color: '#00ff88', border: '1px solid #1a1e28', textDecoration: 'none' }}
             >
               Export Receipt JSON ↗
             </a>
@@ -157,13 +157,13 @@ export default function AgentProofConsole({
         </div>
 
         {/* Top Header Card: Identity & Dual-Verdict System */}
-        <div style={{ backgroundColor: '#0e1117', border: `1px solid ${verification.verified && audit.compliance === 'COMPLIANT' ? '#1a1e28' : audit.compliance === 'VIOLATION' ? 'rgba(255, 68, 68, 0.4)' : '#1a1e28'}`, borderRadius: '12px', padding: '24px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ backgroundColor: '#0d0f14', border: `1px solid ${verification.verified && audit.compliance === 'COMPLIANT' ? '#1a1e28' : audit.compliance === 'VIOLATION' ? 'rgba(255, 68, 68, 0.4)' : '#1a1e28'}`, borderRadius: '12px', padding: '24px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: '350px', height: '100%', background: isHostileSimulated ? 'radial-gradient(circle, rgba(255,184,0,0.1) 0%, transparent 70%)' : verification.verified ? 'radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(255,68,68,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                <span style={{ color: '#06b6d4', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                <span style={{ color: '#00e5ff', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
                   AUTONOMOUS AGENT IDENTITY
                 </span>
                 <span style={{ color: '#4a5568' }}>•</span>
@@ -171,7 +171,7 @@ export default function AgentProofConsole({
               </div>
               <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span>Agent Execution</span>
-                <code style={{ fontSize: '16px', color: '#94a3b8', backgroundColor: '#141822', padding: '3px 8px', borderRadius: '4px', border: '1px solid #1e2430' }}>
+                <code style={{ fontSize: '16px', color: '#94a3b8', backgroundColor: '#131720', padding: '3px 8px', borderRadius: '4px', border: '1px solid #1e2430' }}>
                   {receipt.execution.executionId}
                 </code>
               </h1>
@@ -179,14 +179,14 @@ export default function AgentProofConsole({
                 <span>Public Key: <code style={{ color: '#f0f3f8' }}>{receipt.execution.agentPublicKey.slice(0, 12)}...{receipt.execution.agentPublicKey.slice(-6)}</code></span>
                 <button
                   onClick={() => copyToClipboard(receipt.execution.agentPublicKey, 'key')}
-                  style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '11px', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: '#00ff88', cursor: 'pointer', fontSize: '11px', padding: 0 }}
                 >
                   {copiedText === 'key' ? '✓ Copied' : 'Copy'}
                 </button>
                 <span>•</span>
                 <span>Started: {new Date(receipt.execution.startedAt).toUTCString()}</span>
                 <span>•</span>
-                <span>Protocol: <strong style={{ color: '#10b981' }}>{receipt.version}</strong></span>
+                <span>Protocol: <strong style={{ color: '#00ff88' }}>{receipt.version}</strong></span>
               </div>
             </div>
 
@@ -197,13 +197,13 @@ export default function AgentProofConsole({
                 padding: '10px 16px',
                 borderRadius: '8px',
                 backgroundColor: verification.verified ? 'rgba(0, 255, 136, 0.08)' : 'rgba(255, 68, 68, 0.15)',
-                border: `1px solid ${verification.verified ? '#10b981' : '#f43f5e'}`,
+                border: `1px solid ${verification.verified ? '#00ff88' : '#ff4444'}`,
                 minWidth: '180px',
               }}>
                 <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>
                   1. CRYPTOGRAPHIC PROVENANCE
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: verification.verified ? '#10b981' : '#f43f5e', fontWeight: 700, fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: verification.verified ? '#00ff88' : '#ff4444', fontWeight: 700, fontSize: '13px' }}>
                   <span>{verification.verified ? '✓' : '✗'}</span>
                   <span>{verification.verified ? 'VALID / AUTHENTIC' : 'TAMPER DETECTED'}</span>
                 </div>
@@ -217,18 +217,18 @@ export default function AgentProofConsole({
                 padding: '10px 16px',
                 borderRadius: '8px',
                 backgroundColor: audit.compliance === 'COMPLIANT' ? 'rgba(0, 229, 255, 0.08)' : audit.compliance === 'VIOLATION' ? 'rgba(255, 68, 68, 0.15)' : 'rgba(255, 184, 0, 0.15)',
-                border: `1px solid ${audit.compliance === 'COMPLIANT' ? '#06b6d4' : audit.compliance === 'VIOLATION' ? '#f43f5e' : '#f59e0b'}`,
+                border: `1px solid ${audit.compliance === 'COMPLIANT' ? '#00e5ff' : audit.compliance === 'VIOLATION' ? '#ff4444' : '#ffb800'}`,
                 minWidth: '190px',
               }}>
                 <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>
                   2. BEHAVIORAL POLICY AUDIT
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: audit.compliance === 'COMPLIANT' ? '#06b6d4' : audit.compliance === 'VIOLATION' ? '#f43f5e' : '#f59e0b', fontWeight: 700, fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: audit.compliance === 'COMPLIANT' ? '#00e5ff' : audit.compliance === 'VIOLATION' ? '#ff4444' : '#ffb800', fontWeight: 700, fontSize: '13px' }}>
                   <span>{audit.compliance === 'COMPLIANT' ? '✓' : audit.compliance === 'VIOLATION' ? '🚨' : '⚠️'}</span>
                   <span>{audit.compliance === 'COMPLIANT' ? 'COMPLIANT' : audit.compliance === 'VIOLATION' ? 'POLICY VIOLATION' : 'POLICY WARNING'}</span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                  Risk: <strong style={{ color: audit.overallRisk === 'CRITICAL' ? '#f43f5e' : audit.overallRisk === 'HIGH' ? '#ff8800' : '#10b981' }}>{audit.overallRisk}</strong> ({audit.riskScore}/100)
+                  Risk: <strong style={{ color: audit.overallRisk === 'CRITICAL' ? '#ff4444' : audit.overallRisk === 'HIGH' ? '#ff8800' : '#00ff88' }}>{audit.overallRisk}</strong> ({audit.riskScore}/100)
                 </div>
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function AgentProofConsole({
           {/* Visual Cryptographic Proof Chain */}
           <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #1a1e28' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 700 }}>
+              <div style={{ fontSize: '11px', color: '#00e5ff', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 700 }}>
                 VERIFIABLE CRYPTOGRAPHIC PROOF CHAIN
               </div>
               <span style={{ fontSize: '11px', color: '#64748b' }}>
@@ -246,10 +246,10 @@ export default function AgentProofConsole({
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '10px' }}>
               {/* Node 1: Agent Key */}
-              <div style={{ backgroundColor: '#141822', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.agentSignature === 'VALID' ? '#1e2430' : '#f43f5e'}`, position: 'relative' }}>
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.agentSignature === 'VALID' ? '#1e2430' : '#ff4444'}`, position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>1. AGENT KEY</span>
-                  <span style={{ fontSize: '10px', color: verification.layers.agentSignature === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700, backgroundColor: 'rgba(0,255,136,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
+                  <span style={{ fontSize: '10px', color: verification.layers.agentSignature === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: 'rgba(0,255,136,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
                     {verification.layers.agentSignature === 'VALID' ? 'ED25519' : 'FAIL'}
                   </span>
                 </div>
@@ -260,10 +260,10 @@ export default function AgentProofConsole({
               </div>
 
               {/* Node 2: Payload Hash */}
-              <div style={{ backgroundColor: '#141822', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.eventHash === 'VALID' ? '#1e2430' : '#f43f5e'}` }}>
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.eventHash === 'VALID' ? '#1e2430' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>2. PAYLOAD AUTH</span>
-                  <span style={{ fontSize: '10px', color: verification.layers.eventHash === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700, backgroundColor: verification.layers.eventHash === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
+                  <span style={{ fontSize: '10px', color: verification.layers.eventHash === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: verification.layers.eventHash === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
                     {verification.layers.eventHash === 'VALID' ? 'AUTHENTIC' : 'MISMATCH'}
                   </span>
                 </div>
@@ -274,10 +274,10 @@ export default function AgentProofConsole({
               </div>
 
               {/* Node 3: Hash Chain */}
-              <div style={{ backgroundColor: '#141822', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.hashChain === 'VALID' ? '#1e2430' : '#f43f5e'}` }}>
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.hashChain === 'VALID' ? '#1e2430' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>3. HASH CHAIN</span>
-                  <span style={{ fontSize: '10px', color: verification.layers.hashChain === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700, backgroundColor: verification.layers.hashChain === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
+                  <span style={{ fontSize: '10px', color: verification.layers.hashChain === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: verification.layers.hashChain === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
                     {verification.layers.hashChain === 'VALID' ? 'LINKED' : 'SEVERED'}
                   </span>
                 </div>
@@ -288,10 +288,10 @@ export default function AgentProofConsole({
               </div>
 
               {/* Node 4: Merkle Root */}
-              <div style={{ backgroundColor: '#141822', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.merkleRoot === 'VALID' ? '#1e2430' : '#f43f5e'}` }}>
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${verification.layers.merkleRoot === 'VALID' ? '#1e2430' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>4. MERKLE ROOT</span>
-                  <span style={{ fontSize: '10px', color: verification.layers.merkleRoot === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700, backgroundColor: verification.layers.merkleRoot === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
+                  <span style={{ fontSize: '10px', color: verification.layers.merkleRoot === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700, backgroundColor: verification.layers.merkleRoot === 'VALID' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.15)', padding: '2px 5px', borderRadius: '3px' }}>
                     {verification.layers.merkleRoot === 'VALID' ? 'ROOT PASS' : 'FAIL'}
                   </span>
                 </div>
@@ -302,10 +302,10 @@ export default function AgentProofConsole({
               </div>
 
               {/* Node 5: Solana Anchor */}
-              <div style={{ backgroundColor: '#141822', padding: '12px 14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>5. SOLANA PDA</span>
-                  <span style={{ fontSize: '10px', color: receipt.solana ? '#10b981' : '#f59e0b', fontWeight: 700, backgroundColor: receipt.solana ? 'rgba(0,255,136,0.1)' : 'rgba(255,184,0,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
+                  <span style={{ fontSize: '10px', color: receipt.solana ? '#00ff88' : '#ffb800', fontWeight: 700, backgroundColor: receipt.solana ? 'rgba(0,255,136,0.1)' : 'rgba(255,184,0,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
                     {receipt.solana ? 'ANCHORED' : 'QUEUED'}
                   </span>
                 </div>
@@ -316,10 +316,10 @@ export default function AgentProofConsole({
               </div>
 
               {/* Node 6: Irys Archival */}
-              <div style={{ backgroundColor: '#141822', padding: '12px 14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+              <div style={{ backgroundColor: '#131720', padding: '12px 14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>6. IRYS STORAGE</span>
-                  <span style={{ fontSize: '10px', color: receipt.irys ? '#10b981' : '#f59e0b', fontWeight: 700, backgroundColor: receipt.irys ? 'rgba(0,255,136,0.1)' : 'rgba(255,184,0,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
+                  <span style={{ fontSize: '10px', color: receipt.irys ? '#00ff88' : '#ffb800', fontWeight: 700, backgroundColor: receipt.irys ? 'rgba(0,255,136,0.1)' : 'rgba(255,184,0,0.1)', padding: '2px 5px', borderRadius: '3px' }}>
                     {receipt.irys ? 'ARWEAVE' : 'QUEUED'}
                   </span>
                 </div>
@@ -334,8 +334,8 @@ export default function AgentProofConsole({
 
         {/* INTERACTIVE ATTACK & SIMULATION COMMAND CENTER */}
         <div style={{
-          backgroundColor: '#0e1117',
-          border: `1px solid ${isTampered ? '#f43f5e' : isHostileSimulated ? '#f59e0b' : '#1e2430'}`,
+          backgroundColor: '#0d0f14',
+          border: `1px solid ${isTampered ? '#ff4444' : isHostileSimulated ? '#ffb800' : '#1e2430'}`,
           borderRadius: '12px',
           padding: '20px 24px',
           marginBottom: '24px',
@@ -344,7 +344,7 @@ export default function AgentProofConsole({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '16px' }}>🔬</span>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: isTampered ? '#f43f5e' : isHostileSimulated ? '#f59e0b' : '#06b6d4' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: isTampered ? '#ff4444' : isHostileSimulated ? '#ffb800' : '#00e5ff' }}>
                   {isTampered ? 'ACTIVE DATABASE TAMPER SIMULATION' : isHostileSimulated ? 'ACTIVE HOSTILE AGENT POLICY VIOLATION' : 'ZERO-TRUST ATTACK & POLICY SIMULATION SUITE'}
                 </span>
               </div>
@@ -359,9 +359,9 @@ export default function AgentProofConsole({
                 onClick={handleToggleTamper}
                 disabled={isVerifying}
                 style={{
-                  backgroundColor: isTampered ? '#f43f5e' : '#141822',
+                  backgroundColor: isTampered ? '#ff4444' : '#131720',
                   color: isTampered ? '#ffffff' : '#f0f3f8',
-                  border: `1px solid ${isTampered ? '#f43f5e' : '#2d3748'}`,
+                  border: `1px solid ${isTampered ? '#ff4444' : '#2d3748'}`,
                   padding: '9px 15px',
                   borderRadius: '6px',
                   fontWeight: 600,
@@ -378,9 +378,9 @@ export default function AgentProofConsole({
                 onClick={handleToggleHostile}
                 disabled={isVerifying}
                 style={{
-                  backgroundColor: isHostileSimulated ? '#f59e0b' : '#141822',
-                  color: isHostileSimulated ? '#000000' : '#f59e0b',
-                  border: `1px solid ${isHostileSimulated ? '#f59e0b' : 'rgba(255, 184, 0, 0.4)'}`,
+                  backgroundColor: isHostileSimulated ? '#ffb800' : '#131720',
+                  color: isHostileSimulated ? '#000000' : '#ffb800',
+                  border: `1px solid ${isHostileSimulated ? '#ffb800' : 'rgba(255, 184, 0, 0.4)'}`,
                   padding: '9px 15px',
                   borderRadius: '6px',
                   fontWeight: 700,
@@ -398,7 +398,7 @@ export default function AgentProofConsole({
           {isTampered && (
             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,68,68,0.3)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ backgroundColor: 'rgba(255, 68, 68, 0.1)', padding: '14px', borderRadius: '8px', border: '1px solid rgba(255,68,68,0.4)' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#f43f5e', marginBottom: '4px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#ff4444', marginBottom: '4px' }}>
                   ✗ DATABASE STATE: INVALID
                 </div>
                 <div style={{ fontSize: '11px', color: '#f87171' }}>
@@ -410,18 +410,18 @@ export default function AgentProofConsole({
               </div>
 
               <div style={{ backgroundColor: 'rgba(0, 255, 136, 0.05)', padding: '14px', borderRadius: '8px', border: '1px solid rgba(0,255,136,0.3)' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', marginBottom: '4px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#00ff88', marginBottom: '4px' }}>
                   ✓ PUBLIC COMMITMENT: VALID
                 </div>
                 <div style={{ fontSize: '11px', color: '#94a3b8' }}>
                   Solana PDA holds immutable Merkle root committed on-chain.
                 </div>
                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
-                  Solana Anchor Root: <code style={{ color: '#10b981' }}>{receipt.merkle.root.slice(0, 18)}...</code>
+                  Solana Anchor Root: <code style={{ color: '#00ff88' }}>{receipt.merkle.root.slice(0, 18)}...</code>
                 </div>
               </div>
 
-              <div style={{ gridColumn: 'span 2', textAlign: 'center', color: '#f43f5e', fontWeight: 700, fontSize: '13px', padding: '6px', letterSpacing: '0.5px' }}>
+              <div style={{ gridColumn: 'span 2', textAlign: 'center', color: '#ff4444', fontWeight: 700, fontSize: '13px', padding: '6px', letterSpacing: '0.5px' }}>
                 🚨 DATABASE ≠ COMMITTED PROVENANCE — The local record does not match the immutable provenance.
               </div>
             </div>
@@ -433,21 +433,21 @@ export default function AgentProofConsole({
               <div style={{ backgroundColor: 'rgba(255, 184, 0, 0.08)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255, 184, 0, 0.3)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                   <span style={{ fontSize: '18px' }}>⚖️</span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#f59e0b' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffb800' }}>
                     THE CORE PROVN THESIS: PROVENANCE VALID ≠ ACTION SAFE OR AUTHORIZED
                   </span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '10px' }}>
-                  <div style={{ backgroundColor: '#141822', padding: '12px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                    <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 700 }}>
+                  <div style={{ backgroundColor: '#131720', padding: '12px', borderRadius: '6px', border: '1px solid #1e2430' }}>
+                    <div style={{ fontSize: '11px', color: '#00ff88', fontWeight: 700 }}>
                       ✓ CRYPTOGRAPHIC PROVENANCE: 100% VALID
                     </div>
                     <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
                       The agent&apos;s Ed25519 key genuinely signed <code>rm -rf /</code>, the hash chain is intact, and the batch is committed to Solana.
                     </div>
                   </div>
-                  <div style={{ backgroundColor: '#141822', padding: '12px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                    <div style={{ fontSize: '11px', color: '#f43f5e', fontWeight: 700 }}>
+                  <div style={{ backgroundColor: '#131720', padding: '12px', borderRadius: '6px', border: '1px solid #1e2430' }}>
+                    <div style={{ fontSize: '11px', color: '#ff4444', fontWeight: 700 }}>
                       🚨 POLICY ENGINE: CRITICAL VIOLATION (Risk 95/100)
                     </div>
                     <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
@@ -468,9 +468,9 @@ export default function AgentProofConsole({
           <button
             onClick={() => setActiveTab('PROVENANCE')}
             style={{
-              backgroundColor: activeTab === 'PROVENANCE' ? '#141822' : 'transparent',
-              color: activeTab === 'PROVENANCE' ? '#10b981' : '#94a3b8',
-              border: `1px solid ${activeTab === 'PROVENANCE' ? '#10b981' : 'transparent'}`,
+              backgroundColor: activeTab === 'PROVENANCE' ? '#131720' : 'transparent',
+              color: activeTab === 'PROVENANCE' ? '#00ff88' : '#94a3b8',
+              border: `1px solid ${activeTab === 'PROVENANCE' ? '#00ff88' : 'transparent'}`,
               padding: '8px 18px',
               borderRadius: '6px',
               fontSize: '12px',
@@ -483,9 +483,9 @@ export default function AgentProofConsole({
           <button
             onClick={() => setActiveTab('AUDIT')}
             style={{
-              backgroundColor: activeTab === 'AUDIT' ? '#141822' : 'transparent',
-              color: activeTab === 'AUDIT' ? (audit.compliance === 'VIOLATION' ? '#f43f5e' : '#06b6d4') : '#94a3b8',
-              border: `1px solid ${activeTab === 'AUDIT' ? (audit.compliance === 'VIOLATION' ? '#f43f5e' : '#06b6d4') : 'transparent'}`,
+              backgroundColor: activeTab === 'AUDIT' ? '#131720' : 'transparent',
+              color: activeTab === 'AUDIT' ? (audit.compliance === 'VIOLATION' ? '#ff4444' : '#00e5ff') : '#94a3b8',
+              border: `1px solid ${activeTab === 'AUDIT' ? (audit.compliance === 'VIOLATION' ? '#ff4444' : '#00e5ff') : 'transparent'}`,
               padding: '8px 18px',
               borderRadius: '6px',
               fontSize: '12px',
@@ -498,7 +498,7 @@ export default function AgentProofConsole({
           >
             <span>⚖️ DETERMINISTIC POLICY & AUDIT</span>
             {audit.findings.length > 0 && (
-              <span style={{ backgroundColor: '#f43f5e', color: '#ffffff', fontSize: '10px', padding: '1px 6px', borderRadius: '10px' }}>
+              <span style={{ backgroundColor: '#ff4444', color: '#ffffff', fontSize: '10px', padding: '1px 6px', borderRadius: '10px' }}>
                 {audit.findings.length}
               </span>
             )}
@@ -510,60 +510,60 @@ export default function AgentProofConsole({
           <>
             {/* 6-Link Provenance Checklist */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '24px' }}>
-              <div style={{ backgroundColor: '#0e1117', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.agentSignature === 'VALID' ? '#1a1e28' : '#f43f5e'}` }}>
+              <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.agentSignature === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>1. AGENT SIGNATURES</span>
-                  <span style={{ color: verification.layers.agentSignature === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700 }}>
+                  <span style={{ color: verification.layers.agentSignature === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700 }}>
                     {verification.layers.agentSignature === 'VALID' ? '✓ VALID' : '✗ INVALID'}
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Ed25519 detached per event</div>
               </div>
 
-              <div style={{ backgroundColor: '#0e1117', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.eventHash === 'VALID' ? '#1a1e28' : '#f43f5e'}` }}>
+              <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.eventHash === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>2. EVENT & PAYLOAD</span>
-                  <span style={{ color: verification.layers.eventHash === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700 }}>
+                  <span style={{ color: verification.layers.eventHash === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700 }}>
                     {verification.layers.eventHash === 'VALID' ? '✓ VALID' : '✗ INVALID'}
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Canonical SHA-256 integrity</div>
               </div>
 
-              <div style={{ backgroundColor: '#0e1117', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.hashChain === 'VALID' ? '#1a1e28' : '#f43f5e'}` }}>
+              <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.hashChain === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>3. HASH CHAIN</span>
-                  <span style={{ color: verification.layers.hashChain === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700 }}>
+                  <span style={{ color: verification.layers.hashChain === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700 }}>
                     {verification.layers.hashChain === 'VALID' ? '✓ VALID' : '✗ INVALID'}
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Monotonic sequential links</div>
               </div>
 
-              <div style={{ backgroundColor: '#0e1117', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.merkleInclusion === 'VALID' ? '#1a1e28' : '#f43f5e'}` }}>
+              <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: `1px solid ${verification.layers.merkleInclusion === 'VALID' ? '#1a1e28' : '#ff4444'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>4. MERKLE INCLUSION</span>
-                  <span style={{ color: verification.layers.merkleInclusion === 'VALID' ? '#10b981' : '#f43f5e', fontWeight: 700 }}>
+                  <span style={{ color: verification.layers.merkleInclusion === 'VALID' ? '#00ff88' : '#ff4444', fontWeight: 700 }}>
                     {verification.layers.merkleInclusion === 'VALID' ? '✓ VALID' : '✗ INVALID'}
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Log2(N) proof paths intact</div>
               </div>
 
-              <div style={{ backgroundColor: '#0e1117', padding: '16px', borderRadius: '8px', border: '1px solid #1a1e28' }}>
+              <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: '1px solid #1a1e28' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>5. SOLANA ANCHOR</span>
-                  <span style={{ color: '#10b981', fontWeight: 700 }}>
+                  <span style={{ color: '#00ff88', fontWeight: 700 }}>
                     {receipt.solana ? '✓ COMMITTED' : '○ PENDING'}
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>On-chain batch PDA</div>
               </div>
 
-              <div style={{ backgroundColor: '#0e1117', padding: '16px', borderRadius: '8px', border: '1px solid #1a1e28' }}>
+              <div style={{ backgroundColor: '#0d0f14', padding: '16px', borderRadius: '8px', border: '1px solid #1a1e28' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>6. IRYS ARCHIVAL</span>
-                  <span style={{ color: '#10b981', fontWeight: 700 }}>
+                  <span style={{ color: '#00ff88', fontWeight: 700 }}>
                     {receipt.irys ? '✓ AVAILABLE' : '○ PENDING'}
                   </span>
                 </div>
@@ -572,20 +572,20 @@ export default function AgentProofConsole({
             </div>
 
             {/* Anchors & Batches Details */}
-            <div style={{ backgroundColor: '#0e1117', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px' }}>
-              <div style={{ fontSize: '12px', color: '#06b6d4', textTransform: 'uppercase', fontWeight: 700, marginBottom: '14px' }}>
+            <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px' }}>
+              <div style={{ fontSize: '12px', color: '#00e5ff', textTransform: 'uppercase', fontWeight: 700, marginBottom: '14px' }}>
                 BATCH ANCHORS & COMMITMENTS
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                 <div>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>MERKLE ROOT</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                    <code style={{ fontSize: '12px', color: '#f0f3f8', backgroundColor: '#141822', padding: '4px 8px', borderRadius: '4px' }}>
+                    <code style={{ fontSize: '12px', color: '#f0f3f8', backgroundColor: '#131720', padding: '4px 8px', borderRadius: '4px' }}>
                       {receipt.merkle.root.slice(0, 24)}...{receipt.merkle.root.slice(-8)}
                     </code>
                     <button
                       onClick={() => copyToClipboard(receipt.merkle.root, 'merkle')}
-                      style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '11px' }}
+                      style={{ background: 'none', border: 'none', color: '#00ff88', cursor: 'pointer', fontSize: '11px' }}
                     >
                       {copiedText === 'merkle' ? '✓' : 'Copy'}
                     </button>
@@ -600,7 +600,7 @@ export default function AgentProofConsole({
                         href={`https://explorer.solana.com/tx/${receipt.solana.signature}?cluster=devnet`}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: '12px', color: '#10b981', textDecoration: 'none' }}
+                        style={{ fontSize: '12px', color: '#00ff88', textDecoration: 'none' }}
                       >
                         TX: {receipt.solana.signature.slice(0, 16)}... ↗
                       </a>
@@ -618,7 +618,7 @@ export default function AgentProofConsole({
                         href={`https://devnet.irys.xyz/${receipt.irys.txId}`}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: '12px', color: '#06b6d4', textDecoration: 'none' }}
+                        style={{ fontSize: '12px', color: '#00e5ff', textDecoration: 'none' }}
                       >
                         TX: {receipt.irys.txId.slice(0, 16)}... ↗
                       </a>
@@ -634,9 +634,9 @@ export default function AgentProofConsole({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '24px' }}>
 
               {/* Left Column: Event Stream */}
-              <div style={{ backgroundColor: '#0e1117', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px' }}>
+              <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '12px', color: '#06b6d4', textTransform: 'uppercase', fontWeight: 700 }}>
+                  <span style={{ fontSize: '12px', color: '#00e5ff', textTransform: 'uppercase', fontWeight: 700 }}>
                     EVENT STREAM ({receipt.events.length})
                   </span>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>Click row to inspect</span>
@@ -655,8 +655,8 @@ export default function AgentProofConsole({
                         style={{
                           padding: '10px 14px',
                           borderRadius: '6px',
-                          backgroundColor: isSelected ? '#1e2430' : '#141822',
-                          border: `1px solid ${isTamperedEvent ? '#f43f5e' : isHostileEvent ? '#f59e0b' : isSelected ? '#10b981' : '#1e2430'}`,
+                          backgroundColor: isSelected ? '#1e2430' : '#131720',
+                          border: `1px solid ${isTamperedEvent ? '#ff4444' : isHostileEvent ? '#ffb800' : isSelected ? '#00ff88' : '#1e2430'}`,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
@@ -673,18 +673,18 @@ export default function AgentProofConsole({
                             padding: '2px 6px',
                             borderRadius: '4px',
                             backgroundColor: ev.eventType.startsWith('git') ? 'rgba(0, 229, 255, 0.1)' : ev.eventType.startsWith('tool') ? 'rgba(255, 184, 0, 0.1)' : 'rgba(0, 255, 136, 0.1)',
-                            color: ev.eventType.startsWith('git') ? '#06b6d4' : ev.eventType.startsWith('tool') ? '#f59e0b' : '#10b981',
+                            color: ev.eventType.startsWith('git') ? '#00e5ff' : ev.eventType.startsWith('tool') ? '#ffb800' : '#00ff88',
                             fontWeight: 600,
                           }}>
                             {ev.eventType}
                           </span>
-                          <span style={{ fontSize: '12px', color: isTamperedEvent ? '#ff8888' : isHostileEvent ? '#f59e0b' : '#cbd5e1' }}>
+                          <span style={{ fontSize: '12px', color: isTamperedEvent ? '#ff8888' : isHostileEvent ? '#ffb800' : '#cbd5e1' }}>
                             {String(ev.payload?.path || ev.payload?.tool || ev.payload?.command || ev.payload?.commitHash || ev.payload?.summary || ev.payload?.operation || 'action')}
                           </span>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '11px', color: isTamperedEvent ? '#f43f5e' : isHostileEvent ? '#f59e0b' : '#10b981' }}>
+                          <span style={{ fontSize: '11px', color: isTamperedEvent ? '#ff4444' : isHostileEvent ? '#ffb800' : '#00ff88' }}>
                             {isTamperedEvent ? '✗ TAMPERED' : isHostileEvent ? '⚠️ HOSTILE' : '✓'}
                           </span>
                         </div>
@@ -695,9 +695,9 @@ export default function AgentProofConsole({
               </div>
 
               {/* Right Column: Event Cryptographic Inspector */}
-              <div style={{ backgroundColor: '#0e1117', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px' }}>
+              <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '12px', color: '#06b6d4', textTransform: 'uppercase', fontWeight: 700 }}>
+                  <span style={{ fontSize: '12px', color: '#00e5ff', textTransform: 'uppercase', fontWeight: 700 }}>
                     CRYPTOGRAPHIC INSPECTOR // EVENT #{String(selectedEvent.sequence).padStart(2, '0')}
                   </span>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>
@@ -708,7 +708,7 @@ export default function AgentProofConsole({
                 {/* Field: Canonical Format */}
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>CANONICAL FORMAT (DETERMINISTIC LINE-ORIENTED)</div>
-                  <pre style={{ margin: 0, backgroundColor: '#141822', padding: '10px', borderRadius: '6px', fontSize: '11px', color: '#94a3b8', whiteSpace: 'pre-wrap', border: '1px solid #1e2430' }}>
+                  <pre style={{ margin: 0, backgroundColor: '#131720', padding: '10px', borderRadius: '6px', fontSize: '11px', color: '#94a3b8', whiteSpace: 'pre-wrap', border: '1px solid #1e2430' }}>
 {`PROVN-AGENT-EVENT-V1
 execution:${selectedEvent.executionId}
 sequence:${selectedEvent.sequence}
@@ -725,7 +725,7 @@ payload_hash:${selectedEvent.payloadHash}`}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', marginBottom: '14px' }}>
                   <div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>EVENT HASH (SHA-256)</div>
-                    <code style={{ fontSize: '11px', color: '#10b981', wordBreak: 'break-all' }}>
+                    <code style={{ fontSize: '11px', color: '#00ff88', wordBreak: 'break-all' }}>
                       {selectedEvent.eventHash}
                     </code>
                   </div>
@@ -739,7 +739,7 @@ payload_hash:${selectedEvent.payloadHash}`}
 
                   <div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>ED25519 DETACHED SIGNATURE</div>
-                    <code style={{ fontSize: '11px', color: '#06b6d4', wordBreak: 'break-all' }}>
+                    <code style={{ fontSize: '11px', color: '#00e5ff', wordBreak: 'break-all' }}>
                       {selectedEvent.signature}
                     </code>
                   </div>
@@ -748,7 +748,7 @@ payload_hash:${selectedEvent.payloadHash}`}
                 {/* Field: Raw Payload Commitment */}
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>PAYLOAD COMMITMENT DATA</div>
-                  <pre style={{ margin: 0, backgroundColor: '#141822', padding: '10px', borderRadius: '6px', fontSize: '11px', color: '#f0f3f8', maxHeight: '120px', overflowY: 'auto', border: '1px solid #1e2430' }}>
+                  <pre style={{ margin: 0, backgroundColor: '#131720', padding: '10px', borderRadius: '6px', fontSize: '11px', color: '#f0f3f8', maxHeight: '120px', overflowY: 'auto', border: '1px solid #1e2430' }}>
                     {JSON.stringify(selectedEvent.payload, null, 2)}
                   </pre>
                 </div>
@@ -756,12 +756,12 @@ payload_hash:${selectedEvent.payloadHash}`}
                 {/* Field: Merkle Proof Inclusion Path */}
                 <div>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>MERKLE PROOF INCLUSION PATH</div>
-                  <div style={{ backgroundColor: '#141822', padding: '10px', borderRadius: '6px', border: '1px solid #1e2430' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#10b981' }}>
+                  <div style={{ backgroundColor: '#131720', padding: '10px', borderRadius: '6px', border: '1px solid #1e2430' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#00ff88' }}>
                       <span>Leaf Hash:</span>
                       <code style={{ color: '#94a3b8' }}>{selectedEvent.eventHash.slice(0, 14)}...</code>
                       <span>──► Root:</span>
-                      <code style={{ color: '#10b981' }}>{receipt.merkle.root.slice(0, 14)}...</code>
+                      <code style={{ color: '#00ff88' }}>{receipt.merkle.root.slice(0, 14)}...</code>
                     </div>
                     <div style={{ fontSize: '10px', color: '#64748b', marginTop: '6px' }}>
                       Cryptographic inclusion verified using deterministic odd-leaf promotion algorithm.
@@ -779,7 +779,7 @@ payload_hash:${selectedEvent.payloadHash}`}
         {activeTab === 'AUDIT' && (
           <div>
             {/* Policy Selector & Risk Summary Bar */}
-            <div style={{ backgroundColor: '#0e1117', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px' }}>
+            <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
                 <div>
                   <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
@@ -801,9 +801,9 @@ payload_hash:${selectedEvent.payloadHash}`}
                         key={key}
                         onClick={() => setSelectedPolicyKey(key)}
                         style={{
-                          backgroundColor: isSelected ? '#06b6d4' : '#141822',
+                          backgroundColor: isSelected ? '#00e5ff' : '#131720',
                           color: isSelected ? '#000000' : '#94a3b8',
-                          border: `1px solid ${isSelected ? '#06b6d4' : '#1e2430'}`,
+                          border: `1px solid ${isSelected ? '#00e5ff' : '#1e2430'}`,
                           padding: '6px 12px',
                           borderRadius: '6px',
                           fontSize: '11px',
@@ -820,28 +820,28 @@ payload_hash:${selectedEvent.payloadHash}`}
 
               {/* Metrics Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>COMPLIANCE VERDICT</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: audit.compliance === 'COMPLIANT' ? '#10b981' : '#f43f5e', marginTop: '4px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: audit.compliance === 'COMPLIANT' ? '#00ff88' : '#ff4444', marginTop: '4px' }}>
                     {audit.compliance === 'COMPLIANT' ? '✓ COMPLIANT' : '🚨 POLICY VIOLATION'}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>BEHAVIORAL RISK SCORE</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: audit.overallRisk === 'CRITICAL' ? '#f43f5e' : audit.overallRisk === 'HIGH' ? '#ff8800' : '#10b981', marginTop: '4px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: audit.overallRisk === 'CRITICAL' ? '#ff4444' : audit.overallRisk === 'HIGH' ? '#ff8800' : '#00ff88', marginTop: '4px' }}>
                     {audit.riskScore}/100 ({audit.overallRisk})
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>VIOLATIONS DETECTED</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: audit.summary.violationsCount > 0 ? '#f43f5e' : '#10b981', marginTop: '4px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: audit.summary.violationsCount > 0 ? '#ff4444' : '#00ff88', marginTop: '4px' }}>
                     {audit.summary.violationsCount} Violations ({audit.summary.warningsCount} Warnings)
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>ACTIONS EVALUATED</div>
                   <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0f3f8', marginTop: '4px' }}>
                     {audit.summary.totalEventsEvaluated} Sequential Actions
@@ -851,15 +851,15 @@ payload_hash:${selectedEvent.payloadHash}`}
             </div>
 
             {/* Findings List */}
-            <div style={{ backgroundColor: '#0e1117', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px' }}>
-              <div style={{ fontSize: '12px', color: '#06b6d4', textTransform: 'uppercase', fontWeight: 700, marginBottom: '16px' }}>
+            <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px' }}>
+              <div style={{ fontSize: '12px', color: '#00e5ff', textTransform: 'uppercase', fontWeight: 700, marginBottom: '16px' }}>
                 DETAILED AUDIT FINDINGS ({audit.findings.length})
               </div>
 
               {audit.findings.length === 0 ? (
                 <div style={{ backgroundColor: 'rgba(0, 255, 136, 0.05)', padding: '24px', borderRadius: '8px', border: '1px solid rgba(0, 255, 136, 0.2)', textAlign: 'center' }}>
                   <div style={{ fontSize: '18px', marginBottom: '6px' }}>✓</div>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#00ff88' }}>
                     ZERO POLICY VIOLATIONS DETECTED
                   </div>
                   <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
@@ -872,7 +872,7 @@ payload_hash:${selectedEvent.payloadHash}`}
                     <div
                       key={fnd.id}
                       style={{
-                        backgroundColor: '#141822',
+                        backgroundColor: '#131720',
                         border: `1px solid ${fnd.severity === 'CRITICAL' ? 'rgba(255,68,68,0.5)' : 'rgba(255,184,0,0.5)'}`,
                         borderRadius: '8px',
                         padding: '16px',
@@ -886,14 +886,14 @@ payload_hash:${selectedEvent.payloadHash}`}
                               padding: '2px 8px',
                               borderRadius: '4px',
                               backgroundColor: fnd.severity === 'CRITICAL' ? 'rgba(255, 68, 68, 0.2)' : 'rgba(255, 184, 0, 0.2)',
-                              color: fnd.severity === 'CRITICAL' ? '#f43f5e' : '#f59e0b',
+                              color: fnd.severity === 'CRITICAL' ? '#ff4444' : '#ffb800',
                               fontWeight: 700,
                             }}>
                               {fnd.severity}
                             </span>
                             <span style={{ fontSize: '11px', color: '#64748b' }}>{fnd.ruleId}</span>
                             <span style={{ fontSize: '11px', color: '#4a5568' }}>•</span>
-                            <span style={{ fontSize: '11px', color: '#06b6d4' }}>Event #{String(fnd.eventSequence).padStart(2, '0')}</span>
+                            <span style={{ fontSize: '11px', color: '#00e5ff' }}>Event #{String(fnd.eventSequence).padStart(2, '0')}</span>
                           </div>
                           <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#f0f3f8', margin: 0 }}>
                             {fnd.title}
@@ -907,7 +907,7 @@ payload_hash:${selectedEvent.payloadHash}`}
                           }}
                           style={{
                             backgroundColor: '#1e2430',
-                            color: '#10b981',
+                            color: '#00ff88',
                             border: '1px solid #2d3748',
                             borderRadius: '4px',
                             padding: '4px 10px',
@@ -925,13 +925,13 @@ payload_hash:${selectedEvent.payloadHash}`}
 
                       {fnd.matchedPattern && (
                         <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>
-                          Matched Prohibited Pattern: <code style={{ color: '#f59e0b', backgroundColor: '#0e1117', padding: '2px 6px', borderRadius: '4px' }}>{fnd.matchedPattern}</code>
+                          Matched Prohibited Pattern: <code style={{ color: '#ffb800', backgroundColor: '#0d0f14', padding: '2px 6px', borderRadius: '4px' }}>{fnd.matchedPattern}</code>
                         </div>
                       )}
 
                       {fnd.remediation && (
                         <div style={{ backgroundColor: 'rgba(0, 229, 255, 0.05)', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(0, 229, 255, 0.15)', fontSize: '11px', color: '#94a3b8' }}>
-                          <strong style={{ color: '#06b6d4' }}>Remediation:</strong> {fnd.remediation}
+                          <strong style={{ color: '#00e5ff' }}>Remediation:</strong> {fnd.remediation}
                         </div>
                       )}
                     </div>
@@ -941,49 +941,49 @@ payload_hash:${selectedEvent.payloadHash}`}
             </div>
 
             {/* Active Policy Rules Breakdown */}
-            <div style={{ backgroundColor: '#0e1117', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px' }}>
-              <div style={{ fontSize: '12px', color: '#06b6d4', textTransform: 'uppercase', fontWeight: 700, marginBottom: '14px' }}>
+            <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '20px 24px' }}>
+              <div style={{ fontSize: '12px', color: '#00e5ff', textTransform: 'uppercase', fontWeight: 700, marginBottom: '14px' }}>
                 ACTIVE POLICY GUARDRAILS SPECIFICATION
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>PERMITTED ACTION TYPES</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {(activePolicy.allowedEventTypes || []).map((t) => (
-                      <span key={t} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0e1117', color: '#10b981', border: '1px solid #1e2430' }}>
+                      <span key={t} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0d0f14', color: '#00ff88', border: '1px solid #1e2430' }}>
                         {t}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>FORBIDDEN FILE PATTERNS</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {(activePolicy.forbiddenFilePatterns || []).map((p) => (
-                      <span key={p} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0e1117', color: '#f43f5e', border: '1px solid #1e2430' }}>
+                      <span key={p} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0d0f14', color: '#ff4444', border: '1px solid #1e2430' }}>
                         {p}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>PROHIBITED COMMANDS</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {(activePolicy.forbiddenCommands || []).map((c) => (
-                      <span key={c} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0e1117', color: '#f59e0b', border: '1px solid #1e2430' }}>
+                      <span key={c} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0d0f14', color: '#ffb800', border: '1px solid #1e2430' }}>
                         {c}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: '#141822', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
+                <div style={{ backgroundColor: '#131720', padding: '14px', borderRadius: '8px', border: '1px solid #1e2430' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>PROTECTED TOOL NAMESPACES</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {(activePolicy.forbiddenTools || []).map((t) => (
-                      <span key={t} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0e1117', color: '#f43f5e', border: '1px solid #1e2430' }}>
+                      <span key={t} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#0d0f14', color: '#ff4444', border: '1px solid #1e2430' }}>
                         {t}
                       </span>
                     ))}

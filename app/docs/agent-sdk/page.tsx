@@ -8,52 +8,52 @@ export const metadata: Metadata = {
 
 export default function AgentSdkDocsPage() {
   return (
-    <div className="min-h-screen bg-[#080a0f] text-zinc-200 py-10 px-4 sm:px-6 font-mono">
-      <div className="max-w-4xl mx-auto">
+    <div style={{ minHeight: '100vh', backgroundColor: '#060709', color: '#f0f3f8', padding: '40px 24px', fontFamily: 'var(--font-geist-mono, monospace)' }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         
         {/* Navigation Breadcrumb */}
-        <div className="mb-6">
-          <Link href="/agent-proof" className="inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 transition font-semibold">
-            ← Return to Agent Control Plane
+        <div style={{ marginBottom: '24px' }}>
+          <Link href="/agent-proof" style={{ color: '#00ff88', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>
+            ← Back to Agent Console
           </Link>
         </div>
 
         {/* Title Header */}
-        <div className="mb-8 pb-6 border-b border-[#1e2533]">
-          <div className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-3">
+        <div style={{ marginBottom: '36px', paddingBottom: '20px', borderBottom: '1px solid #1a1e28' }}>
+          <div style={{ color: '#00e5ff', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
             DEVELOPER QUICKSTART // TRACK B AGENT PROTOCOL
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
+          <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 12px 0' }}>
             PROVN Agent SDK Integration
           </h1>
-          <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-sans">
-            Equip autonomous software agents, DevOps bots, and CI/CD pipelines with an independently verifiable cryptographic execution receipt anchored to Solana.
+          <p style={{ color: '#94a3b8', fontSize: '15px', lineHeight: '1.6', margin: 0 }}>
+            Give autonomous software agents, DevOps bots, and CI/CD pipelines an independently verifiable cryptographic execution receipt anchored to Solana.
           </p>
         </div>
 
         {/* 3-Minute Quickstart Card */}
-        <div className="p-6 sm:p-8 rounded-2xl bg-[#0e1117] border border-emerald-500/30 mb-8 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-base sm:text-lg font-bold text-emerald-400 tracking-tight">
+        <div style={{ backgroundColor: '#0d0f14', border: '1px solid #00ff88', borderRadius: '12px', padding: '28px', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#00ff88' }}>
               ⚡ 3-Line TypeScript Quickstart
             </h2>
-            <span className="text-[11px] font-semibold text-zinc-400 bg-[#141822] px-2.5 py-1 rounded-md border border-[#1e2533]">
+            <span style={{ fontSize: '11px', color: '#94a3b8', backgroundColor: '#131720', padding: '4px 8px', borderRadius: '4px', border: '1px solid #1e2430' }}>
               Zero-Trust Architecture
             </span>
           </div>
 
-          <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-4 font-sans">
+          <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6', marginBottom: '16px' }}>
             Install the client library and wrap any consequential action (reading code, modifying files, executing shell commands, or opening PRs):
           </p>
 
-          <pre className="p-3.5 rounded-xl bg-[#080a0f] border border-[#1e2533] text-emerald-400 text-xs sm:text-sm overflow-x-auto mb-4 font-mono">
+          <pre style={{ backgroundColor: '#08090d', padding: '14px', borderRadius: '8px', border: '1px solid #1a1e28', color: '#00ff88', fontSize: '13px', overflowX: 'auto', marginBottom: '20px' }}>
 {`npm install @provn/sdk`}
           </pre>
 
-          <div className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold mb-2">
+          <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 600 }}>
             AGENT EXECUTION WRAPPER
           </div>
-          <pre className="p-4 rounded-xl bg-[#080a0f] border border-[#1e2533] text-zinc-200 text-xs leading-relaxed overflow-x-auto font-mono">
+          <pre style={{ backgroundColor: '#08090d', padding: '16px', borderRadius: '8px', border: '1px solid #1a1e28', color: '#f0f3f8', fontSize: '12px', lineHeight: '1.7', overflowX: 'auto', margin: 0 }}>
 {`import { ProvnAgent } from '@provn/sdk'
 
 // 1. Initialize ProvnAgent (Auto-generates sovereign Ed25519 keypair if none provided)
@@ -95,53 +95,61 @@ console.log('Public Verification Console:', receipt.proofUrl)`}
         </div>
 
         {/* Security Invariants Grid */}
-        <div className="mb-8">
-          <h2 className="text-base sm:text-lg font-bold text-white mb-4">
+        <div style={{ marginBottom: '32px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 16px 0', color: '#f0f3f8' }}>
             Protocol Guarantees & Non-Repudiation
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-5 rounded-xl bg-[#0e1117] border border-[#1e2533]">
-              <div className="text-emerald-400 font-bold text-xs uppercase tracking-wider mb-2">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '8px', padding: '18px' }}>
+              <div style={{ color: '#00ff88', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
                 1. Sovereign Agent Signatures
               </div>
-              <p className="text-zinc-400 text-xs leading-relaxed font-sans">
+              <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
                 The server never signs agent events. Each event is signed locally by the agent runtime using Ed25519 detached signatures over deterministic canonical strings.
-              </p>
+              </div>
             </div>
 
-            <div className="p-5 rounded-xl bg-[#0e1117] border border-[#1e2533]">
-              <div className="text-cyan-400 font-bold text-xs uppercase tracking-wider mb-2">
+            <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '8px', padding: '18px' }}>
+              <div style={{ color: '#00e5ff', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
                 2. Zero Database Trust
               </div>
-              <p className="text-zinc-400 text-xs leading-relaxed font-sans">
+              <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
                 The PostgreSQL database is merely an indexing layer. Any modification or deletion of events immediately breaks the cryptographic hash chain and Merkle root.
-              </p>
+              </div>
             </div>
 
-            <div className="p-5 rounded-xl bg-[#0e1117] border border-[#1e2533]">
-              <div className="text-amber-400 font-bold text-xs uppercase tracking-wider mb-2">
+            <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '8px', padding: '18px' }}>
+              <div style={{ color: '#ffb800', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
                 3. On-Chain Solana PDA Anchoring
               </div>
-              <p className="text-zinc-400 text-xs leading-relaxed font-sans">
+              <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
                 Batch Merkle roots are committed into Program Derived Address (PDA) accounts on Solana, establishing an immutable public timestamp that cannot be backdated.
-              </p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Live Verifier Callout */}
-        <div className="p-6 rounded-2xl bg-[#0e1117] border border-[#1e2533] flex flex-wrap items-center justify-between gap-4">
+        <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1e2430', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h3 className="text-sm sm:text-base font-bold text-white mb-1">
-              Interactive Proof Console & Tamper Simulator
+            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 6px 0', color: '#f0f3f8' }}>
+              Try the Interactive Proof Console & Tamper Simulator
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 font-sans">
+            <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>
               Inspect live executions, trace Ed25519 signatures, and simulate database intrusion attacks in real-time.
             </p>
           </div>
           <Link
             href="/agent-proof/demo"
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-black active:scale-[0.98] transition shadow-sm"
+            style={{
+              backgroundColor: '#00ff88',
+              color: '#060709',
+              padding: '10px 18px',
+              borderRadius: '6px',
+              fontWeight: 700,
+              fontSize: '13px',
+              textDecoration: 'none'
+            }}
           >
             Launch Demo Console →
           </Link>

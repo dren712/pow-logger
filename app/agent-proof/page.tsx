@@ -7,7 +7,7 @@ export const revalidate = 0
 
 export const metadata: Metadata = {
   title: 'PROVN Agent Infrastructure Console — Verifiable AI Workloads',
-  description: 'Inspect verifiable execution provenance, on-chain Merkle commitments, and permanent evidence archives for autonomous software.',
+  description: 'Inspect verifiable execution provenance, on-chain Merkle commitments, and permanent evidence archives for autonomous software.'
 }
 
 export default async function AgentConsolePage() {
@@ -22,127 +22,127 @@ export default async function AgentConsolePage() {
     .limit(10)
 
   return (
-    <div className="min-h-screen bg-[#08090d] text-[#f0f4fc] px-4 sm:px-6 py-8 font-sans">
-      <div className="max-w-7xl mx-auto">
-        {/* Navigation Breadcrumb */}
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-xs font-mono text-[#8b9bb4] hover:text-[#f0f4fc] transition-colors inline-flex items-center gap-1.5"
-          >
-            ← Back to Overview
-          </Link>
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#141822] border border-[#212836] text-[11px] font-mono text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Control Plane Active
-          </div>
-        </div>
-
+    <div style={{ minHeight: '100vh', backgroundColor: '#060709', color: '#f0f3f8', padding: '40px 24px', fontFamily: 'var(--font-geist-mono, monospace)' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-8 border-b border-[#1e2533] gap-4">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', paddingBottom: '20px', borderBottom: '1px solid #1a1e28' }}>
           <div>
-            <div className="text-[11px] font-mono uppercase tracking-widest text-emerald-400 font-semibold mb-1">
-              PROVN // VERIFIABLE RUNTIME
+            <div style={{ color: '#00ff88', fontSize: '12px', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>
+              PROVN // CONTROL & DATA PLANE
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#f0f4fc]">
+            <h1 style={{ fontSize: '28px', fontWeight: 800, margin: 0 }}>
               Agent Provenance Console
             </h1>
-            <p className="text-sm text-[#8b9bb4] mt-1.5 max-w-2xl">
-              Verifiable cryptographic infrastructure for autonomous agents, CI/CD pipelines, and high-stakes automated DevOps.
+            <p style={{ color: '#94a3b8', fontSize: '14px', margin: '6px 0 0 0' }}>
+              Verifiable cryptographic infrastructure for autonomous software agents, CI/CD, and DevOps workflows.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/agent-proof/demo"
-              className="btn-primary"
-            >
-              Launch Tamper Demo ↗
-            </Link>
-          </div>
+          <Link
+            href="/agent-proof/demo"
+            style={{
+              backgroundColor: '#00ff88',
+              color: '#060709',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontWeight: 800,
+              fontSize: '13px',
+              textDecoration: 'none',
+              boxShadow: '0 0 20px rgba(0, 255, 136, 0.2)'
+            }}
+          >
+            Launch Killer Demo ↗
+          </Link>
         </div>
 
-        {/* Featured Verification Walkthrough Banner */}
-        <div className="provn-card p-6 md:p-8 mb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-            <div className="max-w-3xl">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold mb-1.5">
-                Featured Protocol Walkthrough
+        {/* Featured Killer Demo Banner */}
+        <div style={{ backgroundColor: '#0d0f14', border: '1px solid #00ff88', borderRadius: '12px', padding: '24px', marginBottom: '32px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, width: '300px', height: '100%', background: 'radial-gradient(circle, rgba(0,255,136,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <div style={{ color: '#00e5ff', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
+                FEATURED VERIFICATION WALKTHROUGH
               </div>
-              <h2 className="text-lg md:text-xl font-bold text-[#f0f4fc] mb-2 font-mono">
+              <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0' }}>
                 Execution #8f92c10b — Claude 3.5 Sonnet (CI/CD Pipeline & PR #42)
               </h2>
-              <p className="text-xs md:text-sm text-[#8b9bb4] leading-relaxed">
+              <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0, maxWidth: '750px' }}>
                 Inspect 47 signed actions across 3 batches, validated via Ed25519 signatures, hash chains, odd-leaf promoted Merkle trees, and on-chain Solana commitments. Includes an interactive live database intrusion simulator.
               </p>
             </div>
 
-            <div className="flex-shrink-0">
-              <Link
-                href="/agent-proof/demo"
-                className="btn-secondary"
-              >
-                Inspect Execution Trace →
-              </Link>
-            </div>
+            <Link
+              href="/agent-proof/demo"
+              style={{
+                backgroundColor: '#131720',
+                color: '#00ff88',
+                border: '1px solid #00ff88',
+                padding: '10px 18px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 700,
+                textDecoration: 'none'
+              }}
+            >
+              Open Proof Console →
+            </Link>
           </div>
         </div>
 
-        {/* Persisted Executions (PostgreSQL Index) */}
-        <div className="provn-card p-6 mb-8">
-          <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#1e2533]">
-            <div>
-              <h2 className="text-base font-bold text-[#f0f4fc] font-mono">
-                Persisted Executions (PostgreSQL Operational Index)
-              </h2>
-              <p className="text-xs text-[#8b9bb4] mt-0.5">
-                Records ingested via authenticated API routes and sealed through atomic finalization.
-              </p>
-            </div>
-            <span className="text-xs font-mono text-[#8b9bb4] px-2 py-1 rounded bg-[#141822] border border-[#212836]">
+        {/* Recent Executions in Database */}
+        <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#f0f3f8' }}>
+              Persisted Executions (PostgreSQL Index)
+            </h2>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>
               {executions?.length || 0} recorded runs
             </span>
           </div>
 
-          {!executions || executions.length === 0 ? (
-            <div className="py-12 text-center text-[#8b9bb4] text-xs font-mono">
-              <p className="mb-2">No database executions recorded yet.</p>
-              <p>
-                Run <code className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">npx tsx scripts/agent-demo/demo.ts</code> to ingest real agent events.
-              </p>
+          {(!executions || executions.length === 0) ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+              No database executions logged yet. Run <code style={{ color: '#00ff88' }}>npx tsx scripts/agent-demo/demo-phase2.ts</code> to ingest real events.
             </div>
           ) : (
-            <div className="divide-y divide-[#1e2533]">
-              {executions.map((exec) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {executions.map(exec => (
                 <Link
                   key={exec.execution_id}
                   href={`/agent-proof/${exec.execution_id}`}
-                  className="py-3.5 px-3 -mx-3 rounded-lg flex items-center justify-between hover:bg-[#141822] transition-colors group text-xs font-mono no-underline text-inherit"
+                  style={{
+                    backgroundColor: '#131720',
+                    border: '1px solid #1e2430',
+                    borderRadius: '8px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition: 'border-color 0.15s ease'
+                  }}
                 >
                   <div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-[#f0f4fc] group-hover:text-emerald-400 transition-colors">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#f0f3f8' }}>
                         #{exec.execution_id.slice(0, 8)}
                       </span>
-                      <span className="text-[#8b9bb4]">
-                        {exec.agent_public_key.slice(0, 8)}...{exec.agent_public_key.slice(-4)}
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                        {exec.agent_public_key.slice(0, 10)}...{exec.agent_public_key.slice(-4)}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        exec.status === 'completed'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
-                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/25'
-                      }`}>
+                      <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(0,255,136,0.1)', color: '#00ff88' }}>
                         {exec.status}
                       </span>
                     </div>
-                    <div className="text-[11px] text-[#57657d] mt-1">
-                      Started {new Date(exec.started_at).toLocaleString()} · {exec.event_count || 0} Events
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                      Started {new Date(exec.started_at).toLocaleString()} • {exec.event_count || 0} Events
                     </div>
                   </div>
 
-                  <span className="text-emerald-400 text-xs font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                  <span style={{ color: '#00ff88', fontSize: '12px' }}>
                     Inspect Proof →
                   </span>
                 </Link>
@@ -152,34 +152,35 @@ export default async function AgentConsolePage() {
         </div>
 
         {/* Architecture Principles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="provn-card p-5">
-            <div className="text-xs font-mono font-bold text-emerald-400 mb-2">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', padding: '20px', borderRadius: '8px' }}>
+            <div style={{ color: '#00ff88', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
               Control vs Data Plane Split
             </div>
-            <p className="text-xs text-[#8b9bb4] leading-relaxed">
+            <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
               The database is an operational index, never the source of cryptographic truth. All provenance stems from agent-signed hash chains and on-chain Merkle roots.
-            </p>
+            </div>
           </div>
 
-          <div className="provn-card p-5">
-            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">
+          <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', padding: '20px', borderRadius: '8px' }}>
+            <div style={{ color: '#00e5ff', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
               Transactional Outbox Engine
             </div>
-            <p className="text-xs text-[#8b9bb4] leading-relaxed">
+            <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
               Asynchronous worker claiming, lease expirations, idempotent retries, and reconciliation ensure Solana and Irys commits survive network outages.
-            </p>
+            </div>
           </div>
 
-          <div className="provn-card p-5">
-            <div className="text-xs font-mono font-bold text-amber-400 mb-2">
+          <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', padding: '20px', borderRadius: '8px' }}>
+            <div style={{ color: '#ffb800', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
               Self-Contained Portable Receipts
             </div>
-            <p className="text-xs text-[#8b9bb4] leading-relaxed">
+            <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
               Any independent verifier can validate a receipt offline using TweetNaCl and SHA-256 without ever communicating with the PROVN backend.
-            </p>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   )

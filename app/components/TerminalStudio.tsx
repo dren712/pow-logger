@@ -104,37 +104,47 @@ export default function TerminalStudio({
   onSubmitLog,
   maxChars,
 }: TerminalStudioProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('shipped')
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('custom')
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  const [copyStatus, setCopyStatus] = useState(false)
 
-  const charPercent = Math.min((log.length / maxChars) * 100, 100)
-  const liveClassification = log.trim() ? classifyLog(log) : null
+  const liveClassification = log.trim() ? classifyLog(log.trim()) : null
+  const charPercent = Math.min(100, Math.round((log.length / maxChars) * 100))
 
-  const handleSelectTemplate = (tmpl: ProofTemplate) => {
-    setSelectedTemplate(tmpl.id)
-    if (!log.trim() && tmpl.defaultPrefix) {
-      setLog(tmpl.defaultPrefix)
+  const handleSelectTemplate = (template: ProofTemplate) => {
+    setSelectedTemplate(template.id)
+    if (!log.trim() && template.defaultPrefix) {
+      setLog(template.defaultPrefix)
     }
   }
 
-  const generatedCanonicalMessage = React.useMemo(() => {
-    if (!walletAddress || !log.trim()) return ''
-    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://provn-sol.vercel.app'
-    const cleanHost = currentOrigin.replace(/^https?:\/\//, '').split(':')[0]
-    return buildCanonicalSubmitMessageV2({
-      domain: cleanHost,
-      walletAddress,
-      timestamp: new Date().toISOString(),
-      challenge: 'preview-challenge-nonce-000000',
-      content: log.trim(),
-      githubUrl: githubUrl.trim() || undefined,
-      evidenceUrl: evidenceUrl.trim() || undefined,
-    })
-  }, [walletAddress, log, evidenceUrl, githubUrl])
+  // Canonical Message Preview Construction
+  const previewDomain = typeof window !== 'undefined' && window.location?.host ? window.location.host : 'provn-sol.vercel.app'
+  const previewMessage = buildCanonicalSubmitMessageV2({
+    domain: previewDomain,
+    walletAddress: walletAddress || 'YOUR_SOLANA_WALLET_PUBLIC_KEY',
+    timestamp: new Date().toISOString(),
+    challenge: '[server-issued challenge]',
+    content: log.trim() || 'Your work claim description will appear here.',
+    githubUrl: githubUrl.trim() || undefined,
+    evidenceUrl: evidenceUrl.trim() || undefined,
+  })
 
   const handleReviewAndSign = () => {
-    if (!log.trim() || !connected || isDailyLimitReached || log.length > maxChars) return
+    if (!log.trim() || !connected || isDailyLimitReached) return
+    
+    if (githubUrl.trim()) {
+      try {
+        const u = new URL(githubUrl.trim())
+        if (!u.hostname.includes('github.com')) {
+          alert('GitHub URL must be a valid github.com PR or Commit URL.')
+          return
+        }
+      } catch {
+        alert('Invalid GitHub URL format.')
+        return
+      }
+    }
+    
     setIsPreviewOpen(true)
   }
 
@@ -144,29 +154,51 @@ export default function TerminalStudio({
   }
 
   return (
-    <section id="log-terminal" className="provn-card p-6 md:p-8 mb-10 relative">
+    <section
+      id="log-terminal"
+      className="terminal-card"
+      style={{
+        padding: '22px',
+        marginBottom: '36px',
+      }}
+    >
+      <div className="corner-accent corner-top-left" />
+      <div className="corner-accent corner-top-right" />
+
       {/* Terminal Title Bar */}
-      <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#1e2533]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-          <span className="font-mono text-xs font-semibold text-[#f0f4fc]">
-            PROVN Work Logging Studio
-          </span>
-          <span className="text-[10px] font-mono text-[#8b9bb4] hidden sm:inline-block">
-            SIWS Wallet Attestation
-          </span>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+          paddingBottom: '12px',
+          borderBottom: '1px solid #161a24',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }} />
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }} />
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }} />
+          <span style={{ color: '#888', fontSize: '11px', marginLeft: '8px' }}>PROVN_EVIDENCE_STUDIO_v1.0</span>
         </div>
-        <div className="text-[11px] font-mono font-medium text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
-          Ready to Attest
-        </div>
+        <div style={{ color: '#00ff88', fontSize: '11px' }}>[READY TO ATTEST]</div>
       </div>
 
       {/* Proof Templates Selector */}
-      <div className="mb-4">
-        <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b9bb4] mb-2 font-medium">
-          Select Contribution Archetype:
+      <div style={{ marginBottom: '14px' }}>
+        <div style={{ fontSize: '10px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Select Contribution Type:
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none">
+        <div
+          style={{
+            display: 'flex',
+            gap: '6px',
+            overflowX: 'auto',
+            paddingBottom: '4px',
+            scrollbarWidth: 'none',
+          }}
+        >
           {PROOF_TEMPLATES.map((tmpl) => {
             const isActive = selectedTemplate === tmpl.id
             return (
@@ -174,11 +206,21 @@ export default function TerminalStudio({
                 key={tmpl.id}
                 type="button"
                 onClick={() => handleSelectTemplate(tmpl)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-semibold'
-                    : 'bg-[#141822] border border-[#212836] text-[#8b9bb4] hover:border-[#2f384a] hover:text-[#f0f4fc]'
-                }`}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  background: isActive ? 'rgba(0, 255, 136, 0.12)' : '#0a0d14',
+                  border: isActive ? '1px solid rgba(0, 255, 136, 0.5)' : '1px solid #1c2230',
+                  color: isActive ? '#00ff88' : '#888',
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s ease',
+                }}
               >
                 <span>{tmpl.icon}</span>
                 <span>{tmpl.label}</span>
@@ -189,10 +231,10 @@ export default function TerminalStudio({
       </div>
 
       {/* Log Input Area */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2 text-xs font-mono text-[#8b9bb4]">
-          <span>Contribution Evidence Details</span>
-          <span className={log.length > maxChars ? 'text-rose-400 font-bold' : charPercent > 80 ? 'text-amber-400' : 'text-[#8b9bb4]'}>
+      <div style={{ marginBottom: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px', color: '#888' }}>
+          <span>Add Evidence...</span>
+          <span style={{ color: log.length > maxChars ? '#ff4444' : charPercent > 80 ? '#ffb800' : '#888' }}>
             {log.length}/{maxChars}
           </span>
         </div>
@@ -204,20 +246,50 @@ export default function TerminalStudio({
             'e.g. Built TweetNaCl SIWS verification logic, deployed RLS security migration, tested Arweave archival...'
           }
           rows={3}
-          className="w-full bg-[#090b10] border border-[#212836] rounded-lg text-[#f0f4fc] p-3.5 font-mono text-sm leading-relaxed resize-none focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-[#57657d]"
+          style={{
+            width: '100%',
+            background: '#060709',
+            border: '1px solid #1c2230',
+            borderRadius: '6px',
+            color: '#00ff88',
+            padding: '12px',
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            resize: 'none',
+            outline: 'none',
+            boxSizing: 'border-box',
+          }}
         />
 
         {/* Live Auto-Classifier Tag Badge */}
         {liveClassification && (
-          <div className="flex gap-2 flex-wrap mt-2.5 items-center">
-            <span className="text-[10px] font-mono text-[#57657d] uppercase tracking-wider">Classification:</span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium">
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '10px', color: '#555' }}>CLASSIFIED:</span>
+            <span
+              style={{
+                fontSize: '10px',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                background: 'rgba(0,255,136,0.1)',
+                border: '1px solid rgba(0,255,136,0.3)',
+                color: '#00ff88',
+                fontWeight: 700,
+              }}
+            >
               {liveClassification.category}
             </span>
             {liveClassification.skills.map((s) => (
               <span
                 key={s}
-                className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#141822] border border-[#212836] text-cyan-400"
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: '#0d1117',
+                  border: '1px solid #1c2230',
+                  color: '#00e5ff',
+                }}
               >
                 {s}
               </span>
@@ -225,7 +297,14 @@ export default function TerminalStudio({
             {liveClassification.protocols.map((p) => (
               <span
                 key={p}
-                className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400"
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: 'rgba(171, 159, 242, 0.1)',
+                  border: '1px solid rgba(171, 159, 242, 0.3)',
+                  color: '#ab9ff2',
+                }}
               >
                 ⚡ {p}
               </span>
@@ -235,34 +314,45 @@ export default function TerminalStudio({
       </div>
 
       {/* Optional Proof URLs Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-5">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '16px' }}>
         <div>
-          <label className="block text-[11px] font-mono text-[#8b9bb4] mb-1.5">
-            GitHub PR / Commit URL (Source Evidence)
+          <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>
+            GitHub PR / Commit URL (Source-verified evidence)
           </label>
           <input
             type="url"
             value={githubUrl}
             onChange={(e) => setGithubUrl(e.target.value)}
             placeholder="https://github.com/org/repo/pull/1"
-            className="w-full bg-[#090b10] border border-[#212836] rounded-lg text-[#f0f4fc] px-3.5 py-2 font-mono text-xs focus:outline-none focus:border-cyan-500 transition-colors placeholder:text-[#57657d]"
+            style={{
+              width: '100%',
+              background: '#060709',
+              border: '1px solid #1c2230',
+              borderRadius: '6px',
+              color: '#ab9ff2',
+              padding: '8px 12px',
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
           />
           {connected && walletAddress && (
-            <div className="mt-1.5 text-right">
-              <a
+            <div style={{ marginTop: '6px', textAlign: 'right' }}>
+              <a 
                 href={`/u/${walletAddress}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] font-mono text-cyan-400 hover:underline"
+                style={{ fontSize: '10px', color: '#00e5ff', textDecoration: 'underline' }}
               >
-                Link GitHub in Profile →
+                Link your GitHub account in your Profile →
               </a>
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-[11px] font-mono text-[#8b9bb4] mb-1.5">
+          <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>
             Evidence / Demo URL (Optional HTTPS Link)
           </label>
           <input
@@ -270,7 +360,18 @@ export default function TerminalStudio({
             value={evidenceUrl}
             onChange={(e) => setEvidenceUrl(e.target.value)}
             placeholder="https://my-app.vercel.app"
-            className="w-full bg-[#090b10] border border-[#212836] rounded-lg text-[#f0f4fc] px-3.5 py-2 font-mono text-xs focus:outline-none focus:border-cyan-500 transition-colors placeholder:text-[#57657d]"
+            style={{
+              width: '100%',
+              background: '#060709',
+              border: '1px solid #1c2230',
+              borderRadius: '6px',
+              color: '#00e5ff',
+              padding: '8px 12px',
+              fontFamily: 'monospace',
+              fontSize: '11px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
           />
         </div>
       </div>
@@ -278,30 +379,44 @@ export default function TerminalStudio({
       {/* Status Bar */}
       {statusStep !== 'idle' && (
         <div
-          className={`p-3 rounded-lg mb-4 text-xs font-mono flex items-center gap-2 ${
-            statusStep === 'error'
-              ? 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
-              : statusStep === 'success'
-              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-              : 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400'
-          }`}
+          style={{
+            padding: '10px 14px',
+            borderRadius: '6px',
+            marginBottom: '16px',
+            fontSize: '12px',
+            background:
+              statusStep === 'error'
+                ? 'rgba(255, 68, 68, 0.1)'
+                : statusStep === 'success'
+                ? 'rgba(0, 255, 136, 0.1)'
+                : 'rgba(0, 229, 255, 0.1)',
+            border:
+              statusStep === 'error'
+                ? '1px solid rgba(255, 68, 68, 0.3)'
+                : statusStep === 'success'
+                ? '1px solid rgba(0, 255, 136, 0.3)'
+                : '1px solid rgba(0, 229, 255, 0.3)',
+            color:
+              statusStep === 'error'
+                ? '#ff4444'
+                : statusStep === 'success'
+                ? '#00ff88'
+                : '#00e5ff',
+          }}
         >
           {statusMsg}
         </div>
       )}
 
       {/* What does PROVN verify? */}
-      <details className="mb-5 text-xs text-[#8b9bb4] border border-[#212836] rounded-lg p-3 bg-[#0a0d14]">
-        <summary className="cursor-pointer text-cyan-400 font-mono font-medium outline-none">
+      <details style={{ marginBottom: '16px', fontSize: '11px', color: '#888', border: '1px solid #1c2230', borderRadius: '6px', padding: '10px 14px', background: '#0a0d14' }}>
+        <summary style={{ cursor: 'pointer', color: '#00e5ff', fontWeight: 600, outline: 'none' }}>
           What does PROVN verify?
         </summary>
-        <div className="mt-2.5 space-y-1.5 text-xs leading-relaxed text-[#8b9bb4]">
-          <p>
-            <strong className="text-[#f0f4fc]">Cryptographic Signature:</strong> PROVN verifies that your connected Solana wallet signed this exact payload using Ed25519 cryptography.
-          </p>
-          <p>
-            <strong className="text-[#f0f4fc]">Source Verification:</strong> If you provide a GitHub PR/Commit URL, PROVN verifies via the GitHub API that the PR or commit exists and attributes its author and state.
-          </p>
+        <div style={{ marginTop: '8px', lineHeight: '1.5' }}>
+          <strong>Cryptographic Signature:</strong> PROVN verifies that your connected Solana wallet signed this exact payload.<br/>
+          <strong>Source Verification:</strong> If you provide a GitHub PR/Commit URL, PROVN will verify via the GitHub API that the PR or commit actually exists, and record its state (e.g., merged, open) and author.<br/>
+          <em style={{ color: '#555' }}>Note: PROVN verifies the source exists, but does not definitively prove you own the GitHub account, unless you link it on your profile.</em>
         </div>
       </details>
 
@@ -309,10 +424,18 @@ export default function TerminalStudio({
       <button
         onClick={handleReviewAndSign}
         disabled={loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars}
-        className="btn-primary w-full py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+        className="btn-primary"
+        style={{
+          width: '100%',
+          padding: '12px',
+          fontSize: '13px',
+          fontWeight: 800,
+          opacity: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 0.5 : 1,
+          cursor: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 'not-allowed' : 'pointer',
+        }}
       >
         {loading
-          ? '⚡ Processing Cryptographic Signature...'
+          ? '⚡ Processing SIWS Cryptographic Signature...'
           : isDailyLimitReached
           ? '🔒 Daily Limit Reached (3/3 logs today)'
           : !connected
@@ -322,57 +445,135 @@ export default function TerminalStudio({
 
       {/* Draft → Review → Sign Modal */}
       {isPreviewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="provn-card max-w-xl w-full p-6 bg-[#0e1117] border border-[#212836] rounded-xl shadow-2xl">
-            <div className="flex justify-between items-center pb-3 mb-4 border-b border-[#1e2533]">
-              <h3 className="text-base font-bold text-[#f0f4fc] font-mono">
-                Review Cryptographic Signature Payload
-              </h3>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              background: '#0c0e14',
+              border: '1px solid #1f293d',
+              borderRadius: '12px',
+              maxWidth: '640px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.9)',
+              color: '#eee',
+              fontFamily: 'monospace',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #1c2230', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>🛡️</span>
+                <span style={{ fontWeight: 700, fontSize: '15px', color: '#00ff88' }}>Review Canonical Proof Statement</span>
+              </div>
               <button
+                type="button"
                 onClick={() => setIsPreviewOpen(false)}
-                className="text-[#8b9bb4] hover:text-[#f0f4fc] text-lg font-mono cursor-pointer"
+                style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '18px' }}
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-[#8b9bb4] mb-3">
-              The exact plaintext string below will be signed by your Solana wallet via Ed25519. It guarantees timestamp integrity and anti-replay protection.
-            </p>
+            {/* Quality Breakdown */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                <div style={{ color: '#666' }}>SIGNER</div>
+                <div style={{ color: '#00ff88', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Connected Wallet'}
+                </div>
+              </div>
+              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                <div style={{ color: '#666' }}>ALGORITHM</div>
+                <div style={{ color: '#00e5ff', fontWeight: 600 }}>Ed25519 Detached</div>
+              </div>
+              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                <div style={{ color: '#666' }}>STORAGE</div>
+                <div style={{ color: '#ab9ff2', fontWeight: 600 }}>Arweave via Irys</div>
+              </div>
+            </div>
 
-            <pre className="p-3.5 bg-[#08090d] border border-[#212836] rounded-lg text-emerald-400 font-mono text-[11px] overflow-x-auto max-h-60 mb-4 whitespace-pre-wrap leading-relaxed">
-              {generatedCanonicalMessage}
-            </pre>
+            {/* Canonical SIWS Message Box */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>
+                Exact Message Payload for Wallet Signature:
+              </div>
+              <pre
+                style={{
+                  background: '#040507',
+                  border: '1px solid #161b26',
+                  borderRadius: '6px',
+                  padding: '12px',
+                  fontSize: '11px',
+                  color: '#00ff88',
+                  lineHeight: '1.45',
+                  maxHeight: '160px',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {previewMessage}
+              </pre>
+            </div>
 
-            <div className="flex items-center justify-between gap-3">
+            {/* Clear Disclaimer */}
+            <div
+              style={{
+                background: 'rgba(255, 184, 0, 0.08)',
+                border: '1px solid rgba(255, 184, 0, 0.3)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                color: '#ffb800',
+                marginBottom: '20px',
+                lineHeight: '1.4',
+              }}
+            >
+              ℹ️ <strong>Attestation Guarantee:</strong> Your Solana wallet is signing this tamper-evident proof statement. Your wallet is <em>not</em> signing your source code.
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedCanonicalMessage)
-                  setCopyStatus(true)
-                  setTimeout(() => setCopyStatus(false), 2000)
+                onClick={() => setIsPreviewOpen(false)}
+                style={{
+                  background: '#161b26',
+                  border: '1px solid #283144',
+                  color: '#ccc',
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontFamily: 'monospace',
                 }}
-                className="btn-secondary text-xs"
               >
-                {copyStatus ? '✓ Copied' : '📋 Copy Payload'}
+                ← Edit Draft
               </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPreviewOpen(false)}
-                  className="btn-secondary text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmSign}
-                  className="btn-primary text-xs"
-                >
-                  Sign with Wallet →
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleConfirmSign}
+                className="btn-primary"
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                🗿 Sign With Wallet & Publish
+              </button>
             </div>
           </div>
         </div>
