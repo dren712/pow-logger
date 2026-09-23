@@ -1,7 +1,19 @@
 # Explicit GitHub Linguist Configuration
+
+# Core Languages
+*.rs linguist-language=Rust
 *.ts linguist-language=TypeScript
 *.tsx linguist-language=TypeScript
 *.css linguist-language=CSS
-*.json linguist-language=JSON
-*.sql linguist-language=SQL
+
+# Exclude documentation, tests, and scripts from language statistics
 *.md linguist-documentation
+docs/** linguist-documentation
+tests/** linguist-documentation
+scripts/** linguist-documentation
+supabase/** linguist-documentation
+
+# Exclude bundled and generated files
+bin/** linguist-vendored
+*.json linguist-generated
+*.lock linguist-generated
