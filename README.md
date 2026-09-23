@@ -6,9 +6,11 @@ PROVN is a Solana-native cryptographic provenance protocol that turns human deve
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solana](https://img.shields.io/badge/Solana-Anchor%20PDA%20Commitments-00ff88?logo=solana)](programs/provn_anchor)
 [![Arweave](https://img.shields.io/badge/Storage-Arweave%20via%20Irys-00e5ff)](https://irys.xyz)
-[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-294%20Offline%20%7C%20304%20Total%20Passing-brightgreen)](tests/protocol.test.ts)
+[![Protocol Tests](https://img.shields.io/badge/Protocol%20Tests-600%2B%20Passing%20(13%20Suites)-brightgreen)](tests/protocol.test.ts)
 
 - **Live Web App:** [provn-sol.vercel.app](https://provn-sol.vercel.app)
+- **Agent Provenance Console:** [provn-sol.vercel.app/agent-proof](https://provn-sol.vercel.app/agent-proof)
+- **Agent SDK Quickstart:** [provn-sol.vercel.app/docs/agent-sdk](https://provn-sol.vercel.app/docs/agent-sdk)
 - **Live Builder Passport:** [provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p](https://provn-sol.vercel.app/u/AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p)
 - **Policy Engine Demo:** [provn-sol.vercel.app/demo/bounty](https://provn-sol.vercel.app/demo/bounty)
 - **Developer API:** [provn-sol.vercel.app/docs/api](https://provn-sol.vercel.app/docs/api)
