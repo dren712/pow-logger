@@ -14,6 +14,13 @@ const eslintConfig = [
   {
     ignores: [".next/**", "out/**", "build/**", "next-env.d.ts", "scratch/**", "supabase/**", "bin/**"],
   },
+  {
+    files: ["tests/**", "scripts/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+    },
+  },
 ];
 
 export default eslintConfig;
