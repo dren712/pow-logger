@@ -13,10 +13,10 @@ export function generateKillerDemoReceipt(): AgentReceipt {
 
   const executionId = '8f92c10b-47e2-4919-b664-7f11421450cc'
   const state = runtime.startExecution({
+    executionId,
     taskDescription: 'Execute full CI pipeline, create commit 81d39fa, and submit PR #42',
     agentName: 'Claude 3.5 Sonnet'
   })
-  state.execution.executionId = executionId
 
   // Action stream matching user's exact specification
   const actions: Array<{ type: AgentEventType; payload: PayloadCommitment }> = [
@@ -87,10 +87,10 @@ export function generateHostileAgentReceipt(): AgentReceipt {
 
   const executionId = '8f92c10b-47e2-4919-b664-7f11421450cc'
   const state = runtime.startExecution({
+    executionId,
     taskDescription: 'Automated CI runner executing unverified third-party prompt injection',
     agentName: 'Claude 3.5 Sonnet'
   })
-  state.execution.executionId = executionId
 
   const actions: Array<{ type: AgentEventType; payload: PayloadCommitment }> = [
     {

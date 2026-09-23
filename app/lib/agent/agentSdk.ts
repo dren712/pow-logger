@@ -103,8 +103,9 @@ export class ProvnAgentRuntime {
     agentName?: string
     parentExecutionId?: string | null
     metadata?: Record<string, unknown>
+    executionId?: string
   }): ExecutionState {
-    const executionId = generateId()
+    const executionId = taskMeta?.executionId ?? generateId()
     const now = new Date().toISOString()
 
     const execution: AgentExecution = {
