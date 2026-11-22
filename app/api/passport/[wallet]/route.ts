@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { fetchAllWalletLogs } from '@/app/lib/milestones'
 import { calculateReputation } from '@/app/lib/reputationEngine'
 import { PassportExport, ProofDetail } from '@/app/lib/types'
-import { verifyLogCryptographically } from '@/app/lib/canonicalMessage'
+import { hasProofSigningMetadata, verifyLogCryptographically } from '@/app/lib/canonicalMessage'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
 
     const proofDetails: ProofDetail[] = logs.map((l) => {
       const isValid = verifyLogCryptographically(l)
-      const verificationState = isValid ? 'VERIFIED' : ((!l.nonce && (l as { protocol_version?: number }).protocol_version !== 2) ? 'LEGACY' : 'UNVERIFIED')
+      const verificationState = isValid ? 'VERIFIED' : (hasProofSigningMetadata(l) ? 'UNVERIFIED' : 'LEGACY')
       return {
         id: l.id,
         walletAddress: l.wallet_address,
@@ -49,6 +49,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
         evidenceUrl: l.evidence_url || null,
         signature: l.signature,
         nonce: l.nonce,
+        challenge: l.challenge,
+        protocolVersion: l.protocol_version,
         domain: l.domain,
         skills: l.skills,
         protocols: l.protocols,

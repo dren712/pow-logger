@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 import {
-  buildCanonicalSubmitMessageV2,
+  buildCanonicalSubmitMessageV3,
+  CURRENT_PROTOCOL_VERSION,
   validateAndNormalizeUrl,
   decodeBase58,
   getVerifiedDomain
@@ -46,7 +47,6 @@ export async function POST(req: NextRequest) {
     const content = typeof body.content === 'string' ? body.content : undefined
     const walletAddress = typeof body.walletAddress === 'string' ? body.walletAddress : undefined
     const timestamp = typeof body.timestamp === 'string' ? body.timestamp : undefined
-    const nonce = typeof body.nonce === 'string' ? body.nonce : undefined
     const challenge = typeof body.challenge === 'string' ? body.challenge.trim() : undefined
     const signature = typeof body.signature === 'string' ? body.signature : undefined
     const evidenceUrl = typeof body.evidenceUrl === 'string' ? body.evidenceUrl : undefined
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (!challenge) {
       return NextResponse.json(
-        { error: 'Protocol Version 1 (v1) submissions are deprecated. Anti-replay server challenge (v2) is strictly required.' },
+        { error: 'An anti-replay server challenge is required.' },
         { status: 400 }
       )
     }
@@ -91,6 +91,9 @@ export async function POST(req: NextRequest) {
     if (isNaN(requestTime) || Math.abs(now - requestTime) > 900000) {
       return NextResponse.json({ error: 'Expired or invalid timestamp. Replay attempt rejected.' }, { status: 401 })
     }
+    if (timestamp !== new Date(requestTime).toISOString()) {
+      return NextResponse.json({ error: 'Timestamp must be in UTC ISO 8601 format with milliseconds' }, { status: 400 })
+    }
 
     // 3. Evidence URL Validation & Normalization
     const cleanGithubUrl = validateAndNormalizeUrl(githubUrl as string | null, 'github')
@@ -118,7 +121,7 @@ export async function POST(req: NextRequest) {
     const consumedChallengeId = challengeRecord.id
 
     // 4. Cryptographic Ed25519 Signature Verification
-    const expectedMessageText = buildCanonicalSubmitMessageV2({
+    const expectedMessageText = buildCanonicalSubmitMessageV3({
       domain: reqHost,
       walletAddress,
       timestamp,
@@ -198,7 +201,7 @@ export async function POST(req: NextRequest) {
       p_wallet: walletAddress,
       p_signature: signature,
       p_created_at: timestamp,
-      p_nonce: challenge || nonce || 'legacy',
+      p_nonce: challenge,
       p_domain: reqHost,
       p_evidence_url: cleanEvidenceUrl,
       p_github_url: cleanGithubUrl,
@@ -207,7 +210,7 @@ export async function POST(req: NextRequest) {
       p_category: classification.category,
       p_archival_state: 'pending',
       p_visibility: visibility || 'private',
-      p_protocol_version: challenge ? 2 : 1,
+      p_protocol_version: CURRENT_PROTOCOL_VERSION,
       p_challenge_id: consumedChallengeId,
       p_evidence_type: evidenceType,
       p_provenance_level: provenanceLevel,
@@ -215,7 +218,7 @@ export async function POST(req: NextRequest) {
       p_source_metadata: sourceMetadata,
       p_source_verification_status: sourceVerificationStatus,
       p_source_verified_at: sourceVerifiedAt,
-      p_challenge: challenge || null
+      p_challenge: challenge
     })
 
     if (insertResError) {
@@ -247,9 +250,9 @@ export async function POST(req: NextRequest) {
       const submissionPayload = JSON.stringify({
         type: 'PROVN_SUBMISSION_RECEIPT',
         version: 1,
-        protocol_version: challenge ? 2 : 1,
+        protocol_version: CURRENT_PROTOCOL_VERSION,
         proof_id: savedLog.id,
-        challenge_id: challenge || nonce || 'legacy',
+        challenge_id: challenge,
         wallet: walletAddress,
         signed_payload_hash: signedPayloadHash,
         observed_at: observedAt,
@@ -282,7 +285,7 @@ export async function POST(req: NextRequest) {
     try {
       const structuredEnvelope = JSON.stringify({
         app: 'PROVN',
-        version: challenge ? 2 : 1,
+        version: CURRENT_PROTOCOL_VERSION,
         proofId: savedLog.id,
         domain: reqHost,
         walletAddress,
@@ -313,7 +316,7 @@ export async function POST(req: NextRequest) {
         { name: 'Proof-Id', value: String(savedLog.id) },
         { name: 'Proof-Type', value: 'Ed25519-Signed-Proof' },
         { name: 'Timestamp', value: timestamp },
-        { name: 'Protocol-Version', value: challenge ? '2' : '1' }
+        { name: 'Protocol-Version', value: String(CURRENT_PROTOCOL_VERSION) }
       ]
       if (cleanGithubUrl) tags.push({ name: 'GitHub-URL', value: cleanGithubUrl })
       if (classification.category) tags.push({ name: 'Category', value: classification.category })
@@ -358,7 +361,7 @@ export async function POST(req: NextRequest) {
 
     const newMilestone = checkNewMilestoneReached(previousReputation.currentStreak, currentReputation.currentStreak)
 
-    const isProtocolVerified = Boolean(!challenge || submissionReceipt)
+    const isProtocolVerified = Boolean(submissionReceipt)
 
     return NextResponse.json({
       success: true,

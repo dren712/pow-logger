@@ -1,13 +1,13 @@
 /**
  * Cryptographic Log Submission Client Helper
  *
- * Prompts the user's Solana wallet to sign canonical proof messages (SIWS-inspired),
+ * Prompts the user's Solana wallet to sign canonical proof messages,
  * encodes signatures in Base58, and communicates with verified API routes.
  */
 
 import bs58 from 'bs58'
 import {
-  buildCanonicalSubmitMessageV2,
+  buildCanonicalSubmitMessageV3,
   buildCanonicalRetryMessageV2,
   getVerifiedDomain,
 } from './canonicalMessage'
@@ -82,12 +82,12 @@ export async function submitVerifiedLog(
   evidenceUrl?: string,
   githubUrl?: string
 ): Promise<SubmitLogResponse> {
-  const timestamp = new Date().toISOString()
   const challenge = await requestChallenge(walletAddress)
+  const timestamp = new Date().toISOString()
 
   // 1. Build canonical proof message cryptographically binding content AND evidence URLs
   const clientDomain = getVerifiedDomain(typeof window !== 'undefined' && window.location?.host ? window.location.host : null)
-  const messageText = buildCanonicalSubmitMessageV2({
+  const messageText = buildCanonicalSubmitMessageV3({
     domain: clientDomain,
     walletAddress,
     timestamp,

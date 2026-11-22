@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifyLogCryptographically, evaluateProofValidity, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { verifyLogCryptographically, evaluateProofValidity, decodeBase58, hasProofSigningMetadata } from '@/app/lib/canonicalMessage'
 import { computeBadgeSummary, calculateStreak, calculateLongestStreak, fetchAllWalletLogs, PROTOCOL_TIMEZONE } from '@/app/lib/milestones'
 
 const supabase = createClient(
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
       let status: 'verified' | 'unverified' | 'legacy_unindexed' = 'unverified'
       const validity = evaluateProofValidity(l)
 
-      if (!l.nonce && (l as { protocol_version?: number }).protocol_version !== 2) {
+      if (!hasProofSigningMetadata(l)) {
         status = 'legacy_unindexed'
       } else {
         isCryptoVerified = validity.signatureVerified
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ wallet: s
     // Strict Invariant: Metrics and badges are derived EXCLUSIVELY from cryptographically verified proofs
     const verifiedLogs = logs.filter((l) => verifyLogCryptographically(l))
     const verifiedLogsCount = verifiedLogs.length
-    const legacyCount = logs.filter((l) => !l.nonce && (l as { protocol_version?: number }).protocol_version !== 2).length
+    const legacyCount = logs.filter((l) => !hasProofSigningMetadata(l)).length
 
     const createdAts = verifiedLogs.map((l) => l.created_at)
     const streak = calculateStreak(createdAts, PROTOCOL_TIMEZONE)

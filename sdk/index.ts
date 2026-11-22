@@ -201,7 +201,9 @@ export class ProvnClient {
   static verifyProofLocally(proof: {
     walletAddress: string
     signature: string
-    nonce: string
+    nonce?: string | null
+    challenge?: string | null
+    protocolVersion?: number
     timestamp: string
     content: string
     domain?: string
@@ -212,6 +214,8 @@ export class ProvnClient {
       wallet_address: proof.walletAddress,
       signature: proof.signature,
       nonce: proof.nonce,
+      challenge: proof.challenge,
+      protocol_version: proof.protocolVersion,
       domain: proof.domain,
       created_at: proof.timestamp,
       content: proof.content,

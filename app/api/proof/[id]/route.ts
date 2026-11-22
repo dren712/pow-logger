@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { evaluateProofValidity, verifyPrivateProofAuth, getCanonicalDomainAndUri } from '@/app/lib/canonicalMessage'
+import { evaluateProofValidity, verifyPrivateProofAuth, getCanonicalDomainAndUri, hasProofSigningMetadata } from '@/app/lib/canonicalMessage'
 import { ProofDetail, WalletLog } from '@/app/lib/types'
 import { PROVN_ALLOWED_DOMAINS } from '@/app/lib/serverKeypair'
 
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     const isProtoValid = validityReport.protocolVerified
     const isDomainValid = Boolean(rawLog.domain && PROVN_ALLOWED_DOMAINS.includes(rawLog.domain.trim().toLowerCase().split(':')[0]))
     const domainVerified = validityReport.challengeVerified && isDomainValid
-    const canonicalMessageReconstructed = Boolean((rawLog.nonce || rawLog.protocol_version === 2) && rawLog.wallet_address)
+    const canonicalMessageReconstructed = Boolean(hasProofSigningMetadata(rawLog) && rawLog.wallet_address)
 
     // Accurate verification state: do NOT collapse signature-only validity into full protocol validity
     let verificationState: ProofDetail['verificationState'] = 'UNVERIFIED'
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       verificationState = 'VERIFIED'
     } else if (isSigValid) {
       verificationState = 'UNVERIFIED' // Signature valid but protocol bounds/receipt incomplete
-    } else if (!rawLog.nonce && rawLog.protocol_version !== 2) {
+    } else if (!hasProofSigningMetadata(rawLog)) {
       verificationState = 'LEGACY'
     }
 
@@ -85,6 +85,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       evidenceUrl: rawLog.evidence_url || null,
       signature: rawLog.signature,
       nonce: rawLog.nonce,
+      challenge: rawLog.challenge,
+      protocolVersion: rawLog.protocol_version,
       domain: rawLog.domain,
       skills: rawLog.skills,
       protocols: rawLog.protocols,

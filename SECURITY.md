@@ -5,10 +5,10 @@ PROVN is designed to provide cryptographic evidence of a builder's claims. Howev
 ## 1. Cryptographic Guarantees (What PROVN Proves)
 
 When a log is evaluated by PROVN or an independent third-party auditor, the protocol verifies a 4-layer proof model:
-* **Signature Authenticity (Layer 1):** The private key corresponding to the supplied Solana public key produced the Ed25519 signature over the reconstructed canonical SIWS message envelope.
+* **Signature Authenticity (Layer 1):** The private key corresponding to the supplied Solana public key produced the Ed25519 signature over the reconstructed, version-specific canonical message.
 * **Protocol Context & Challenge Issuance (Layer 2):** The challenge was issued by the PROVN server, cryptographically signed by an authorized server key (`kid`), and strictly bounded by the issuance window (`iat <= client_timestamp <= exp`) on an authorized domain.
 * **Server Observation & Submission Receipt (Layer 2.5):** The PROVN server observed and ingested the proof, issuing a signed `PROVN_SUBMISSION_RECEIPT` that cryptographically binds to the exact `SHA-256` digest of the canonical signed message (`signed_payload_hash`).
-* **Author Identity Attribution (Layer 3):** When linked via SIWS OAuth, PROVN cryptographically establishes that the commit/PR author matches the verified GitHub account bound to the wallet (`source_verified`).
+* **Author Identity Attribution (Layer 3):** When linked via wallet-signed GitHub OAuth, PROVN cryptographically establishes that the commit/PR author matches the verified GitHub account bound to the wallet (`source_verified`).
 * **Archival Data Availability (Layer 4):** When archival is requested and confirmed, the server records an archival state backed by a verifiable Irys/Arweave transaction receipt.
 
 ## 2. Published Trust Anchors (Public Key Registry)
@@ -29,12 +29,13 @@ PROVN implements standard PKI CRL/OCSP temporal revocation bounds:
 - Historical receipts observed and signed **prior to** `revoked_at` remain cryptographically verifiable against the key epoch.
 - Dedicated test fixtures (`status: test`) are strictly rejected by production verification endpoints and cannot be used in production node initialization.
 
-## 3. Formal Verification Algorithm Specification (Protocol V2)
+## 3. Formal Verification Algorithm Specification (Protocol V2 and V3)
 
 Any independent node, auditor, or smart contract can evaluate a PROVN proof offline using the following 7-step algorithm without database access:
 
 ```text
 1. RECONSTRUCT CANONICAL MESSAGE & VALIDATE DOMAIN
+   # V2 uses the original SIWS-style header; V3 uses a plain-text PROVN header.
    canonicalMsg = reconstructCanonicalSubmitMessage(log)
    assert(canonicalMsg != null)
    assert(PROVN_ALLOWED_DOMAINS.includes(log.domain))
@@ -82,7 +83,7 @@ Any independent node, auditor, or smart contract can evaluate a PROVN proof offl
 
 PROVN provides the *cryptographic wrapper* around a claim, but the claim itself may be false. Reviewers MUST independently verify the claims.
 * **Work Quality / Truthfulness:** PROVN does NOT prove that the builder actually performed the work they claim to have done in the text content, nor does it evaluate code quality.
-* **Identity & Attribution:** The integration establishes a strict cryptographic binding: `Wallet -> SIWS Challenge -> Server OAuth State (PKCE) -> Immutable GitHub ID -> Commit Author ID`. PROVN proves that the commit author matches the linked GitHub account, but it does NOT prove the user holds access to the original repository beyond that specific contribution.
+* **Identity & Attribution:** The integration establishes a strict cryptographic binding: `Wallet -> Signed PROVN Challenge -> Server OAuth State (PKCE) -> Immutable GitHub ID -> Commit Author ID`. PROVN proves that the commit author matches the linked GitHub account, but it does NOT prove the user holds access to the original repository beyond that specific contribution.
 * **Anti-Gaming:** There is currently no algorithmic prevention against a user submitting low-effort logs purely to maintain a daily streak. The system enforces a strict maximum quota of 3 logs per day per wallet, but relies on human reviewers (DAOs, grant committees) to assess the quality of those logs.
 
 ## 5. Database Security & Transactional Hardening
