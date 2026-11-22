@@ -168,7 +168,7 @@ Options:
       console.log(` ⛓️ PROVN 5-LINK PROVENANCE CHAIN — PROOF #${p.id}`)
       console.log('======================================================')
       console.log(` [1] Solana Wallet:   ${p.walletAddress} (${p.signatureVerified ? '✅ VERIFIED' : '❌ FAILED'})`)
-      console.log(` [2] Protocol Epoch:  ${p.nonce || 'v2'} (${p.protocolVerified ? '✅ VERIFIED' : '⏳ PENDING'})`)
+      console.log(` [2] Protocol Epoch:  v${p.protocolVersion ?? p.validityReport?.details.protocolVersion ?? '?'} (${p.protocolVerified ? '✅ VERIFIED' : '⏳ PENDING'})`)
       console.log(` [3] Source Evidence: ${p.provenanceLevel || 'self_attested'} (${p.githubUrl || 'None'})`)
       console.log(` [4] Solana Anchor:   PDA: ${p.solanaAnchorPda || 'Calculated on Request'}`)
       console.log(`     Program ID:      ${p.solanaProgramId || 'FZomvFyB1R2CQZwoTKhU8f2i1hVd1NS3TYUaFrwijmZx'}`)

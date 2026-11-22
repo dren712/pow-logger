@@ -58,6 +58,7 @@ export interface WalletLog {
   nonce?: string
   domain?: string
   challenge?: string
+  protocol_version?: number
   submission_receipt?: string | null
   evidence_url?: string | null
   github_url?: string | null
@@ -141,6 +142,8 @@ export interface ProofDetail {
   evidenceUrl?: string | null
   signature?: string
   nonce?: string
+  challenge?: string | null
+  protocolVersion?: number
   domain?: string
   skills?: string[]
   protocols?: string[]

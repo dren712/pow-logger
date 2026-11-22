@@ -1,9 +1,8 @@
 /**
- * PROVN Canonical Proof Message Builder (SIWS-Inspired)
+ * PROVN Canonical Proof Message Builder
  *
  * Cryptographically binds wallet address, content, evidence links (GitHub & Demo URLs),
  * timestamp, and unique nonce into a standardized, tamper-evident Solana signed proof message.
- * Follows Sign-In-With-Solana (SIWS) domain-binding and wallet authentication principles.
  */
 
 import bs58 from 'bs58'
@@ -50,7 +49,11 @@ export function encodeBase58(bytes: Uint8Array): string {
   return fn(bytes)
 }
 
-export const CURRENT_PROTOCOL_VERSION = 2
+export const CURRENT_PROTOCOL_VERSION = 3
+
+export function hasProofSigningMetadata(log: Pick<VerifiableLog, 'nonce' | 'protocol_version'>): boolean {
+  return Boolean(log.nonce || log.protocol_version === 2 || log.protocol_version === 3)
+}
 
 export interface CanonicalSubmitParamsV2 {
   domain?: string
@@ -118,7 +121,7 @@ export function validateAndNormalizeUrl(
 }
 
 /**
- * Resolves and validates the canonical domain for SIWS verification.
+ * Resolves and validates the canonical signing domain.
  * Prevents Host header injection by enforcing configured app domain or whitelisted patterns.
  */
 export function getVerifiedDomain(reqHost: string | null): string {
@@ -156,6 +159,23 @@ export function isConfiguredSupabaseUrl(url?: string): boolean {
   if (!url || typeof url !== 'string') return false
   const lower = url.toLowerCase().trim()
   return !lower.includes('placeholder') && !lower.includes('dummy-test') && lower.startsWith('http')
+}
+
+export function buildCanonicalSubmitMessageV3(params: CanonicalSubmitParamsV2): string {
+  const domain = params.domain ? params.domain.trim().toLowerCase().split(':')[0] : 'provn-sol.vercel.app'
+  const cleanContent = params.content.trim()
+  const cleanGithubUrl = validateAndNormalizeUrl(params.githubUrl, 'github') || 'none'
+  const cleanEvidenceUrl = validateAndNormalizeUrl(params.evidenceUrl, 'evidence') || 'none'
+
+  return `PROVN — Submit Proof
+Domain: ${domain}
+Wallet: ${params.walletAddress}
+PROVN Protocol Version: 3
+Challenge: ${params.challenge}
+Timestamp: ${params.timestamp}
+Content: ${cleanContent}
+GitHub URL: ${cleanGithubUrl}
+Evidence URL: ${cleanEvidenceUrl}`
 }
 
 export function buildCanonicalSubmitMessageV2(params: CanonicalSubmitParamsV2): string {
@@ -199,10 +219,9 @@ Evidence URL: ${cleanEvidenceUrl}`
 
 export function buildCanonicalRetryMessageV2(params: CanonicalRetryParamsV2): string {
   const domain = params.domain || 'provn-sol.vercel.app'
-  return `${domain} wants you to sign in with your Solana account:
-${params.walletAddress}
-
-PROVN Protocol Version: 2
+  return `PROVN — Wallet Authorization
+Domain: ${domain}
+Wallet: ${params.walletAddress}
 Action: Retry Archival
 Log ID: ${params.logId}
 Challenge: ${params.challenge}
@@ -233,10 +252,9 @@ export interface CanonicalArchiveParams {
 }
 
 export function buildCanonicalArchiveMessage(params: CanonicalArchiveParams): string {
-  return `${params.domain} wants you to sign in with your Solana account:
-${params.walletAddress}
-
-PROVN Protocol Version: 2
+  return `PROVN — Wallet Authorization
+Domain: ${params.domain}
+Wallet: ${params.walletAddress}
 Action: Archive Evidence
 Log ID: ${params.logId}
 Challenge: ${params.challenge}
@@ -253,10 +271,9 @@ export interface CanonicalVisibilityParams {
 }
 
 export function buildCanonicalVisibilityMessage(params: CanonicalVisibilityParams): string {
-  return `${params.domain} wants you to sign in with your Solana account:
-${params.walletAddress}
-
-PROVN Protocol Version: 2
+  return `PROVN — Wallet Authorization
+Domain: ${params.domain}
+Wallet: ${params.walletAddress}
 Action: Set Visibility
 Log ID: ${params.logId}
 Visibility: ${params.visibility}
@@ -274,10 +291,9 @@ export interface CanonicalIdentityLinkParams {
 
 export function buildCanonicalIdentityLinkMessage(params: CanonicalIdentityLinkParams): string {
   const actionName = params.action || 'Link'
-  return `${params.domain} wants you to sign in with your Solana account:
-${params.walletAddress}
-
-PROVN Protocol Version: 2
+  return `PROVN — Wallet Authorization
+Domain: ${params.domain}
+Wallet: ${params.walletAddress}
 Action: ${actionName} GitHub Identity
 Challenge: ${params.challenge}
 Timestamp: ${params.timestamp}`
@@ -292,13 +308,14 @@ export function reconstructCanonicalSubmitMessage(log: VerifiableLog): string | 
     return null
   }
 
-  const challengeStr = log.challenge || (log.protocol_version === 2 ? log.nonce : null)
-  const isV2 = log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!challengeStr)
+  const challengeStr = log.challenge || (log.protocol_version === 2 || log.protocol_version === 3 ? log.nonce : null)
+  const isV3 = log.protocol_version === 3
+  const usesChallenge = isV3 || log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!challengeStr)
 
-  if (isV2 && (!challengeStr || typeof challengeStr !== 'string' || challengeStr.trim() === '')) {
+  if (usesChallenge && (!challengeStr || typeof challengeStr !== 'string' || challengeStr.trim() === '')) {
     return null
   }
-  if (!isV2 && (!log.nonce || typeof log.nonce !== 'string')) {
+  if (!usesChallenge && (!log.nonce || typeof log.nonce !== 'string')) {
     return null
   }
 
@@ -312,16 +329,20 @@ export function reconstructCanonicalSubmitMessage(log: VerifiableLog): string | 
     if (!normalizedEv) return null
   }
 
-  // Strict Domain: For Protocol V2, domain is mandatory and must not silently fallback
-  if (isV2 && (!log.domain || typeof log.domain !== 'string' || log.domain.trim() === '')) {
+  // For challenge-based proofs the domain is mandatory.
+  if (usesChallenge && (!log.domain || typeof log.domain !== 'string' || log.domain.trim() === '')) {
     return null
   }
-  const domain = isV2 ? log.domain! : (log.domain || 'provn-sol.vercel.app')
+  const domain = usesChallenge ? log.domain! : (log.domain || 'provn-sol.vercel.app')
 
   // Postgres / Supabase transforms "2026-08-17T18:01:50.481Z" into "...+00:00" and may trim trailing ms zeroes.
   // We MUST restore the exact string the client signed (which is standard JS .toISOString() format).
   let fixedTimestamp = log.created_at
-  if (fixedTimestamp.endsWith('+00:00')) {
+  if (isV3) {
+    const timestamp = new Date(fixedTimestamp)
+    if (isNaN(timestamp.getTime())) return null
+    fixedTimestamp = timestamp.toISOString()
+  } else if (fixedTimestamp.endsWith('+00:00')) {
     fixedTimestamp = fixedTimestamp.replace('+00:00', 'Z')
     const msMatch = fixedTimestamp.match(/\.(\d+)Z$/)
     if (msMatch) {
@@ -331,8 +352,9 @@ export function reconstructCanonicalSubmitMessage(log: VerifiableLog): string | 
     }
   }
 
-  if (isV2) {
-    return buildCanonicalSubmitMessageV2({
+  if (usesChallenge) {
+    const buildMessage = isV3 ? buildCanonicalSubmitMessageV3 : buildCanonicalSubmitMessageV2
+    return buildMessage({
       domain,
       walletAddress: log.wallet_address,
       content: log.content,
@@ -356,7 +378,7 @@ export function reconstructCanonicalSubmitMessage(log: VerifiableLog): string | 
 
 /**
  * The single canonical cryptographic verification function across the PROVN protocol.
- * Reconstructs the canonical SIWS-inspired proof message and executes TweetNaCl Ed25519
+ * Reconstructs the canonical proof message and executes TweetNaCl Ed25519
  * detached signature verification against the signer's public key.
  *
  * Strict Protocol Invariants:
@@ -372,9 +394,9 @@ export function verifyLogCryptographically(
     return false
   }
 
-  const isV2 = log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!log.challenge)
+  const usesChallenge = log.protocol_version === 3 || log.protocol_version === 2 || (log.protocol_version !== 1 && !log.nonce && !!log.challenge)
 
-  if (!isV2) {
+  if (!usesChallenge) {
     // Strict Nonce Validation: Base58 string, 8-64 chars, no surrounding whitespace
     if (!log.nonce || typeof log.nonce !== 'string' || log.nonce.trim() !== log.nonce || log.nonce.length < 8 || log.nonce.length > 64) {
       return false
@@ -415,13 +437,14 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   const isSigValid = verifyLogCryptographically(log)
 
   const protocolVersion = log.protocol_version || (log.nonce && !log.challenge ? 1 : 2)
+  const usesChallenge = protocolVersion === 2 || protocolVersion === 3
   const domain = log.domain || 'provn-sol.vercel.app'
   const isDomainValid = PROVN_ALLOWED_DOMAINS.includes(domain)
 
   let challengeValid = false
   let timestampValid = false
 
-  if (protocolVersion === 2) {
+  if (usesChallenge) {
     const challengeStr = log.challenge || log.nonce
     if (typeof challengeStr === 'string') {
       const parts = challengeStr.split('.')
@@ -547,8 +570,7 @@ export function evaluateProofValidity(log: VerifiableLog): ProofValidityReport {
   }
 
   const submissionReceiptVerified = Boolean(submissionReceiptValid)
-  const isV2 = protocolVersion === 2
-  const isProtocolValid = isSigValid && challengeVerified && (isV2 ? submissionReceiptVerified : true)
+  const isProtocolValid = isSigValid && challengeVerified && (!usesChallenge || submissionReceiptVerified)
 
   return {
     signatureVerified: isSigValid,
@@ -729,4 +751,3 @@ export async function verifyPrivateProofAuth(
     return false
   }
 }
-

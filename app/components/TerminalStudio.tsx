@@ -2,7 +2,7 @@
 
 import React, { useEffect, useId, useState } from 'react'
 import { classifyLog } from '@/app/lib/classifier'
-import { buildCanonicalSubmitMessageV2 } from '@/app/lib/canonicalMessage'
+import { buildCanonicalSubmitMessageV3 } from '@/app/lib/canonicalMessage'
 
 export interface ProofTemplate {
   id: string
@@ -130,7 +130,7 @@ export default function TerminalStudio({
 
   // Canonical Message Preview Construction
   const previewDomain = typeof window !== 'undefined' && window.location?.host ? window.location.host : 'provn-sol.vercel.app'
-  const previewMessage = buildCanonicalSubmitMessageV2({
+  const previewMessage = buildCanonicalSubmitMessageV3({
     domain: previewDomain,
     walletAddress: walletAddress || 'YOUR_SOLANA_WALLET_PUBLIC_KEY',
     timestamp: new Date().toISOString(),
