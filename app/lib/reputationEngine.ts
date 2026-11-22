@@ -18,7 +18,7 @@ import {
   PROTOCOL_TIMEZONE,
 } from './milestones'
 import { evaluateAchievements } from './achievements'
-import { verifyLogCryptographically } from './canonicalMessage'
+import { hasProofSigningMetadata, verifyLogCryptographically } from './canonicalMessage'
 
 export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderReputation {
   const safeLogs = logs || []
@@ -32,8 +32,8 @@ export function calculateReputation(wallet: string, logs: WalletLog[]): BuilderR
   const totalProofs = verifiedProofs // Invariant alias
   
   // Explicit categorization of historical & unverified records
-  const legacyRecords = safeLogs.filter((l) => !l.nonce && l.protocol_version !== 2).length
-  const unverifiedRecords = safeLogs.filter((l) => (l.nonce || l.protocol_version === 2) && !verifyLogCryptographically(l)).length
+  const legacyRecords = safeLogs.filter((l) => !hasProofSigningMetadata(l)).length
+  const unverifiedRecords = safeLogs.filter((l) => hasProofSigningMetadata(l) && !verifyLogCryptographically(l)).length
   
   // Archived verified proofs (Irys / Arweave confirmed)
   const archivedVerifiedProofs = verifiedLogs.filter(

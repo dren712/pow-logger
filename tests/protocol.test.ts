@@ -18,6 +18,7 @@ import { createClient } from '@supabase/supabase-js'
 import {
   buildCanonicalSubmitMessage,
   buildCanonicalSubmitMessageV2,
+  buildCanonicalSubmitMessageV3,
   buildCanonicalRetryMessage,
   buildCanonicalRetryMessageV2,
   buildCanonicalArchiveMessage,
@@ -856,7 +857,7 @@ async function runProductionTestSuite() {
   // --- SUITE 11: Protocol V2 & Server-Issued Challenge Integrity [V2 Canonical Challenge Protocol] ---
   console.log('\n► SUITE 11: Protocol V2 & Server-Issued Challenge Integrity [V2 Canonical Challenge]')
 
-  assert(CURRENT_PROTOCOL_VERSION === 2, 'Current protocol version is exported as 2')
+  assert(CURRENT_PROTOCOL_VERSION === 3, 'Current protocol version is exported as 3')
 
   const testV2Keypair = nacl.sign.keyPair()
   const testV2Wallet = bs58.encode(testV2Keypair.publicKey)
@@ -878,6 +879,17 @@ async function runProductionTestSuite() {
   assert(v2SubmitMsg.includes('PROVN Protocol Version: 2'), 'V2 canonical submit message includes Protocol Version 2 header')
   assert(v2SubmitMsg.includes(`Challenge: ${testV2Challenge}`), 'V2 canonical submit message includes server-issued challenge')
   assert(v2SubmitMsg.includes('GitHub URL: https://github.com/dren712/pow-logger/pull/42'), 'V2 canonical submit message includes normalized GitHub URL')
+  assert(v2SubmitMsg === [
+    `${testV2Domain} wants you to sign in with your Solana account:`,
+    testV2Wallet,
+    '',
+    'PROVN Protocol Version: 2',
+    `Challenge: ${testV2Challenge}`,
+    `Timestamp: ${testV2Timestamp}`,
+    `Content: ${testV2Content.trim()}`,
+    'GitHub URL: https://github.com/dren712/pow-logger/pull/42',
+    'Evidence URL: https://provn-sol.vercel.app/',
+  ].join('\n'), 'V2 canonical proof bytes remain unchanged')
 
   const v2RetryMsg = buildCanonicalRetryMessageV2({
     domain: testV2Domain,
@@ -889,6 +901,7 @@ async function runProductionTestSuite() {
 
   assert(v2RetryMsg.includes('Action: Retry Archival'), 'V2 canonical retry message includes Action: Retry Archival')
   assert(v2RetryMsg.includes(`Challenge: ${testV2Challenge}`), 'V2 canonical retry message includes challenge')
+  assert(v2RetryMsg.startsWith(`PROVN — Wallet Authorization\nDomain: ${testV2Domain}\nWallet: ${testV2Wallet}\n`), 'Retry uses a plain-text, domain-bound prompt')
 
   // Sign V2 message
   const v2MsgBytes = new TextEncoder().encode(v2SubmitMsg)
@@ -946,6 +959,17 @@ async function runProductionTestSuite() {
     protocol_version: 1,
   }
   assert(verifyLogCryptographically(authenticV1Log) === true, 'verifyLogCryptographically maintains backward compatibility for V1 logs')
+  assert(v1Msg === [
+    'provn-sol.vercel.app wants you to sign in with your Solana account:',
+    v1Wallet,
+    '',
+    'SIWS Schema Version: 1',
+    `Nonce: ${v1Nonce}`,
+    `Timestamp: ${v1Timestamp}`,
+    `Content: ${v1Content}`,
+    'GitHub URL: none',
+    'Evidence URL: none',
+  ].join('\n'), 'V1 canonical proof bytes remain unchanged')
 
   // Validation of valid visibility states
   const validVisibilities = ['private', 'public']
@@ -1008,6 +1032,7 @@ async function runProductionTestSuite() {
   assert(archiveMsg.includes('Action: Archive Evidence'), 'Archive canonical message includes correct action')
   assert(archiveMsg.includes('Log ID: 42'), 'Archive canonical message includes log ID')
   assert(archiveMsg.includes(`Challenge: ${testV2Challenge}`), 'Archive canonical message includes challenge')
+  assert(archiveMsg.startsWith(`PROVN — Wallet Authorization\nDomain: provn-sol.vercel.app\nWallet: ${testV2Wallet}\n`), 'Archive uses a plain-text, domain-bound prompt')
 
   // Test P0-7: Adversarial Identity Attribution Downgrade (Option A)
   const maliciousGitHubUrl = 'https://github.com/dren712/pow-logger/pull/42' // Assuming this URL exists
@@ -1097,6 +1122,7 @@ async function runProductionTestSuite() {
   })
   assert(visMsg.includes('Action: Set Visibility'), 'Visibility canonical message includes correct action')
   assert(visMsg.includes('Visibility: public'), 'Visibility canonical message includes visibility value')
+  assert(visMsg.startsWith(`PROVN — Wallet Authorization\nDomain: provn-sol.vercel.app\nWallet: ${testV2Wallet}\n`), 'Visibility uses a plain-text, domain-bound prompt')
 
   // Test buildCanonicalIdentityLinkMessage
   const linkMsg = buildCanonicalIdentityLinkMessage({
@@ -1107,6 +1133,14 @@ async function runProductionTestSuite() {
   })
   assert(linkMsg.includes('Action: Link GitHub Identity'), 'Identity link canonical message includes correct action')
   assert(linkMsg.includes(testV2Challenge), 'Identity link canonical message includes challenge')
+  assert(linkMsg === [
+    'PROVN — Wallet Authorization',
+    'Domain: provn-sol.vercel.app',
+    `Wallet: ${testV2Wallet}`,
+    'Action: Link GitHub Identity',
+    `Challenge: ${testV2Challenge}`,
+    `Timestamp: ${testV2Timestamp}`,
+  ].join('\n'), 'Identity link uses the exact plain-text authorization format')
 
 
 
@@ -1798,6 +1832,77 @@ async function runProductionTestSuite() {
   assert(cliReport.layers.layer2_challenge.passed === true, 'CLI engine: Layer 2 server challenge token verified')
   assert(cliReport.layers.layer2_5_receipt.passed === true, 'CLI engine: Layer 2.5 server submission receipt verified')
   assert(cliReport.canonicalHash === computeCanonicalProofHash(legitimateCanonical), 'CLI engine: Exact canonical hash reproduced')
+
+  const v3Timestamp = new Date(Math.ceil(serverTime / 1000) * 1000).toISOString()
+  const v3StoredTimestamp = v3Timestamp.replace('.000Z', '+00:00')
+  const v3Canonical = buildCanonicalSubmitMessageV3({
+    domain: 'PROVN-SOL.VERCEL.APP:443',
+    walletAddress: testWallet,
+    challenge: serverChallenge,
+    timestamp: v3Timestamp,
+    content: `  ${baseProof.content}  `,
+    githubUrl: baseProof.github_url,
+  })
+  assert(v3Canonical === [
+    'PROVN — Submit Proof',
+    'Domain: provn-sol.vercel.app',
+    `Wallet: ${testWallet}`,
+    'PROVN Protocol Version: 3',
+    `Challenge: ${serverChallenge}`,
+    `Timestamp: ${v3Timestamp}`,
+    `Content: ${baseProof.content}`,
+    `GitHub URL: ${baseProof.github_url}`,
+    'Evidence URL: none',
+  ].join('\n'), 'V3 signs the exact plain-text, normalized proof format')
+  const v3Hash = computeCanonicalProofHash(v3Canonical)
+  const v3Signature = bs58.encode(nacl.sign.detached(new TextEncoder().encode(v3Canonical), testKeypair.secretKey))
+  const v3ReceiptPayload = new TextEncoder().encode(JSON.stringify({
+    type: 'PROVN_SUBMISSION_RECEIPT',
+    version: 1,
+    protocol_version: 3,
+    proof_id: baseProof.id,
+    challenge_id: serverChallenge,
+    wallet: testWallet,
+    signed_payload_hash: v3Hash,
+    observed_at: v3Timestamp,
+    iss: 'PROVN',
+    kid: PROVN_KID,
+  }))
+  const v3Receipt = `${bs58.encode(v3ReceiptPayload)}.${bs58.encode(signServerReceipt(v3ReceiptPayload))}`
+  const v3Proof = {
+    ...baseProof,
+    challenge: null,
+    nonce: serverChallenge,
+    created_at: v3StoredTimestamp,
+    signature: v3Signature,
+    protocol_version: 3,
+    submission_receipt: v3Receipt,
+  }
+  assert(reconstructCanonicalSubmitMessage(v3Proof) === v3Canonical, 'V3 restores exact signed proof bytes including milliseconds omitted by Postgres')
+  assert(evaluateProofValidity(v3Proof).protocolVerified, 'V3 validates the wallet signature, server challenge and submission receipt')
+  assert(!evaluateProofValidity({ ...v3Proof, submission_receipt: null }).protocolVerified, 'V3 requires a server submission receipt')
+  assert(!verifyLogCryptographically({ ...v3Proof, protocol_version: 2 }), 'V3 signature cannot be interpreted as a V2 signature')
+  assert(reconstructCanonicalSubmitMessage({ ...v3Proof, nonce: null }) === null, 'V3 requires a persisted server challenge')
+  assert(ProvnClient.verifyProofLocally({
+    walletAddress: testWallet,
+    signature: v3Signature,
+    protocolVersion: 3,
+    timestamp: v3StoredTimestamp,
+    domain: baseProof.domain,
+    challenge: serverChallenge,
+    content: baseProof.content,
+    githubUrl: baseProof.github_url,
+  }), 'SDK verifies a V3 signature locally')
+  const v3Envelope = {
+    ...portableProofEnvelope,
+    version: 3,
+    claim: { ...portableProofEnvelope.claim, timestamp: v3StoredTimestamp },
+    signature: { algorithm: 'Ed25519', value: v3Signature },
+    server_attestations: { ...portableProofEnvelope.server_attestations, submission_receipt: v3Receipt, signed_payload_hash: v3Hash },
+  }
+  const v3CliReport = verifyProofPacket(v3Envelope)
+  assert(v3CliReport.valid && v3CliReport.canonicalHash === v3Hash, 'CLI verifies a V3 proof and reproduces the exact canonical hash')
+  assert(!verifyProofPacket({ ...v3Envelope, server_attestations: { challenge: serverChallenge } }).valid, 'CLI rejects a V3 proof without a submission receipt')
 
   // Test 2: Adversarial Content Tampering in Portable Envelope Rejection
   const tamperedEnvelope = {

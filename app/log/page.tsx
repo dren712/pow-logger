@@ -188,7 +188,7 @@ export default function LoggerApp() {
     const previewText = logText.length > 80 ? `${logText.slice(0, 80)}...` : logText
     const proofLink = txId
       ? `Verified on Arweave: https://gateway.irys.xyz/${txId}`
-      : `Verified SIWS Proof: https://provn-sol.vercel.app`
+      : `Verified PROVN Proof: https://provn-sol.vercel.app`
     const tweetText = `Just logged my proof-of-work on PROVN 🗿\n\n"${previewText}"\n\n${proofLink}\nBuild your reputation: provn-sol.vercel.app\n#PROVN #Solana #BuildInPublic`
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank', 'noopener')
   }

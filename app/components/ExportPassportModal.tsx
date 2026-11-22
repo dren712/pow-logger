@@ -99,7 +99,7 @@ ${logs
       ? `[\`${l.irys_tx_id.slice(0, 8)}...\`](https://gateway.irys.xyz/${l.irys_tx_id})`
       : l.github_url
       ? `[GitHub PR](${l.github_url})`
-      : 'SIWS Verified'
+      : 'Signature Verified'
     return `| ${dateStr} | ${sanitizedContent} | ${skillsStr} | ${arweaveLink} |`
   })
   .join('\n')}
@@ -551,7 +551,7 @@ ${logs
                       ? `Arweave: ${l.irys_tx_id.slice(0, 8)}...`
                       : l.github_url
                       ? 'GitHub PR'
-                      : 'SIWS Verified'}
+                      : 'Signature Verified'}
                   </td>
                 </tr>
               ))}
