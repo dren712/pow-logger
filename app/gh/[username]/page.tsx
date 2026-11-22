@@ -72,7 +72,7 @@ export default async function BuilderProfilePage({ params }: PageProps) {
         <Link href="/leaderboard" className="text-gray-400 hover:text-emerald-400">Leaderboard →</Link>
       </nav>
 
-      <header className="glass-card flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
+      <div className="glass-card printable flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={p.avatarUrl} alt="" width={96} height={96} className="h-24 w-24 rounded-full border border-emerald-400/30" />
         <div className="min-w-0 flex-1">
@@ -95,7 +95,7 @@ export default async function BuilderProfilePage({ params }: PageProps) {
           <div className="text-[10px] uppercase tracking-widest text-gray-500">score / 100</div>
           <div className="mt-1 text-xs font-bold text-amber-400">{p.tier}</div>
         </div>
-      </header>
+      </div>
 
       <ProfileActions url={profileUrl} badgeMarkdown={badgeMarkdown} />
 
@@ -108,7 +108,7 @@ export default async function BuilderProfilePage({ params }: PageProps) {
         ))}
       </section>
 
-      <section className="glass-card p-6">
+      <section className="glass-card printable p-6">
         <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-400">Verified contributions</h2>
         <p className="mt-1 text-xs text-gray-500">
           Pull requests by {p.login} that maintainers of other projects merged. Each line links to the pull request on GitHub.
@@ -142,7 +142,7 @@ export default async function BuilderProfilePage({ params }: PageProps) {
       </section>
 
       {p.topRepos.length > 0 && (
-        <section className="glass-card p-6">
+        <section className="glass-card printable p-6">
           <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-400">Projects</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {p.topRepos.map((r) => (
@@ -161,7 +161,7 @@ export default async function BuilderProfilePage({ params }: PageProps) {
       )}
 
       {p.languages.length > 0 && (
-        <section className="glass-card p-6">
+        <section className="glass-card printable p-6">
           <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-400">Languages</h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {p.languages.map((l) => (
@@ -173,13 +173,13 @@ export default async function BuilderProfilePage({ params }: PageProps) {
         </section>
       )}
 
-      <footer className="text-[11px] leading-relaxed text-gray-500" style={{ display: 'block' }}>
+      <div className="text-[11px] leading-relaxed text-gray-500">
         <p>
           Built from public GitHub data on {new Date(p.generatedAt).toISOString().slice(0, 10)}; refreshed at most once every{' '}
           {PROFILE_REVALIDATE_SECONDS / 3600} hours. Verified at {profileUrl}
         </p>
         <p className="break-all">Evidence fingerprint (SHA-256): {p.fingerprint}</p>
-      </footer>
+      </div>
 
       <section className="no-print glass-card flex flex-col items-center gap-3 p-6 text-center">
         <h2 className="text-sm font-bold text-white">Get your own verified profile</h2>
