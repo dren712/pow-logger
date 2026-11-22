@@ -4,6 +4,29 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { EligibilityEvaluation } from '@/app/lib/types'
 import { STANDARD_POLICY_PRESETS } from '@/app/lib/policyEngine'
+import SiteNav from '@/app/components/SiteNav'
+
+const SAMPLE_WALLET = 'AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p'
+
+function formatValue(value: number | string | boolean | string[]) {
+  if (Array.isArray(value)) return value.length ? value.join(', ') : 'None'
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  return String(value)
+}
+
+function Mark({ passed }: { passed: boolean }) {
+  const color = passed ? '#2ee59d' : '#f5c451'
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-0.5 shrink-0">
+      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
+      {passed ? (
+        <path d="M7.5 12.5l3 3 6-6.5" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+      )}
+    </svg>
+  )
+}
 
 export default function BountyDemoPage() {
   const [wallet, setWallet] = useState('')
@@ -54,187 +77,191 @@ export default function BountyDemoPage() {
     setWallet(sampleAddr)
   }
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100 px-4 py-12">
-      <div className="max-w-3xl mx-auto space-y-8">
-        {/* Navigation */}
-        <div>
-          <Link href="/" className="text-xs font-mono text-emerald-400 hover:underline mb-2 block">
-            ← Back to PROVN Terminal
-          </Link>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎯</span>
-            <h1 className="text-2xl font-bold font-mono text-white">Ecosystem Policy & Bounty Integration Demo</h1>
-          </div>
-          <p className="text-xs text-gray-400 mt-1">
-            Interactive reference implementation showing how Superteam Earn, DAOs, or grant committees use the PROVN Policy Evaluation API to programmatically gate developer submissions.
-          </p>
-        </div>
+  const requirements = [
+    activePolicy.minVerifiedProofs && `At least ${activePolicy.minVerifiedProofs} verified proofs`,
+    activePolicy.minRecentProofs && `At least ${activePolicy.minRecentProofs} verified proof in the last 30 days`,
+    activePolicy.minStreak && `A daily building streak of at least ${activePolicy.minStreak} days`,
+    activePolicy.requiredProtocols && `Protocol experience: ${activePolicy.requiredProtocols.join(', ')}`,
+    activePolicy.requiredSkills && `Technical skills: ${activePolicy.requiredSkills.join(', ')}`,
+    activePolicy.requireGithubSource && 'Public GitHub evidence attached (pull request or commit)',
+    activePolicy.requireVerifiedGithubAttribution && 'Verified GitHub author attribution',
+    activePolicy.requireArchivedProof && 'At least one proof permanently archived on Arweave',
+  ].filter((r): r is string => Boolean(r))
 
-        {/* Policy Preset Selector */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-3">
-          <div className="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">
-            Select Evaluation Policy Preset:
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+  return (
+    <div className="pv flex flex-1 flex-col">
+      <SiteNav />
+      <main className="pv-main mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-5 py-8 lg:py-12">
+        <header>
+          <p className="pv-eyebrow">Integration demo</p>
+          <h1 className="mt-2 text-[28px] font-bold leading-tight tracking-tight text-white sm:text-[32px]">Policy eligibility check</h1>
+          <p className="pv-muted mt-3 max-w-2xl text-[15px] leading-relaxed">
+            A reference example of how a bounty platform, DAO or grant committee could use the PROVN policy evaluation API to
+            check a builder&rsquo;s wallet against a set of requirements. The policies and reward shown here are examples, not live programmes.
+          </p>
+        </header>
+
+        <section className="pv-card p-5 sm:p-6" aria-labelledby="policy-heading">
+          <h2 id="policy-heading" className="pv-h2">1. Choose an example policy</h2>
+          <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3" role="group" aria-labelledby="policy-heading">
             {Object.entries(STANDARD_POLICY_PRESETS).map(([key, preset]) => {
               const isSelected = selectedPreset === key
               return (
                 <button
                   key={key}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => {
                     setSelectedPreset(key)
                     setEvaluation(null)
                   }}
-                  className={`p-3 rounded-xl border text-left font-mono transition ${
-                    isSelected
-                      ? 'bg-emerald-950/30 border-emerald-500 text-white'
-                      : 'bg-[#0a0d14] border-gray-800 text-gray-400 hover:border-gray-700'
+                  className={`rounded-xl border p-3.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2ee59d] ${
+                    isSelected ? 'border-[#2ee59d] bg-[rgba(46,229,157,0.06)]' : 'border-[#272e3a] bg-[#080a0e] hover:border-[#3a4352]'
                   }`}
                 >
-                  <div className="text-xs font-bold text-emerald-400">{preset.name}</div>
-                  <div className="text-[10px] text-gray-500 mt-1">
-                    Min {preset.minVerifiedProofs || 0} proofs • {preset.minStreak || 0}d streak
-                  </div>
+                  <span className="block text-[14px] font-semibold text-white">{preset.name}</span>
+                  <span className="pv-muted mt-1 block text-[12px]">
+                    Min {preset.minVerifiedProofs || 0} {preset.minVerifiedProofs === 1 ? "proof" : "proofs"}, {preset.minStreak || 0}-day streak
+                  </span>
                 </button>
               )
             })}
           </div>
-        </div>
 
-        {/* Selected Policy Card */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-            <div>
-              <span className="text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded">
-                EVALUATION POLICY: {activePolicy.name}
-              </span>
-              <h2 className="text-base sm:text-lg font-bold font-mono text-white mt-2">
-                Policy Evaluation Example (Unofficial)
-              </h2>
+          <div className="mt-5 border-t border-[#1c222c] pt-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="pv-faint text-[12px]">Selected policy</p>
+                <p className="mt-1 text-[16px] font-semibold text-white">{activePolicy.name}</p>
+              </div>
+              <div className="sm:text-right">
+                <p className="pv-faint text-[12px]">Example reward</p>
+                <p className="mt-1 text-[16px] font-semibold text-white">$2,500 USDC</p>
+              </div>
             </div>
-            <div className="text-left sm:text-right">
-              <div className="text-emerald-400 font-mono font-bold text-lg">$2,500 USDC</div>
-              <div className="text-[10px] text-gray-500 font-mono">Bounty Reward / Allocation</div>
-            </div>
+            <p className="pv-faint mt-4 text-[12px]">Requirements</p>
+            {requirements.length > 0 ? (
+              <ul className="mt-2 flex flex-col gap-2 text-[14px] text-[#c3cad6]">
+                {requirements.map((r) => (
+                  <li key={r} className="flex gap-2.5">
+                    <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-[#2ee59d]" aria-hidden="true" />
+                    <span className="min-w-0 break-words">{r}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="pv-muted mt-2 text-[14px]">This policy has no requirements.</p>
+            )}
           </div>
+        </section>
 
-          <div className="border-t border-gray-800/80 pt-3">
-            <div className="text-xs font-mono text-gray-400 font-bold mb-2">Declared Policy Requirements:</div>
-            <ul className="text-xs font-mono space-y-1 text-gray-300">
-              {activePolicy.minVerifiedProofs && (
-                <li>• Minimum {activePolicy.minVerifiedProofs} Verified Cryptographic Proofs ⚡</li>
-              )}
-              {activePolicy.minRecentProofs && (
-                <li>• Minimum {activePolicy.minRecentProofs} Verified Proof in the last 30 days 📊</li>
-              )}
-              {activePolicy.minStreak && (
-                <li>• Minimum {activePolicy.minStreak}-Day Daily Building Streak 🔥</li>
-              )}
-              {activePolicy.requiredProtocols && (
-                <li>• Required Protocol Experience: {activePolicy.requiredProtocols.join(', ')} 🌐</li>
-              )}
-              {activePolicy.requiredSkills && (
-                <li>• Required Technical Skills: {activePolicy.requiredSkills.join(', ')} 🛠️</li>
-              )}
-              {activePolicy.requireGithubSource && (
-                <li>• Public GitHub Evidence Attached (PR / Commit) 🐙</li>
-              )}
-              {activePolicy.requireVerifiedGithubAttribution && (
-                <li>• Verified GitHub Author Attribution 🛡️</li>
-              )}
-              {activePolicy.requireArchivedProof && (
-                <li>• Confirmed Arweave L1 Permanent Provenance 📦</li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        {/* Verification Form */}
-        <div className="bg-[#11111a] border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-bold font-mono text-white">Evaluate Solana Wallet</h3>
-            <div className="flex gap-2 text-[11px] font-mono text-gray-500">
-              <span>Try sample:</span>
-              <button
-                type="button"
-                onClick={() => handleUseSampleWallet('AocAQAwVo8req1XQ9WfBmj5CLVrwic1xCiQrDKN2hF3p')}
-                className="text-emerald-400 hover:underline"
-              >
-                Sample Builder
+        <section className="pv-card p-5 sm:p-6" aria-labelledby="evaluate-heading">
+          <h2 id="evaluate-heading" className="pv-h2">2. Evaluate a wallet</h2>
+          <form onSubmit={handleCheckEligibility} className="mt-4">
+            <label htmlFor="wallet" className="pv-muted block text-[13px]">Solana wallet address</label>
+            <div className="mt-2 flex flex-col gap-2.5 sm:flex-row">
+              <input
+                id="wallet"
+                type="text"
+                placeholder="Base58 address"
+                value={wallet}
+                onChange={(e) => setWallet(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                className="pv-input pv-mono min-w-0 flex-1 !pl-3.5 !text-[13px]"
+              />
+              <button type="submit" disabled={loading} className="pv-btn">
+                {loading ? 'Evaluating...' : 'Evaluate policy'}
               </button>
             </div>
-          </div>
-
-          <form onSubmit={handleCheckEligibility} className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              placeholder="Enter Solana Wallet Address (Base58)..."
-              value={wallet}
-              onChange={(e) => setWallet(e.target.value)}
-              className="flex-1 bg-[#08080c] border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs px-4 py-2.5 rounded-lg transition disabled:opacity-50"
-            >
-              {loading ? 'Evaluating Policy...' : 'Evaluate Policy →'}
-            </button>
+            <p className="pv-muted mt-2.5 text-[13px]">
+              No wallet to hand?{' '}
+              <button
+                type="button"
+                onClick={() => handleUseSampleWallet(SAMPLE_WALLET)}
+                className="rounded text-[#2ee59d] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2ee59d]"
+              >
+                Use the example wallet
+              </button>
+            </p>
           </form>
 
-          {error && <div className="text-xs font-mono text-red-400 bg-red-950/40 p-3 rounded-lg">{error}</div>}
-
-          {evaluation && (
-            <div
-              className={`p-4 rounded-xl border font-mono text-xs space-y-4 ${
-                evaluation.eligible
-                  ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
-                  : 'bg-yellow-950/20 border-yellow-500/40 text-yellow-300'
-              }`}
-            >
-              <div className="flex justify-between items-center font-bold">
-                <span>
-                  Status: {evaluation.eligible ? '✅ ELIGIBLE (POLICY SATISFIED)' : '❌ INELIGIBLE (REQUIREMENTS MISSING)'}
-                </span>
-                <span className="text-[10px] bg-black/40 px-2 py-1 rounded">
-                  Passed {evaluation.summary.passedCount} / {evaluation.summary.totalChecks} Checks
-                </span>
+          <div className="mt-5" aria-live="polite">
+            {loading && (
+              <div className="flex flex-col gap-2.5" aria-label="Evaluating policy">
+                <div className="pv-skeleton h-12" />
+                <div className="pv-skeleton h-10" />
+                <div className="pv-skeleton h-10" />
               </div>
+            )}
 
-              {/* Individual Checks Breakdown */}
-              <div className="space-y-2 pt-2 border-t border-gray-800">
-                {evaluation.checks.map((check) => (
-                  <div
-                    key={check.id}
-                    className="flex justify-between items-start text-[11px] bg-black/30 p-2 rounded"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{check.passed ? '✅' : '❌'}</span>
-                      <span className="text-white font-medium">{check.label}</span>
-                    </div>
-                    <div className="text-right text-[10px] text-gray-400">
-                      <div>Actual: {JSON.stringify(check.actual)}</div>
-                      <div>Required: {JSON.stringify(check.required)}</div>
+            {error && (
+              <div role="alert" className="rounded-xl border border-[rgba(255,123,123,0.4)] bg-[rgba(255,123,123,0.07)] px-4 py-3 text-[14px] text-[#ff9c9c]">
+                <p className="font-semibold">The policy could not be evaluated</p>
+                <p className="mt-1 break-words text-[13px] text-[#e3b5b5]">{error}</p>
+              </div>
+            )}
+
+            {!loading && !error && !evaluation && (
+              <p className="pv-faint rounded-xl border border-dashed border-[#272e3a] px-4 py-6 text-center text-[13px]">
+                Enter a wallet address to see which requirements it meets.
+              </p>
+            )}
+
+            {evaluation && (
+              <div className="overflow-hidden rounded-xl border border-[#1c222c]">
+                <div
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+                  style={{
+                    background: evaluation.eligible ? 'rgba(46, 229, 157, 0.07)' : 'rgba(245, 196, 81, 0.07)',
+                    color: evaluation.eligible ? '#2ee59d' : '#f5c451',
+                  }}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Mark passed={evaluation.eligible} />
+                    <div>
+                      <p className="text-[15px] font-semibold">{evaluation.eligible ? 'Eligible' : 'Not eligible'}</p>
+                      <p className="text-[13px] text-[#c3cad6]">
+                        {evaluation.eligible ? 'This wallet meets every requirement of the policy.' : 'This wallet is missing one or more requirements.'}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <span className="pv-chip">
+                    {evaluation.summary.passedCount} of {evaluation.summary.totalChecks} checks passed
+                  </span>
+                </div>
 
-              <div className="text-[10px] text-gray-400 pt-2 border-t border-gray-800 flex justify-between items-center">
-                <span>Evaluated at {new Date(evaluation.evaluatedAt).toLocaleTimeString()}</span>
-                <Link
-                  href={`/u/${evaluation.wallet}`}
-                  className="text-emerald-400 hover:underline"
-                >
-                  View Full Builder Passport →
-                </Link>
+                <ul className="divide-y divide-[#1c222c] border-t border-[#1c222c]">
+                  {evaluation.checks.map((check) => (
+                    <li key={check.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                      <div className="flex min-w-0 gap-2.5">
+                        <Mark passed={check.passed} />
+                        <div className="min-w-0">
+                          <p className="text-[14px] font-medium text-white">{check.label}</p>
+                          <p className="sr-only">{check.passed ? 'Passed' : 'Not met'}</p>
+                        </div>
+                      </div>
+                      <dl className="pv-muted grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 pl-7 text-[12px] sm:max-w-[45%] sm:pl-0">
+                        <dt className="pv-faint">Actual</dt>
+                        <dd className="break-words text-[#c3cad6]">{formatValue(check.actual)}</dd>
+                        <dt className="pv-faint">Required</dt>
+                        <dd className="break-words text-[#c3cad6]">{formatValue(check.required)}</dd>
+                      </dl>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="pv-muted flex flex-wrap items-center justify-between gap-2 border-t border-[#1c222c] px-4 py-3 text-[12px]">
+                  <span>Evaluated at {new Date(evaluation.evaluatedAt).toLocaleTimeString()}</span>
+                  <Link href={`/u/${evaluation.wallet}`} className="rounded text-[#2ee59d] hover:underline">
+                    View builder passport
+                  </Link>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
