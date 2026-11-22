@@ -128,11 +128,19 @@ export class ProvnVerify {
       reasons: evaluation.reasons,
       spentBefore: evaluation.spentBefore,
     }
-    const event = await this.execution.action({
-      type: eventType,
-      ...(request.kind === 'tool' ? { tool: request.action } : {}),
-      metadata: { ...extra, provnVerify: commitment },
-    })
+    let event
+    try {
+      event = await this.execution.action({
+        type: eventType,
+        ...(request.kind === 'tool' ? { tool: request.action } : {}),
+        metadata: { ...extra, provnVerify: commitment },
+      })
+    } catch (err) {
+      if (evaluation.decision === 'allow' && request.kind === 'payment' && request.amount) {
+        this.spent = formatAmount(parseAmount(this.spent) - parseAmount(request.amount))
+      }
+      throw err
+    }
     return { actionId, evaluation, payloadHash: event.payloadHash }
   }
 
@@ -234,7 +242,8 @@ export class ProvnVerify {
       await this.settle(actionId, evaluation, payloadHash, 'outcome.attestation', hashEvidence({ error: message }), {
         outcomeType: 'payment.failed',
         success: false,
-        summary: `Payment not completed: ${message.slice(0, 200)}`,
+        // The payer's error text stays out of the receipt (it may trip the secret scan); only its hash is committed.
+        summary: 'Payment not completed by the payer',
       })
       throw err
     }
