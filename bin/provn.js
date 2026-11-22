@@ -44,6 +44,27 @@ function decodeBase58(str) {
   throw new Error('Base58 decoding library not available')
 }
 
+const ED25519_ORDER = Uint8Array.from([
+  0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
+  0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
+])
+
+function isCanonicalEd25519Signature(signature) {
+  if (!signature || signature.length !== 64) return false
+  for (let i = 63; i >= 32; i--) {
+    if (signature[i] !== ED25519_ORDER[i - 32]) {
+      return signature[i] < ED25519_ORDER[i - 32]
+    }
+  }
+  return false
+}
+
+function verifyDetached(message, signature, publicKey) {
+  return isCanonicalEd25519Signature(signature) && nacl.sign.detached.verify(message, signature, publicKey)
+}
+
 /**
  * Resolves trusted public key bytes with strict temporal validity and status enforcement.
  */
@@ -268,7 +289,7 @@ function verifyProofPacket(packet) {
     const sigBytes = decodeBase58(sigValue)
     const msgBytes = new TextEncoder().encode(canonicalMsg)
 
-    if (pubkeyBytes.length === 32 && sigBytes.length === 64 && nacl.sign.detached.verify(msgBytes, sigBytes, pubkeyBytes)) {
+    if (pubkeyBytes.length === 32 && sigBytes.length === 64 && verifyDetached(msgBytes, sigBytes, pubkeyBytes)) {
       results.layers.layer1_signature.passed = true
       results.layers.layer1_signature.message = `Valid Ed25519 detached signature from ${claim.wallet}`
     } else {
@@ -307,7 +328,7 @@ function verifyProofPacket(packet) {
           results.layers.layer2_challenge.message = `Unknown, expired, or untrusted challenge Key ID: ${kid}`
           results.errors.push(`Challenge Key ID ${kid} not valid in public trust registry for epoch ${chalTimestamp}`)
         } else {
-          const isChalValid = nacl.sign.detached.verify(chalPayloadBytes, chalSigBytes, serverPubkey)
+          const isChalValid = verifyDetached(chalPayloadBytes, chalSigBytes, serverPubkey)
 
           if (isChalValid && chalObj.iss === 'PROVN' && chalObj.wallet === claim.wallet) {
             challengeValid = true
@@ -368,7 +389,7 @@ function verifyProofPacket(packet) {
           results.layers.layer2_5_receipt.message = `Unknown, expired, or untrusted submission receipt Key ID: ${kid}`
           results.errors.push(`Receipt Key ID ${kid} not valid in public trust registry for epoch ${subTimestamp}`)
         } else {
-          const isSubValid = nacl.sign.detached.verify(subPayloadBytes, subSigBytes, serverPubkey)
+          const isSubValid = verifyDetached(subPayloadBytes, subSigBytes, serverPubkey)
 
           const hashMatches = subObj.signed_payload_hash === results.canonicalHash
           const walletMatches = subObj.wallet === claim.wallet
@@ -622,7 +643,7 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
       const pubKey = decodeBase58(event.agentPublicKey)
       const sig = decodeBase58(event.signature)
       const hashBuf = Buffer.from(event.eventHash, 'hex')
-      const ok = nacl.sign.detached.verify(hashBuf, sig, pubKey)
+      const ok = verifyDetached(hashBuf, sig, pubKey)
       if (!ok) {
         signaturesPass = false
         errors.push(`Event #${event.sequence} Ed25519 signature is INVALID`)
