@@ -127,6 +127,22 @@ async function run() {
     const report = verifyProvnVerifyReceipt(await f.complete())
     assert.strictEqual(report.verified, true, report.problems.join('\n'))
   })
+  await test('verifies a rejection caused by a reservation that later failed', async () => {
+    const r = await ProvnVerify.start({ intent: 'overlap', mandate, client: { gatewayUrl: '' } })
+    const failing = async () => { await new Promise((res) => setTimeout(res, 10)); throw new Error('declined: bad secret token') }
+    const [first, second] = await Promise.allSettled([
+      r.pay({ resource: 'r', payTo: 'R1', amount: '400.00', asset: 'USDC' }, failing),
+      r.pay({ resource: 'r', payTo: 'R1', amount: '200.00', asset: 'USDC' }, async () => ({ txSignature: 's' })),
+    ])
+    assert.strictEqual(first.status, 'rejected')
+    assert.strictEqual(second.status === 'fulfilled' && second.value.decision, 'reject')
+    const report = verifyProvnVerifyReceipt(await r.complete())
+    assert.strictEqual(report.verified, true, report.problems.join('\n'))
+  })
+  await test('completes with the default summary for a short intent', async () => {
+    const r = await ProvnVerify.start({ intent: 'Rotate API keys', mandate, client: { gatewayUrl: '' } })
+    assert.strictEqual(verifyProvnVerifyReceipt(await r.complete()).verified, true)
+  })
   await test('rejects secrets in start metadata', async () => {
     await assert.rejects(ProvnVerify.start({ intent: 'x', mandate, metadata: { note: 'Bearer abcdefghijklmnopqrstuvwxyz' }, client: { gatewayUrl: '' } }), /SENSITIVE_DATA_DETECTED/)
   })
