@@ -44,6 +44,27 @@ function decodeBase58(str) {
   throw new Error('Base58 decoding library not available')
 }
 
+const ED25519_ORDER = Uint8Array.from([
+  0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
+  0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
+])
+
+function isCanonicalEd25519Signature(signature) {
+  if (!signature || signature.length !== 64) return false
+  for (let i = 63; i >= 32; i--) {
+    if (signature[i] !== ED25519_ORDER[i - 32]) {
+      return signature[i] < ED25519_ORDER[i - 32]
+    }
+  }
+  return false
+}
+
+function verifyDetached(message, signature, publicKey) {
+  return isCanonicalEd25519Signature(signature) && nacl.sign.detached.verify(message, signature, publicKey)
+}
+
 /**
  * Resolves trusted public key bytes with strict temporal validity and status enforcement.
  */
@@ -96,7 +117,8 @@ function canonicalizePayload(val) {
     return JSON.stringify(val)
   }
   if (Array.isArray(val)) {
-    const items = val.map(v => {
+    const items = Array.from({ length: val.length }, (_, index) => {
+      const v = val[index]
       if (v === undefined || typeof v === 'function' || typeof v === 'symbol') return 'null'
       return canonicalizePayload(v)
     })
@@ -268,7 +290,7 @@ function verifyProofPacket(packet) {
     const sigBytes = decodeBase58(sigValue)
     const msgBytes = new TextEncoder().encode(canonicalMsg)
 
-    if (pubkeyBytes.length === 32 && sigBytes.length === 64 && nacl.sign.detached.verify(msgBytes, sigBytes, pubkeyBytes)) {
+    if (pubkeyBytes.length === 32 && sigBytes.length === 64 && verifyDetached(msgBytes, sigBytes, pubkeyBytes)) {
       results.layers.layer1_signature.passed = true
       results.layers.layer1_signature.message = `Valid Ed25519 detached signature from ${claim.wallet}`
     } else {
@@ -307,7 +329,7 @@ function verifyProofPacket(packet) {
           results.layers.layer2_challenge.message = `Unknown, expired, or untrusted challenge Key ID: ${kid}`
           results.errors.push(`Challenge Key ID ${kid} not valid in public trust registry for epoch ${chalTimestamp}`)
         } else {
-          const isChalValid = nacl.sign.detached.verify(chalPayloadBytes, chalSigBytes, serverPubkey)
+          const isChalValid = verifyDetached(chalPayloadBytes, chalSigBytes, serverPubkey)
 
           if (isChalValid && chalObj.iss === 'PROVN' && chalObj.wallet === claim.wallet) {
             challengeValid = true
@@ -368,7 +390,7 @@ function verifyProofPacket(packet) {
           results.layers.layer2_5_receipt.message = `Unknown, expired, or untrusted submission receipt Key ID: ${kid}`
           results.errors.push(`Receipt Key ID ${kid} not valid in public trust registry for epoch ${subTimestamp}`)
         } else {
-          const isSubValid = nacl.sign.detached.verify(subPayloadBytes, subSigBytes, serverPubkey)
+          const isSubValid = verifyDetached(subPayloadBytes, subSigBytes, serverPubkey)
 
           const hashMatches = subObj.signed_payload_hash === results.canonicalHash
           const walletMatches = subObj.wallet === claim.wallet
@@ -503,13 +525,21 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
     dim: '\x1b[2m',
   }
 
-  if (!receipt || receipt.protocol !== 'PROVN' || !receipt.execution || !Array.isArray(receipt.events)) {
+  if (!receipt || receipt.protocol !== 'PROVN' || receipt.version !== 'agent/1' || !receipt.execution || !Array.isArray(receipt.events)) {
     console.error(`\n${c.bold}${c.red}❌ ERROR: Malformed Agent Receipt. Missing protocol header, execution metadata, or events.${c.reset}\n`)
     return false
   }
 
   const events = [...receipt.events].sort((a, b) => a.sequence - b.sequence)
   const exec = receipt.execution
+
+  try {
+    if (!events.length || typeof exec.executionId !== 'string' || !exec.executionId.trim() || decodeBase58(exec.agentPublicKey).length !== 32) {
+      return false
+    }
+  } catch {
+    return false
+  }
 
   if (isInspectOnly) {
     console.log('\n' + c.bold + c.cyan + '=================================================================================' + c.reset)
@@ -557,8 +587,27 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
   let merkleRootPass = true
   let solanaAnchorPass = true
 
+  if (events[0].sequence !== 0) {
+    hashChainPass = false
+    errors.push('Event sequence must start at 0')
+  }
+  for (const count of [exec.eventCount, receipt.batch?.eventCount, receipt.merkle?.leafCount]) {
+    if (count !== undefined && count !== events.length) {
+      hashChainPass = false
+      errors.push('Declared event count does not match receipt events')
+    }
+  }
+
   // 1. Event Hash & Signature Verification
   events.forEach((event, idx) => {
+    if (event.agentPublicKey !== exec.agentPublicKey) {
+      signaturesPass = false
+      errors.push(`Event #${event.sequence} signer does not match execution agent identity`)
+    }
+    if (event.executionId !== exec.executionId) {
+      hashChainPass = false
+      errors.push(`Event #${event.sequence} belongs to a different execution`)
+    }
     const canonical = [
       'PROVN-AGENT-EVENT-V1',
       `execution:${event.executionId}`,
@@ -595,7 +644,7 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
       const pubKey = decodeBase58(event.agentPublicKey)
       const sig = decodeBase58(event.signature)
       const hashBuf = Buffer.from(event.eventHash, 'hex')
-      const ok = nacl.sign.detached.verify(hashBuf, sig, pubKey)
+      const ok = verifyDetached(hashBuf, sig, pubKey)
       if (!ok) {
         signaturesPass = false
         errors.push(`Event #${event.sequence} Ed25519 signature is INVALID`)
@@ -695,7 +744,9 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
         errors.push(pdaStatusMessage)
       }
     } catch (pdaErr) {
-      pdaStatusMessage = `PDA derivation skipped: ${pdaErr.message}`
+      solanaAnchorPass = false
+      pdaStatusMessage = `PDA derivation failed: ${pdaErr.message}`
+      errors.push(pdaStatusMessage)
     }
   }
 

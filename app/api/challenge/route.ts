@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const { walletAddress } = body
 
-    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32) {
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32 || walletAddress.length > 44) {
       return NextResponse.json({ error: 'Invalid wallet address' }, { status: 400 })
     }
 

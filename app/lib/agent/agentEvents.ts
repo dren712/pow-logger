@@ -33,6 +33,23 @@ import {
 
 import { canonicalize } from './canonicalize'
 
+const ED25519_ORDER = Uint8Array.from([
+  0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
+  0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
+])
+
+export function isCanonicalEd25519Signature(signature: Uint8Array): boolean {
+  if (signature.length !== 64) return false
+  for (let i = 63; i >= 32; i--) {
+    if (signature[i] !== ED25519_ORDER[i - 32]) {
+      return signature[i] < ED25519_ORDER[i - 32]
+    }
+  }
+  return false
+}
+
 /**
  * Computes the SHA-256 hex digest of a payload commitment.
  * Uses strict deterministic JSON-like recursive serialization to ensure
@@ -166,7 +183,7 @@ export function verifyEventSignature(
     const sigBytes = bs58.decode(signatureBase58)
     const pubBytes = bs58.decode(publicKeyBase58)
 
-    if (sigBytes.length !== 64 || pubBytes.length !== 32) {
+    if (sigBytes.length !== 64 || pubBytes.length !== 32 || !isCanonicalEd25519Signature(sigBytes)) {
       return false
     }
 

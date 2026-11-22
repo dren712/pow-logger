@@ -11,8 +11,9 @@ export async function GET(req: NextRequest) {
     const authHeader = req.headers.get('authorization')
     const auth = await validateApiKey(authHeader)
 
-    // In production, execution listing must be authenticated
-    if (!auth.valid && process.env.PROVN_DEV_MODE !== 'true') {
+    // Development bypass is never permitted in production.
+    const isDevModeAllowed = process.env.PROVN_DEV_MODE === 'true' && process.env.NODE_ENV !== 'production'
+    if (!auth.valid && !isDevModeAllowed) {
       return NextResponse.json(
         { error: auth.error || 'Authentication required to list project executions' },
         { status: 401 }

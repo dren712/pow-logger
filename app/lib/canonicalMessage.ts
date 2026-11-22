@@ -34,6 +34,9 @@ export interface VerifiableLog {
   [key: string]: unknown
 }
 export function decodeBase58(str: string): Uint8Array {
+  if (typeof str !== 'string' || str.length > 16_384) {
+    throw new Error('Base58 input exceeds maximum length')
+  }
   const bs58Obj = bs58 as unknown as { decode?: (s: string) => Uint8Array; default?: { decode: (s: string) => Uint8Array } }
   const fn = bs58Obj.decode || bs58Obj.default?.decode
   if (!fn) throw new Error('Base58 decoder unavailable')
@@ -726,5 +729,4 @@ export async function verifyPrivateProofAuth(
     return false
   }
 }
-
 

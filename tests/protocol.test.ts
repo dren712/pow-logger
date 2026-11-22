@@ -38,6 +38,7 @@ import {
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
+import { consumeSigningChallenge, isOAuthTimestampFresh } from '../app/lib/oauth'
 import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE, BUILDER_LEVELS, getBuilderLevel, getEarnedSkillBadges, computeBadgeSummary } from '../app/lib/milestones'
 import { calculateReputation } from '../app/lib/reputationEngine'
 import { evaluateAchievements } from '../app/lib/achievements'
@@ -58,6 +59,11 @@ import {
 
 import fs from 'fs'
 import path from 'path'
+import { spawnSync } from 'child_process'
+import os from 'os'
+import { createSignedEvent, verifyEventSignature, isCanonicalEd25519Signature } from '../app/lib/agent/agentEvents'
+import { canonicalize } from '../app/lib/agent/canonicalize'
+import { buildAgentReceipt } from '../app/lib/agent/agentReceipt'
 
 try {
   const envContent = fs.readFileSync(path.join(process.cwd(), '.env.local'), 'utf-8')
@@ -132,6 +138,37 @@ async function runProductionTestSuite() {
 
   const validLocalhost = getVerifiedDomain('localhost:3000')
   assert(validLocalhost === 'localhost', 'Localhost development host header accepted')
+
+  const oauthNow = Date.parse('2026-09-04T12:00:00.000Z')
+  assert(!isOAuthTimestampFresh('not-a-timestamp', oauthNow), 'OAuth rejects malformed timestamps')
+  assert(!isOAuthTimestampFresh('2026-09-04T12:02:00.000Z', oauthNow), 'OAuth rejects timestamps beyond future clock skew')
+  assert(!isOAuthTimestampFresh('2026-09-04T11:44:00.000Z', oauthNow), 'OAuth rejects timestamps older than freshness window')
+  assert(isOAuthTimestampFresh('2026-09-04T11:59:30.000Z', oauthNow), 'OAuth accepts timestamps within freshness bounds')
+
+  let challengeConsumed = false
+  const challengeClient = {
+    from: () => ({
+      update: () => ({
+        eq: () => ({
+          eq: () => ({
+            is: () => ({
+              gt: () => ({
+                select: () => ({
+                  maybeSingle: async () => {
+                    if (challengeConsumed) return { data: null, error: null }
+                    challengeConsumed = true
+                    return { data: { id: 'challenge-id' }, error: null }
+                  },
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    }),
+  } as unknown as Parameters<typeof consumeSigningChallenge>[0]
+  assert(await consumeSigningChallenge(challengeClient, 'challenge', 'test-wallet', new Date(oauthNow).toISOString()), 'OAuth challenge first consumption succeeds')
+  assert(!(await consumeSigningChallenge(challengeClient, 'challenge', 'test-wallet', new Date(oauthNow).toISOString())), 'OAuth challenge replay is rejected atomically')
 
   const dummyKeyArr = JSON.stringify(Array.from({ length: 64 }, (_, i) => i))
   const parsedKeyBytes = parseIrysPrivateKey(dummyKeyArr)
@@ -2567,6 +2604,88 @@ async function runProductionTestSuite() {
   assert(agentProofPayloadHash.length === 64, 'SHA-256 digest computed for AI Agent execution receipt')
   
   // --- SUMMARY ---
+
+  assert(canonicalize(Array(1)) === '[null]', 'Sparse array hole canonicalizes as null')
+  assert(canonicalize([, 1, ,]) === '[null,1,null]', 'Leading and trailing sparse holes preserve indices')
+  assert(canonicalize([]) === '[]', 'Empty arrays remain empty')
+  assert(canonicalize([undefined]) === '[null]', 'Undefined array entries match null holes')
+  const assertThrows = (fn: () => unknown, message: string) => {
+    let threw = false
+    try { fn() } catch { threw = true }
+    assert(threw, message)
+  }
+  assertThrows(() => canonicalize([Infinity]), 'Non-finite array entries remain rejected')
+  assertThrows(() => decodeBase58('1'.repeat(16_385)), 'Base58 decoder rejects oversized inputs')
+  assert(decodeBase58('1'.repeat(32)).length === 32, 'Base58 decoder accepts normal public key')
+
+  const receiptEvent = createSignedEvent({
+    eventId: 'hardening-event',
+    executionId: 'hardening-execution',
+    sequence: 0,
+    agentPublicKey: agentWalletAddress,
+    eventType: 'agent.started',
+    timestamp: '2026-09-04T12:00:00.000Z',
+    previousEventHash: null,
+    payload: { type: 'agent.started', taskDescription: 'Regression fixture' },
+  }, agentWalletKp.secretKey)
+  const hardenedReceipt = buildAgentReceipt({
+    executionId: receiptEvent.executionId,
+    agentPublicKey: agentWalletAddress,
+    startedAt: receiptEvent.timestamp,
+    completedAt: receiptEvent.timestamp,
+    status: 'completed',
+    eventCount: 1,
+    terminalEventHash: receiptEvent.eventHash,
+    merkleRoot: null,
+    anchorReference: null,
+    protocolVersion: 'agent/1',
+  }, [receiptEvent])
+  const canonicalSignature = bs58.decode(receiptEvent.signature)
+  assert(isCanonicalEd25519Signature(canonicalSignature), 'Valid event signature has canonical scalar')
+  assert(verifyEventSignature(receiptEvent.eventHash, receiptEvent.signature, agentWalletAddress), 'Library accepts valid event signature')
+  const order = Buffer.from('edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010', 'hex')
+  const malleated = Uint8Array.from(canonicalSignature)
+  let carry = 0
+  for (let i = 0; i < 32; i++) {
+    const sum = malleated[i + 32] + order[i] + carry
+    malleated[i + 32] = sum & 255
+    carry = sum >>> 8
+  }
+  assert(!isCanonicalEd25519Signature(malleated), 'Ed25519 S+L is noncanonical')
+  assert(!verifyEventSignature(receiptEvent.eventHash, bs58.encode(malleated), agentWalletAddress), 'Library rejects malleated event signature')
+  const scalarAtOrder = new Uint8Array(64)
+  scalarAtOrder.set(order, 32)
+  assert(!isCanonicalEd25519Signature(scalarAtOrder), 'Ed25519 scalar equal to L is rejected')
+  assert(!isCanonicalEd25519Signature(new Uint8Array(0)), 'Empty signatures are rejected')
+
+  const receiptDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'provn-hardening-'))
+  const receiptFile = path.join(receiptDirectory, 'receipt.json')
+  const cliReceiptStatus = (receipt: unknown) => {
+    fs.writeFileSync(receiptFile, JSON.stringify(receipt))
+    return spawnSync(process.execPath, ['bin/provn.js', 'agent', 'verify', receiptFile], { encoding: 'utf8' }).status
+  }
+  try {
+    assert(cliReceiptStatus(hardenedReceipt) === 0, 'CLI accepts valid agent receipt')
+    assert(cliReceiptStatus({ ...hardenedReceipt, protocol: 'OTHER' }) === 1, 'CLI exits nonzero for incorrect protocol')
+    assert(cliReceiptStatus({ ...hardenedReceipt, version: 'agent/2' }) === 1, 'CLI exits nonzero for incorrect receipt version')
+    assert(cliReceiptStatus({ ...hardenedReceipt, events: [] }) === 1, 'CLI exits nonzero for empty receipts')
+    assert(cliReceiptStatus({ ...hardenedReceipt, execution: { ...hardenedReceipt.execution, agentPublicKey: testWallet } }) === 1, 'CLI rejects execution/event signer mismatch')
+    assert(cliReceiptStatus({ ...hardenedReceipt, events: [{ ...receiptEvent, signature: bs58.encode(malleated) }] }) === 1, 'CLI rejects noncanonical signature')
+    assert(cliReceiptStatus({ ...hardenedReceipt, events: [{ ...receiptEvent, signature: '' }] }) === 1, 'CLI rejects empty signature')
+    assert(cliReceiptStatus({ ...hardenedReceipt, solana: { pda: 'invalid', programId: 'invalid' } }) === 1, 'CLI exits nonzero when anchor verification throws')
+  } finally {
+    fs.rmSync(receiptDirectory, { recursive: true, force: true })
+  }
+
+  const { NextRequest } = await import('next/server')
+  const { POST: challengePost } = await import('../app/api/challenge/route')
+  const { POST: oauthPost } = await import('../app/api/auth/github/route')
+  const apiRequest = (body: unknown) => new NextRequest('https://provn-sol.vercel.app/api/test', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  assert((await challengePost(apiRequest({ walletAddress: '1'.repeat(45) }))).status === 400, 'Challenge API rejects oversized wallet before lookup')
+  assert((await challengePost(apiRequest({ walletAddress: '' }))).status === 400, 'Challenge API rejects empty wallet')
+  assert((await oauthPost(apiRequest({ walletAddress: testWallet, challenge: 'challenge', signature: '1'.repeat(89) }))).status === 400, 'OAuth API rejects oversized signature before lookup')
 
   console.log('\n===================================================================')
   console.log(`   PRODUCTION SUITE COMPLETE: ${passed} PASSED, ${failed} FAILED`)
