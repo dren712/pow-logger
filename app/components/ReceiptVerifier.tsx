@@ -54,9 +54,17 @@ export default function ReceiptVerifier({ sampleJson, initialId }: { sampleJson:
       setReport(null)
       return
     }
+    let result: ProvnVerifyReport
+    try {
+      result = verifyProvnVerifyReceipt(parsed)
+    } catch (err) {
+      setError(`This does not look like a PROVN receipt: ${(err as Error).message}`)
+      setReport(null)
+      return
+    }
     setError(null)
     setReceipt(parsed)
-    setReport(verifyProvnVerifyReceipt(parsed))
+    setReport(result)
     setSource(from)
   }, [])
 
@@ -157,7 +165,7 @@ export default function ReceiptVerifier({ sampleJson, initialId }: { sampleJson:
                 <dd className="text-white">{report.mandate.spendLimit.amount} {report.mandate.spendLimit.currency} (spent {report.totalSpent})</dd>
                 <dt className="pv-faint">Allowed actions</dt>
                 <dd className="pv-mono ac-break text-[12.5px] text-[#c3cad6]">{report.mandate.allowedActions.join(', ')}</dd>
-                <dt className="pv-faint">Granted by</dt>
+                <dt className="pv-faint">Principal (as stated)</dt>
                 <dd className="ac-break text-[#c3cad6]">{report.mandate.principal}</dd>
                 <dt className="pv-faint">Mandate hash</dt>
                 <dd className="pv-mono ac-break text-[12.5px] text-[#c3cad6]">{report.mandateHash}</dd>

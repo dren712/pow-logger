@@ -173,13 +173,15 @@ export interface ResultCommitment {
 }
 
 const RESULT_EVENT_TYPES = new Set(['tool.response', 'payment.executed'])
+const MANDATE_EVENT_TYPES = new Set(['tool.request', 'tool.response', 'payment.intent', 'payment.executed'])
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null
 }
 
 export function extractMandateCommitment(receipt: AgentReceipt): MandateCommitment | null {
-  const started = receipt.events?.find((e) => e.eventType === 'agent.started')
+  if (!Array.isArray(receipt?.events)) return null
+  const started = receipt.events.find((e) => e?.eventType === 'agent.started')
   const meta = asRecord(asRecord(started?.payload)?.metadata)
   const pv = asRecord(meta?.provnVerify)
   if (!pv || pv.version !== PROVN_VERIFY_VERSION || !asRecord(pv.mandate)) return null
@@ -269,6 +271,9 @@ export function buildAnchorLink(receipt: AgentReceipt): AnchorLink | null {
  * Merkle) plus a replay of every mandate decision and evidence hash. Needs nothing but the receipt.
  */
 export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyReport {
+  if (!receipt || typeof receipt !== 'object' || !Array.isArray(receipt.events) || receipt.events.some((e) => !e || typeof e !== 'object')) {
+    receipt = { ...(receipt && typeof receipt === 'object' ? receipt : {}), events: [] } as unknown as AgentReceipt
+  }
   const integrity = verifyAgentReceipt(receipt, { skipSolana: true, skipIrys: true })
   const problems: string[] = integrity.failures.map((f) => f.message)
   const actions: VerifiedAction[] = []
@@ -286,6 +291,13 @@ export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyRepo
     if (mandateHash !== commitment.mandateHash) {
       mandateStatus = 'fail'
       problems.push('The committed mandate hash does not match the mandate in the receipt')
+    }
+
+    for (const e of events) {
+      if (MANDATE_EVENT_TYPES.has(e.eventType) && !requestOf(e) && !resultOf(e)) {
+        mandateStatus = 'fail'
+        problems.push(`Event #${e.sequence} (${e.eventType}) has no mandate commitment; its payload may have been removed`)
+      }
     }
 
     const results = new Map<string, AgentEvent>()
@@ -318,6 +330,12 @@ export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyRepo
         actionProblems.push('A rejected action was executed anyway')
       }
       if (!resultEvent) actionProblems.push('No result or rejection was recorded for this request')
+      if (resultEvent?.eventType === 'payment.executed' && req.request.kind === 'payment') {
+        const paid = asRecord(resultEvent.payload) ?? {}
+        if (paid.amount !== req.request.amount || paid.asset !== req.request.currency || paid.recipient !== req.request.recipient) {
+          actionProblems.push('Executed payment terms (amount, asset or recipient) differ from the approved request')
+        }
+      }
 
       let evidenceHash: string | null = null
       let evidenceHashValid = false
