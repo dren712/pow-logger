@@ -710,6 +710,9 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 @media print {
   .pv { color: #111 !important; }
   .pv-card { background: #fff !important; border-color: #ddd !important; break-inside: avoid; }
+  /* Printing a wallet passport prints only its dossier, not the dark on-screen profile. */
+  .pv-main:has(> .provn-print-dossier) { display: block !important; }
+  .pv-main:has(> .provn-print-dossier) > :not(.provn-print-dossier) { display: none !important; }
   .resume-stage { padding: 0 !important; background: none !important; }
   .resume-sheet { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; max-width: none !important; font-size: 10.5pt !important; }
   .resume-sheet a:hover { text-decoration: none; }
