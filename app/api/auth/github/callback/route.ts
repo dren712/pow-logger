@@ -119,18 +119,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(relinkUrl.toString())
     }
 
-    // Upsert the identity.
-    const { error: upsertError } = await supabase
-      .from('wallet_identities')
-      .upsert(
-        {
-          wallet_address: wallet,
-          github_id: githubId,
-          github_username: githubUsername,
-          verified_at: new Date().toISOString(),
-        },
-        { onConflict: 'wallet_address' }
-      )
+    const identityRow = {
+      wallet_address: wallet,
+      github_id: githubId,
+      github_username: githubUsername,
+      verified_at: new Date().toISOString(),
+    }
+    // A plain Link of the already-linked account only refreshes that row, so it
+    // cannot undo a Relink that saved a different account in the meantime.
+    const { error: upsertError } =
+      existingIdentity && action !== 'Relink'
+        ? await supabase
+            .from('wallet_identities')
+            .update(identityRow)
+            .eq('wallet_address', wallet)
+            .eq('github_id', githubId)
+        : await supabase.from('wallet_identities').upsert(identityRow, { onConflict: 'wallet_address' })
 
     if (upsertError) {
       console.error('Failed to store wallet identity:', upsertError)
