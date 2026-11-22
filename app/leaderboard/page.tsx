@@ -32,7 +32,7 @@ export default async function LeaderboardPage() {
 
         {rows === null || rows.length === 0 ? (
           <div className="pv-card flex flex-col items-center gap-2 px-6 py-14 text-center">
-            <p className="text-[16px] font-semibold text-white">
+            <p className="text-balance text-[16px] font-semibold text-white">
               {rows === null ? 'The leaderboard is not available right now' : 'No builders yet'}
             </p>
             <p className="pv-muted text-[14px]">
@@ -43,13 +43,13 @@ export default async function LeaderboardPage() {
           <ol className="pv-card overflow-hidden">
             {rows.map((r, i) => (
               <li key={r.login} className="border-b border-[#1c222c] last:border-b-0">
-                <Link href={`/gh/${r.login}`} className="pv-row flex items-center gap-4 px-4 py-3.5 sm:px-5">
-                  <span className={`pv-mono w-7 text-right text-[13px] font-semibold ${i < 3 ? 'text-[#f5c451]' : 'pv-faint'}`}>{i + 1}</span>
+                <Link href={`/gh/${r.login}`} className="pv-row flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5">
+                  <span className={`pv-mono w-6 shrink-0 text-right text-[13px] font-semibold tabular-nums sm:w-7 ${i < 3 ? 'text-[#f5c451]' : 'pv-faint'}`}>{i + 1}</span>
                   {r.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={r.avatar_url} alt="" width={40} height={40} loading="lazy" className="h-10 w-10 rounded-full" />
+                    <img src={r.avatar_url} alt="" width={40} height={40} loading="lazy" className="h-10 w-10 shrink-0 rounded-full bg-[#1c222c]" />
                   ) : (
-                    <span className="h-10 w-10 rounded-full bg-[#1c222c]" />
+                    <span className="h-10 w-10 shrink-0 rounded-full bg-[#1c222c]" aria-hidden="true" />
                   )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[15px] font-semibold text-white">{r.name || r.login}</span>
@@ -57,8 +57,8 @@ export default async function LeaderboardPage() {
                       {[`@${r.login}`, r.top_language, `${compact(r.merged_external_prs)} merged PRs`, `${compact(r.stars)} stars`].filter(Boolean).join(' · ')}
                     </span>
                   </span>
-                  <span className={`pv-tier pv-tier-${r.tier} hidden sm:inline-flex`}>{r.tier}</span>
-                  <span className="w-9 text-right text-[18px] font-bold text-[#2ee59d]">{r.score}</span>
+                  <span className={`pv-tier pv-tier-${r.tier} hidden shrink-0 sm:inline-flex`}>{r.tier}</span>
+                  <span className="w-9 shrink-0 text-right text-[18px] font-bold tabular-nums text-[#2ee59d]" aria-label={`Score ${r.score}`}>{r.score}</span>
                 </Link>
               </li>
             ))}

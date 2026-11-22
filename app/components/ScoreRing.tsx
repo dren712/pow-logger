@@ -1,26 +1,29 @@
 export default function ScoreRing({ score, size = 112 }: { score: number; size?: number }) {
+  const value = Math.max(0, Math.min(100, Math.round(score)))
   const stroke = Math.max(6, Math.round(size / 14))
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
-  const filled = (Math.max(0, Math.min(100, score)) / 100) * c
+  const filled = (value / 100) * c
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={`Score ${score} out of 100`}>
-      <svg width={size} height={size} className="-rotate-90">
+    <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={`Score ${value} out of 100`}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#1c222c" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="#2ee59d"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${filled} ${c - filled}`}
-        />
+        {value > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke="#2ee59d"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${filled} ${c - filled}`}
+          />
+        )}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-bold leading-none text-white" style={{ fontSize: size * 0.32 }}>{score}</span>
-        <span className="pv-mono mt-1 text-[10px] text-[#5c6473]">/ 100</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
+        <span className="font-bold leading-none tracking-tight text-white tabular-nums" style={{ fontSize: size * 0.32 }}>{value}</span>
+        <span className="pv-mono mt-1 text-[10px] leading-none text-[#5c6473]">/ 100</span>
       </div>
     </div>
   )

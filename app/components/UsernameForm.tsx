@@ -37,7 +37,10 @@ export default function UsernameForm({ cta = 'Get my profile' }: { cta?: string 
             id={id}
             value={value}
             onChange={(e) => { setValue(e.target.value); if (error) setError('') }}
+            name="username"
             placeholder="your-github-username"
+            enterKeyHint="go"
+            autoCorrect="off"
             autoComplete="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -46,11 +49,12 @@ export default function UsernameForm({ cta = 'Get my profile' }: { cta?: string 
             className="pv-input"
           />
         </div>
-        <button type="submit" className="pv-btn" disabled={loading}>
+        <button type="submit" className="pv-btn" disabled={loading} aria-busy={loading || undefined}>
+          {loading && <span className="pv-spinner" aria-hidden="true" />}
           {loading ? 'Building…' : cta}
         </button>
       </div>
-      {error && <p id={`${id}-error`} role="alert" className="mt-2 text-left text-[13px] text-amber-400">{error}</p>}
+      {error && <p id={`${id}-error`} role="alert" className="mt-2 text-left text-[13px] text-[#f5c451]">{error}</p>}
     </form>
   )
 }

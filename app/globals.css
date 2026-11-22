@@ -542,6 +542,41 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 }
 .pv-btn:hover { background: #5cf0b4; box-shadow: 0 0 0 4px rgba(46, 229, 157, 0.14); }
 .pv-btn:disabled { opacity: 0.6; cursor: progress; }
+.pv-btn-sm { padding: 8px 10px; font-size: 13px; }
+.pv-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--pv-muted);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pv-share:hover { color: var(--pv-text); background: rgba(255, 255, 255, 0.05); }
+.pv-underline { color: #aab2c0; text-decoration: underline; text-decoration-color: #3a4250; text-underline-offset: 4px; }
+.pv-underline:hover { color: #fff; }
+.pv-code {
+  font-family: var(--font-geist-mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.pv-spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  border: 2px solid rgba(4, 19, 12, 0.3);
+  border-top-color: #04130c;
+  animation: pvSpin 0.7s linear infinite;
+}
+
+.pv-spinner-light { width: 18px; height: 18px; border-color: rgba(46, 229, 157, 0.2); border-top-color: var(--pv-accent); }
+@keyframes pvSpin { to { transform: rotate(360deg); } }
 .pv-btn-ghost {
   background: transparent;
   color: var(--pv-text);
@@ -551,6 +586,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 .pv-btn:focus-visible,
 .pv-btn-ghost:focus-visible,
 .pv-input:focus-visible,
+.pv-share:focus-visible,
 .pv a:focus-visible { outline: 2px solid var(--pv-accent); outline-offset: 2px; }
 
 .pv-input {
@@ -611,6 +647,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 }
 @media (prefers-reduced-motion: reduce) {
   .pv-skeleton { animation: none; }
+  .pv-spinner { animation-duration: 2s; }
 }
 
 /* Résumé: a white sheet on screen, the page itself in print */
@@ -631,7 +668,16 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 .resume-sheet a { color: inherit; text-decoration: none; }
 .resume-sheet a:hover { text-decoration: underline; }
 .resume-name { font-size: 30px; font-weight: 750; letter-spacing: -0.03em; line-height: 1.1; color: #0b0d11; }
-.resume-meta { color: #555c68; font-size: 12.5px; }
+.resume-name { overflow-wrap: anywhere; }
+.resume-bio { margin-top: 6px; font-size: 14px; color: #333a45; overflow-wrap: anywhere; }
+.resume-meta { color: #555c68; font-size: 12.5px; display: flex; flex-wrap: wrap; margin: 10px 0 0 -9px; row-gap: 2px; overflow: hidden; }
+.resume-meta > span { padding: 0 9px; border-left: 1px solid #cfd4db; margin-left: -1px; line-height: 1.35; overflow-wrap: anywhere; }
+.resume-score { margin-top: 10px; font-size: 12.5px; color: #333a45; }
+.resume-score b { color: #0b7a4f; font-weight: 700; }
+.resume-text { color: #333a45; }
+.resume-code { font-family: var(--font-geist-mono); font-size: 0.9em; letter-spacing: 0; background: #f1f3f5; border-radius: 3px; padding: 0 3px; }
+.resume-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.resume-row > :first-child { min-width: 0; overflow-wrap: anywhere; }
 .resume-section { margin-top: 26px; }
 .resume-heading {
   font-size: 11px;
@@ -648,15 +694,17 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 .resume-item-title { font-weight: 650; color: #0b0d11; }
 .resume-aside { color: #6a7180; font-size: 12px; white-space: nowrap; }
 .resume-bullets { margin: 4px 0 0; padding-left: 16px; color: #333a45; list-style: disc; }
-.resume-bullets li { margin-top: 2px; }
+.resume-bullets li { margin-top: 2px; overflow-wrap: anywhere; }
+.resume-more { margin-top: 10px; font-size: 12px; color: #6a7180; }
 .resume-facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .resume-fact { border: 1px solid #e3e6ea; border-radius: 8px; padding: 10px 12px; }
-.resume-fact b { display: block; font-size: 18px; font-weight: 700; color: #0b0d11; }
-.resume-fact span { font-size: 11px; color: #6a7180; }
-.resume-verify { margin-top: 28px; border-top: 1px solid #e3e6ea; padding-top: 12px; font-size: 10.5px; color: #6a7180; }
+.resume-fact b { display: block; font-size: 18px; font-weight: 700; line-height: 1.2; color: #0b0d11; font-variant-numeric: tabular-nums; }
+.resume-fact span { display: block; margin-top: 2px; font-size: 11px; line-height: 1.35; color: #6a7180; }
+.resume-verify { break-inside: avoid; margin-top: 28px; border-top: 1px solid #e3e6ea; padding-top: 12px; font-size: 10.5px; color: #6a7180; }
 @media (max-width: 640px) {
   .resume-sheet { padding: 28px 22px; }
   .resume-facts { grid-template-columns: repeat(2, 1fr); }
+  .resume-row { flex-wrap: wrap; column-gap: 12px; row-gap: 0; }
 }
 
 @media print {
@@ -665,4 +713,27 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
   .resume-stage { padding: 0 !important; background: none !important; }
   .resume-sheet { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; max-width: none !important; font-size: 10.5pt !important; }
   .resume-sheet a:hover { text-decoration: none; }
+  /* The global scroll containers clip a multi-page printout; let the résumé flow across pages. */
+  html:has(.resume-sheet),
+  html:has(.resume-sheet) body { overflow: visible !important; height: auto !important; min-height: 0 !important; display: block !important; }
+  .pv:has(.resume-sheet) { display: block !important; }
+  /* The résumé prints on whatever paper the reader picks (A4 or Letter). */
+  @page resume { size: auto; margin: 14mm 16mm 15mm; }
+  .resume-sheet { page: resume; line-height: 1.42 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .resume-name { font-size: 22pt; }
+  .resume-bio { font-size: 10.5pt; }
+  .resume-meta, .resume-score { font-size: 9.5pt; }
+  .resume-aside, .resume-more { font-size: 9pt; }
+  .resume-heading { font-size: 8.5pt; break-after: avoid; margin-bottom: 9px; }
+  .resume-section { margin-top: 18px; }
+  .resume-item + .resume-item { margin-top: 9px; }
+  .resume-row { break-after: avoid; }
+  .resume-bullets li { break-inside: avoid; }
+  .resume-fact { padding: 8px 10px; break-inside: avoid; }
+  .resume-fact b { font-size: 13pt; }
+  .resume-fact span { font-size: 8pt; }
+  .resume-facts, .resume-text { break-inside: avoid; }
+  .resume-text, .resume-bullets { orphans: 3; widows: 3; }
+  .resume-verify { margin-top: 20px; font-size: 8pt; }
+  .resume-section:has(+ .resume-verify) { break-after: avoid; }
 }
