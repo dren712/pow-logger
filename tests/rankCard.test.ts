@@ -1,0 +1,28 @@
+import assert from 'assert'
+import { renderRankCard } from '../app/lib/rankCard'
+
+console.log('Testing README rank cards...')
+const card = { username: 'octo', score: 64, tier: 'Veteran', rank: 7 }
+const dark = renderRankCard(card)
+assert.ok(dark.startsWith('<svg'))
+assert.ok(dark.includes('width="480" height="240"'))
+for (const value of ['@octo', '64/100', 'Veteran', 'Leaderboard: #7', '#11151c', '<title>']) assert.ok(dark.includes(value))
+const light = renderRankCard({ ...card, theme: 'light' })
+assert.ok(light.includes('fill="#f8fafc"'))
+assert.ok(light.includes('#087b50'))
+assert.notStrictEqual(dark, light)
+console.log('  ✓ stats and light/dark themes')
+const escaped = renderRankCard({ ...card, username: '<script>&"\'\x00', tier: '<b>"&' })
+assert.ok(escaped.includes('&lt;script&gt;&amp;&quot;&apos;'))
+assert.ok(escaped.includes('&lt;b&gt;&quot;&amp;'))
+assert.ok(!escaped.includes('<script>'))
+assert.ok(!escaped.includes('\x00'))
+console.log('  ✓ XML escaping and invalid XML control characters')
+const fallback = renderRankCard({ username: '', score: null, tier: 'Unknown builder', rank: null })
+assert.ok(fallback.includes('Leaderboard: Unranked'))
+assert.ok(fallback.includes('Unknown builder'))
+assert.ok(fallback.includes('>—</text>'))
+assert.ok(renderRankCard({ ...card, rank: -1, score: NaN }).includes('Unranked'))
+assert.ok(renderRankCard({ ...card, score: 999 }).includes('100/100'))
+console.log('  ✓ unknown, unranked and invalid numeric input')
+console.log('README rank card tests passed.')

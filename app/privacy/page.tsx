@@ -93,16 +93,33 @@ export default function PrivacyPage() {
 
       <h2 id="browser">Cookies, browser storage and logs</h2>
       <ul>
-        <li>PROVN does not set cookies and does not load advertising or analytics scripts.</li>
+        <li>PROVN does not set cookies or load advertising scripts.</li>
         <li>If you connect a wallet, the wallet adapter remembers which wallet you chose in your browser&apos;s local storage so it can reconnect.</li>
         <li>IP addresses are used to rate-limit requests. The hosting provider also keeps standard request logs.</li>
       </ul>
+
+      <h2 id="analytics">Vercel Web Analytics</h2>
+      <p>
+        We use Vercel Web Analytics for cookieless, aggregated usage statistics. We measure profile views,
+        résumé download-button clicks, sharing networks, README card copies and successful waitlist joins.
+        We do not send personal data such as emails, GitHub usernames or wallet addresses as custom event properties.
+        Query strings are removed and profile identifiers are masked in analytics URLs. No cookie banner is required
+        because this analytics integration does not use cookies.
+      </p>
+
+      <h2 id="waitlist">Pro waitlist</h2>
+      <p>
+        If you join the Pro waitlist, we store your email address, the GitHub username from the page, the source
+        page type and signup time in Supabase to notify you about Pro. This is separate from analytics and is not
+        public. There is no payment or subscription at signup. To leave the waitlist or delete your information,
+        contact us using the details below.
+      </p>
 
       <h2 id="providers">Services PROVN relies on</h2>
       <ul>
         <li><strong>GitHub</strong>: source of public profile data, and sign-in if you link an account to a wallet.</li>
         <li><strong>Supabase</strong>: database for leaderboard rows, proofs and agent events.</li>
-        <li><strong>Vercel</strong>: hosting and server functions.</li>
+        <li><strong>Vercel</strong>: hosting, server functions and cookieless Web Analytics.</li>
         <li><strong>Solana</strong>: public network where proof hashes are anchored.</li>
         <li><strong>Irys and Arweave</strong>: permanent storage for archived proofs.</li>
       </ul>

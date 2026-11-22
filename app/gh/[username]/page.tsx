@@ -8,6 +8,9 @@ import RichText, { cleanText } from '@/app/components/builder-qa/RichText'
 import ScoreRing from '@/app/components/ScoreRing'
 import SiteNav from '@/app/components/SiteNav'
 import UsernameForm from '@/app/components/UsernameForm'
+import ReadmeCard from '@/app/components/ReadmeCard'
+import ProWaitlist from '@/app/components/ProWaitlist'
+import ProfileView from '@/app/components/ProfileView'
 
 export const dynamic = 'force-dynamic'
 
@@ -156,6 +159,7 @@ export default async function BuilderProfilePage({ params }: PageProps) {
             </dl>
             <div className="mt-5">
               <ProfileActions url={profileUrl} badgeMarkdown={badgeMarkdown} resumeHref={`/gh/${p.login}/resume`} shareText={shareText} />
+              <Link href={`/gh/${p.login}/2026`} className="pv-btn-ghost mt-3 w-full">2026 in merged PRs →</Link>
             </div>
           </div>
 
@@ -163,6 +167,9 @@ export default async function BuilderProfilePage({ params }: PageProps) {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6">
+          <ProfileView username={p.login} />
+          <ReadmeCard username={p.login} />
+          <ProWaitlist source="profile" githubUsername={p.login} />
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Summary">
             {stats.map((s) => (
               <div key={s.label} className="pv-card px-4 py-4">
