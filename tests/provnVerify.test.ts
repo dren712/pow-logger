@@ -138,6 +138,21 @@ async function run() {
     assert.strictEqual(second.status === 'fulfilled' && second.value.decision, 'reject')
     const report = verifyProvnVerifyReceipt(await r.complete())
     assert.strictEqual(report.verified, true, report.problems.join('\n'))
+    const row = report.actions.find((a) => a.amount === '200.00')!
+    assert.strictEqual(row.recomputedDecision, 'reject')
+    assert.ok(row.reasons.some((x) => /spend limit/.test(x)))
+  })
+  await test('flags a rejection that claims budget no pending payment held', async () => {
+    const bad = await ProvnVerify.start({ intent: 'forged hold', mandate, client: { gatewayUrl: '' } })
+    const exec = (bad as unknown as { execution: { action: (p: unknown) => Promise<{ payloadHash: string }> } }).execution
+    await exec.action({
+      type: 'payment.intent',
+      metadata: { provnVerify: { actionId: 'f1', mandateHash: bad.mandateHash, request: pay('100.00'), decision: 'reject', reasons: ['held'], spentBefore: '450.00' } },
+    })
+    await exec.action({ type: 'outcome.attestation', metadata: { outcomeType: 'mandate.rejected', success: false, provnVerify: { actionId: 'f1', resultHash: null, evidenceHash: 'x' } } })
+    const report = verifyProvnVerifyReceipt(await bad.complete())
+    assert.strictEqual(report.checks.mandate, 'fail')
+    assert.ok(report.problems.some((p) => /Recorded decision "reject"/.test(p)))
   })
   await test('completes with the default summary for a short intent', async () => {
     const r = await ProvnVerify.start({ intent: 'Rotate API keys', mandate, client: { gatewayUrl: '' } })
