@@ -270,20 +270,6 @@ export function buildAnchorLink(receipt: AgentReceipt): AnchorLink | null {
  * Verifies a PROVN Verify receipt offline: the existing agent checks (signatures, event hashes, hash chain,
  * Merkle) plus a replay of every mandate decision and evidence hash. Needs nothing but the receipt.
  */
-/**
- * A rejection is still valid when the agent counted budget held by an in-flight payment that later
- * failed: its recorded spentBefore is at least the replayed spend and the mandate rejects at that amount.
- */
-function isReservationRejection(mandate: AgentMandate, req: RequestCommitment, replayedSpent: bigint): boolean {
-  if (req.decision !== 'reject' || typeof req.spentBefore !== 'string') return false
-  try {
-    if (parseAmount(req.spentBefore) < replayedSpent) return false
-    return evaluateMandate(mandate, req.request, req.spentBefore).decision === 'reject'
-  } catch {
-    return false
-  }
-}
-
 export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyReport {
   if (!receipt || typeof receipt !== 'object' || !Array.isArray(receipt.events) || receipt.events.some((e) => !e || typeof e !== 'object')) {
     receipt = { ...(receipt && typeof receipt === 'object' ? receipt : {}), events: [] } as unknown as AgentReceipt
@@ -320,6 +306,7 @@ export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyRepo
       if (r) results.set(r.actionId, e)
     }
     const requestIds = new Set<string>()
+    const holds: { amount: bigint; resultSequence: number }[] = []
 
     for (const e of events) {
       const req = requestOf(e)
@@ -328,13 +315,15 @@ export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyRepo
       const actionProblems: string[] = []
       if (req.mandateHash !== mandateHash) actionProblems.push('Request references a different mandate')
 
+      // Budget held by earlier approved payments whose (failed) result was still pending at this request.
+      const held = holds.filter((h) => h.resultSequence > e.sequence).reduce((sum, h) => sum + h.amount, BigInt(0))
       let recomputed: MandateEvaluation | null = null
       try {
-        recomputed = evaluateMandate(commitment.mandate, req.request, formatAmount(spent))
+        recomputed = evaluateMandate(commitment.mandate, req.request, formatAmount(spent + held))
       } catch (err) {
         actionProblems.push(`Mandate could not be evaluated: ${(err as Error).message}`)
       }
-      if (recomputed && recomputed.decision !== req.decision && !isReservationRejection(commitment.mandate, req, spent)) {
+      if (recomputed && recomputed.decision !== req.decision) {
         actionProblems.push(`Recorded decision "${req.decision}" but the mandate gives "${recomputed.decision}"`)
       }
 
@@ -368,8 +357,9 @@ export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyRepo
         if (resultEvent.sequence < e.sequence) actionProblems.push('Result was recorded before its request')
       }
 
-      if (executed && req.request.kind === 'payment' && req.request.amount && recomputed?.decision === 'allow') {
-        spent += parseAmount(req.request.amount)
+      if (req.request.kind === 'payment' && req.request.amount && recomputed?.decision === 'allow') {
+        if (executed) spent += parseAmount(req.request.amount)
+        else if (resultEvent) holds.push({ amount: parseAmount(req.request.amount), resultSequence: resultEvent.sequence })
       }
 
       actions.push({
