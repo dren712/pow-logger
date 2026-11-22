@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { fetchLeaderboard } from '@/app/lib/builderLeaderboard'
 import UsernameForm from '@/app/components/UsernameForm'
+import SiteNav from '@/app/components/SiteNav'
+import { compact } from '@/app/lib/profileFormat'
 
 export const revalidate = 300
 
@@ -14,49 +16,59 @@ export default async function LeaderboardPage() {
   const rows = await fetchLeaderboard(100)
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-10">
-      <nav className="flex items-center justify-between text-xs">
-        <Link href="/" className="font-bold text-emerald-400">PROVN</Link>
-        <Link href="/log" className="text-gray-400 hover:text-emerald-400">Solana proof logger →</Link>
-      </nav>
-      <header>
-        <h1 className="text-2xl font-extrabold text-white">Verified builder leaderboard</h1>
-        <p className="mt-2 text-sm text-gray-400">
-          Ranked by work other maintainers merged, stars earned and time building in public. Add yourself by creating a profile.
-        </p>
-      </header>
+    <div className="pv flex flex-1 flex-col">
+      <SiteNav cta={false} />
+      <main className="pv-main mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-5 py-10 sm:py-14">
+        <div>
+          <p className="pv-eyebrow">Leaderboard</p>
+          <h1 className="mt-3 text-[34px] font-bold leading-tight tracking-[-0.03em] text-white">Verified builders</h1>
+          <p className="pv-muted mt-3 max-w-xl text-[15px] leading-relaxed">
+            Ranked by work other maintainers merged, stars earned and time building in public. Create a profile to add yourself.
+          </p>
+          <div className="mt-6">
+            <UsernameForm cta="Add me" />
+          </div>
+        </div>
 
-      <UsernameForm cta="Add me" />
-
-      {rows === null ? (
-        <p className="glass-card p-6 text-sm text-gray-400">The leaderboard is not available right now.</p>
-      ) : rows.length === 0 ? (
-        <p className="glass-card p-6 text-sm text-gray-400">No builders yet. Be the first.</p>
-      ) : (
-        <ol className="glass-card divide-y divide-white/5">
-          {rows.map((r, i) => (
-            <li key={r.login}>
-              <Link href={`/gh/${r.login}`} className="flex items-center gap-4 px-4 py-3 hover:bg-emerald-400/5">
-                <span className="w-8 text-right text-sm font-bold text-gray-500">{i + 1}</span>
-                {r.avatar_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={r.avatar_url} alt="" width={36} height={36} loading="lazy" className="h-9 w-9 rounded-full" />
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold text-white">{r.name || r.login}</span>
-                  <span className="block truncate text-xs text-gray-500">
-                    {[`@${r.login}`, r.top_language, `${r.merged_external_prs} merged PRs`, `${r.stars} stars`].filter(Boolean).join(' · ')}
+        {rows === null || rows.length === 0 ? (
+          <div className="pv-card flex flex-col items-center gap-2 px-6 py-14 text-center">
+            <p className="text-balance text-[16px] font-semibold text-white">
+              {rows === null ? 'The leaderboard is not available right now' : 'No builders yet'}
+            </p>
+            <p className="pv-muted text-[14px]">
+              {rows === null ? 'Profiles still work. Check back shortly.' : 'Create your profile above to take the first spot.'}
+            </p>
+          </div>
+        ) : (
+          <ol className="pv-card overflow-hidden">
+            {rows.map((r, i) => (
+              <li key={r.login} className="border-b border-[#1c222c] last:border-b-0">
+                <Link href={`/gh/${r.login}`} className="pv-row flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5">
+                  <span className={`pv-mono w-6 shrink-0 text-right text-[13px] font-semibold tabular-nums sm:w-7 ${i < 3 ? 'text-[#f5c451]' : 'pv-faint'}`}>{i + 1}</span>
+                  {r.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={r.avatar_url} alt="" width={40} height={40} loading="lazy" className="h-10 w-10 shrink-0 rounded-full bg-[#1c222c]" />
+                  ) : (
+                    <span className="h-10 w-10 shrink-0 rounded-full bg-[#1c222c]" aria-hidden="true" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold text-white">{r.name || r.login}</span>
+                    <span className="pv-muted block truncate text-[12.5px]">
+                      {[`@${r.login}`, r.top_language, `${compact(r.merged_external_prs)} merged PRs`, `${compact(r.stars)} stars`].filter(Boolean).join(' · ')}
+                    </span>
                   </span>
-                </span>
-                <span className="text-right">
-                  <span className="block text-lg font-black text-emerald-400">{r.score}</span>
-                  <span className="block text-[10px] uppercase tracking-widest text-amber-400">{r.tier}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      )}
-    </main>
+                  <span className={`pv-tier pv-tier-${r.tier} hidden shrink-0 sm:inline-flex`}>{r.tier}</span>
+                  <span className="w-9 shrink-0 text-right text-[18px] font-bold tabular-nums text-[#2ee59d]" aria-label={`Score ${r.score}`}>{r.score}</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <p className="pv-faint text-center text-[13px]">
+          Building on Solana? <Link href="/log" className="text-[#aab2c0] hover:text-white">Open the proof logger →</Link>
+        </p>
+      </main>
+    </div>
   )
 }

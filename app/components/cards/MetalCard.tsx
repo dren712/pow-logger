@@ -120,6 +120,7 @@ export default function MetalCard({
         onTouchMove={handleTouchMove}
         onTouchStart={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={onFlipToggle}
         style={{
           position: 'relative',
           width: '100%',
@@ -134,8 +135,8 @@ export default function MetalCard({
             ? 'transform 0.08s ease-out, box-shadow 0.2s ease'
             : 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.6s ease',
           boxShadow: isHovered
-            ? `0 24px 48px -12px rgba(0, 0, 0, 0.8), 0 0 24px -4px ${theme.specularColor}`
-            : '0 16px 32px -10px rgba(0, 0, 0, 0.65)',
+            ? `0 30px 60px -18px rgba(0, 0, 0, 0.85), 0 0 28px -8px ${theme.specularColor}`
+            : '0 22px 44px -18px rgba(0, 0, 0, 0.75), 0 1px 0 rgba(255, 255, 255, 0.04) inset',
           cursor: onFlipToggle ? 'pointer' : 'default',
           userSelect: 'none',
           touchAction: 'manipulation',
@@ -170,7 +171,7 @@ export default function MetalCard({
               position: 'absolute',
               inset: 0,
               pointerEvents: 'none',
-              opacity: 0.18,
+              opacity: 0.1,
               backgroundImage: `repeating-linear-gradient(0deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3px), repeating-linear-gradient(90deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px)`,
             }}
           />
@@ -186,11 +187,15 @@ export default function MetalCard({
             }}
           />
 
-          {/* Corner Rivet / Bolt Accents */}
-          <div style={{ position: 'absolute', top: '10px', left: '10px', width: '4px', height: '4px', borderRadius: '50%', background: theme.borderTone, boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.9)' }} />
-          <div style={{ position: 'absolute', top: '10px', right: '10px', width: '4px', height: '4px', borderRadius: '50%', background: theme.borderTone, boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.9)' }} />
-          <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '4px', height: '4px', borderRadius: '50%', background: theme.borderTone, boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.9)' }} />
-          <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '4px', height: '4px', borderRadius: '50%', background: theme.borderTone, boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.9)' }} />
+          {/* Static top-edge sheen */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 32%)',
+            }}
+          />
 
           {/* Dynamic Specular Lighting Glint on Mouse/Touch Movement */}
           <div
@@ -241,7 +246,7 @@ export default function MetalCard({
                 position: 'absolute',
                 inset: 0,
                 pointerEvents: 'none',
-                opacity: 0.18,
+                opacity: 0.1,
                 backgroundImage: `repeating-linear-gradient(0deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3px), repeating-linear-gradient(90deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px)`,
               }}
             />
@@ -301,13 +306,14 @@ export default function MetalCard({
             alignItems: 'center',
             marginTop: '10px',
             padding: '0 4px',
-            fontSize: '10px',
-            fontFamily: 'var(--font-geist-mono), monospace',
-            color: theme.technicalTextColor,
+            gap: '12px',
+            fontSize: '11px',
+            fontFamily: "'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+            color: '#5c6473',
           }}
         >
-          <span>SPEC: {theme.material.toUpperCase()} {'//'} MAT-REV.26</span>
-          <span style={{ color: theme.accentTone, fontWeight: 700 }}>{serialNumber}</span>
+          <span>{theme.name}</span>
+          <span style={{ fontFamily: 'var(--font-geist-mono), monospace', color: '#8a93a3' }}>{serialNumber}</span>
         </div>
       )}
     </div>

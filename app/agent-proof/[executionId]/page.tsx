@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { buildAgentReceipt } from '@/app/lib/agent/agentReceipt'
 import { verifyAgentReceipt } from '@/app/lib/agent/agentVerifier'
-import { generateKillerDemoReceipt } from '@/app/lib/agent/demoExecutionGenerator'
+import { generateHostileAgentReceipt, generateKillerDemoReceipt } from '@/app/lib/agent/demoExecutionGenerator'
 import AgentProofConsole from '@/app/components/AgentProofConsole'
 import type { AgentExecution, AgentEvent, AnchorReference, IrysArchiveReference } from '@/app/lib/agent/types'
 
@@ -16,8 +16,8 @@ export const revalidate = 0
 export async function generateMetadata({ params }: AgentProofPageProps): Promise<Metadata> {
   const { executionId } = await params
   return {
-    title: `PROVN Agent Execution #${executionId.slice(0, 8)} — Cryptographic Provenance Console`,
-    description: `Inspect deterministic Ed25519 signatures, hash chains, and Solana Merkle commitments for autonomous agent execution #${executionId}.`
+    title: `Agent execution ${executionId.slice(0, 8)} — PROVN agent console`,
+    description: `Signatures, hash chain, Merkle commitments and policy audit for agent execution ${executionId}.`
   }
 }
 
@@ -32,6 +32,7 @@ export default async function AgentProofPage({ params }: AgentProofPageProps) {
       <AgentProofConsole 
         initialReceipt={demoReceipt}
         initialVerification={verification}
+        hostileReceipt={generateHostileAgentReceipt()}
         isLiveDbRecord={false}
       />
     )
@@ -49,15 +50,16 @@ export default async function AgentProofPage({ params }: AgentProofPageProps) {
     .maybeSingle()
 
   if (!exec) {
-    // Graceful fallback to demo receipt so the user sees a complete, working screen immediately
+    // Not found: show the generated example, unmodified so it still verifies, with a notice naming the requested id
     const fallbackDemo = generateKillerDemoReceipt()
-    fallbackDemo.execution.executionId = executionId
     const verification = verifyAgentReceipt(fallbackDemo)
     return (
       <AgentProofConsole 
         initialReceipt={fallbackDemo}
         initialVerification={verification}
+        hostileReceipt={generateHostileAgentReceipt()}
         isLiveDbRecord={false}
+        missingExecutionId={executionId}
       />
     )
   }
@@ -132,6 +134,7 @@ export default async function AgentProofPage({ params }: AgentProofPageProps) {
     <AgentProofConsole 
       initialReceipt={receipt}
       initialVerification={verification}
+      hostileReceipt={generateHostileAgentReceipt()}
       isLiveDbRecord={true}
     />
   )

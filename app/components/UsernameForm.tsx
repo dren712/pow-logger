@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 function extractLogin(input: string): string {
@@ -11,6 +11,7 @@ function extractLogin(input: string): string {
 
 export default function UsernameForm({ cta = 'Get my profile' }: { cta?: string }) {
   const router = useRouter()
+  const id = useId()
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
   const [loading, startNavigation] = useTransition()
@@ -27,24 +28,33 @@ export default function UsernameForm({ cta = 'Get my profile' }: { cta?: string 
   }
 
   return (
-    <form onSubmit={submit} className="w-full max-w-xl">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <label className="sr-only" htmlFor="github-username">GitHub username</label>
-        <input
-          id="github-username"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="your GitHub username"
-          autoComplete="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          className="flex-1 rounded-md border border-emerald-400/30 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-emerald-400"
-        />
-        <button type="submit" className="btn-primary text-sm" disabled={loading}>
+    <form onSubmit={submit} className="w-full max-w-xl" noValidate>
+      <div className="flex flex-col gap-2.5 sm:flex-row">
+        <label className="sr-only" htmlFor={id}>GitHub username</label>
+        <div className="relative flex-1">
+          <span className="pv-mono pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#5c6473]" aria-hidden="true">@</span>
+          <input
+            id={id}
+            value={value}
+            onChange={(e) => { setValue(e.target.value); if (error) setError('') }}
+            name="username"
+            placeholder="your-github-username"
+            enterKeyHint="go"
+            autoCorrect="off"
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${id}-error` : undefined}
+            className="pv-input"
+          />
+        </div>
+        <button type="submit" className="pv-btn" disabled={loading} aria-busy={loading || undefined}>
+          {loading && <span className="pv-spinner" aria-hidden="true" />}
           {loading ? 'Building…' : cta}
         </button>
       </div>
-      {error && <p role="alert" className="mt-2 text-xs text-amber-400">{error}</p>}
+      {error && <p id={`${id}-error`} role="alert" className="mt-2 text-left text-[13px] text-[#f5c451]">{error}</p>}
     </form>
   )
 }
