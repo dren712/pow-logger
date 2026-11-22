@@ -44,6 +44,27 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.release_agent_event_quota(p_project_id UUID, p_count INT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF p_count IS NULL OR p_count <= 0 THEN
+        RAISE EXCEPTION 'Quota count must be positive';
+    END IF;
+
+    UPDATE public.agent_projects AS p
+    SET monthly_events_used = GREATEST(0, p.monthly_events_used - p_count),
+        updated_at = now()
+    WHERE p.id = p_project_id;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.release_agent_event_quota(UUID, INT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.release_agent_event_quota(UUID, INT) TO service_role;
+
 REVOKE EXECUTE ON FUNCTION public.finalize_agent_execution(UUID, TEXT, TEXT, TEXT, INT, INT, INT, TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.claim_outbox_tasks(TEXT, INT, INT) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.consume_agent_event_quota(UUID, INT) FROM PUBLIC, anon, authenticated;
