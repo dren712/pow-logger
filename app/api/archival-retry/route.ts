@@ -35,12 +35,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Valid numeric logId is required' }, { status: 400 })
     }
 
-    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32) {
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32 || walletAddress.length > 44) {
       return NextResponse.json({ error: 'Valid Base58 walletAddress is required' }, { status: 400 })
     }
 
     // Optional Re-authorization Challenge (if signature is supplied by client)
     if (signature && typeof signature === 'string') {
+      if (signature.length > 88) {
+        return NextResponse.json({ error: 'Invalid signature length' }, { status: 400 })
+      }
       if (!challenge || typeof challenge !== 'string' || challenge.trim().length === 0) {
         return NextResponse.json({ error: 'Anti-replay server challenge (v2) is required when signing retry' }, { status: 400 })
       }

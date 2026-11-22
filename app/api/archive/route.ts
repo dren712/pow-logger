@@ -21,10 +21,10 @@ export async function POST(req: NextRequest) {
     if (!logId || typeof logId !== 'number') {
       return NextResponse.json({ error: 'Invalid logId' }, { status: 400 })
     }
-    if (!walletAddress || typeof walletAddress !== 'string') {
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32 || walletAddress.length > 44) {
       return NextResponse.json({ error: 'Invalid walletAddress' }, { status: 400 })
     }
-    if (!signature || typeof signature !== 'string') {
+    if (!signature || typeof signature !== 'string' || signature.length > 88) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
     if (!timestamp || typeof timestamp !== 'string') {

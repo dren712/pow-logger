@@ -22,13 +22,13 @@ export async function POST(req: NextRequest) {
 
     const { walletAddress, challenge, signature, timestamp, action = 'Link' } = body
 
-    if (!walletAddress || typeof walletAddress !== 'string') {
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32 || walletAddress.length > 44) {
       return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 })
     }
     if (!challenge || typeof challenge !== 'string') {
       return NextResponse.json({ error: 'challenge is required' }, { status: 400 })
     }
-    if (!signature || typeof signature !== 'string') {
+    if (!signature || typeof signature !== 'string' || signature.length > 88) {
       return NextResponse.json({ error: 'signature is required' }, { status: 400 })
     }
     if (!timestamp || typeof timestamp !== 'string') {

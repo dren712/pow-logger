@@ -73,11 +73,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Log content exceeds maximum length of 280 characters' }, { status: 400 })
     }
 
-    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32) {
+    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.length < 32 || walletAddress.length > 44) {
       return NextResponse.json({ error: 'Valid Base58 walletAddress is required' }, { status: 400 })
     }
 
-    if (!signature || typeof signature !== 'string') {
+    if (!signature || typeof signature !== 'string' || signature.length > 88) {
       return NextResponse.json({ error: 'Cryptographic wallet signature is required' }, { status: 401 })
     }
 

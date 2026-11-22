@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}))
     const wallet = body.wallet
 
-    if (!wallet || typeof wallet !== 'string') {
+    if (!wallet || typeof wallet !== 'string' || wallet.trim().length < 32 || wallet.trim().length > 44) {
       return NextResponse.json({ error: 'Missing wallet parameter' }, { status: 400 })
     }
 
