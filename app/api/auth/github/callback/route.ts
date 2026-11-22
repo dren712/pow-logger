@@ -112,8 +112,11 @@ export async function GET(req: NextRequest) {
       .eq('wallet_address', wallet)
       .maybeSingle()
 
-    if (existingIdentity && action !== 'Relink') {
-      throw new Error('Identity already exists. Explicit Relink action required.')
+    if (existingIdentity && String(existingIdentity.github_id) !== githubId && action !== 'Relink') {
+      const relinkUrl = new URL(`/u/${wallet}`, req.url)
+      relinkUrl.searchParams.set('identity_linked', 'false')
+      relinkUrl.searchParams.set('error', 'relink_required')
+      return NextResponse.redirect(relinkUrl.toString())
     }
 
     // Upsert the identity.

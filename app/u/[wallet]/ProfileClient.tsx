@@ -44,6 +44,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
   const [achievementFilter, setAchievementFilter] = useState<AchievementFilter>('all')
   const [identityLinkStatus, setIdentityLinkStatus] = useState<'success' | 'error' | null>(null)
   const [identityLinkError, setIdentityLinkError] = useState<string | null>(null)
+  const [identityRelinkRequired, setIdentityRelinkRequired] = useState(false)
 
   // Initialize theme or packet from URL if present
   useEffect(() => {
@@ -67,6 +68,10 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         // Auto-dismiss after 5 seconds
         setTimeout(() => setIdentityLinkStatus(null), 5000)
       } else if (identityLinked === 'false') {
+        if (params.get('error') === 'relink_required') {
+          setIdentityRelinkRequired(true)
+          setIdentityLinkError('This wallet is already linked to a different GitHub account.')
+        }
         setIdentityLinkStatus('error')
         const cleanUrl = new URL(window.location.href)
         cleanUrl.searchParams.delete('identity_linked')
@@ -77,7 +82,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
     }
   }, [])
 
-  const handleLinkGithub = async () => {
+  const handleLinkGithub = async (action: 'Link' | 'Relink' = 'Link') => {
     if (!publicKey || publicKey.toBase58() !== wallet) {
       setIdentityLinkError('Connect the wallet for this profile to link GitHub.')
       setIdentityLinkStatus('error')
@@ -91,6 +96,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
 
     setIdentityLinkError(null)
     setIdentityLinkStatus(null)
+    setIdentityRelinkRequired(false)
     try {
       // 1. Fetch Challenge
       const challengeRes = await fetch('/api/challenge', {
@@ -108,7 +114,8 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         domain: clientDomain,
         walletAddress: wallet,
         challenge,
-        timestamp
+        timestamp,
+        action
       })
 
       const messageBytes = new TextEncoder().encode(canonicalMsg)
@@ -126,7 +133,8 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           walletAddress: wallet,
           challenge,
           signature,
-          timestamp
+          timestamp,
+          action
         })
       })
 
@@ -247,7 +255,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
           onExport={() => setIsExportOpen(true)}
           onCustomize={() => setIsCustomizerOpen(true)}
           onRefresh={handleRefresh}
-          onLinkGithub={handleLinkGithub}
+          onLinkGithub={() => handleLinkGithub()}
         />
 
         <div className="pv-card p-5 text-[12px] leading-relaxed">
@@ -277,6 +285,11 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             }}
           >
             {identityLinkError || 'Please try again. If it keeps failing, the GitHub OAuth app may not be configured for this deployment.'}
+            {identityRelinkRequired && (
+              <button type="button" className="pv-btn mt-3" onClick={() => handleLinkGithub('Relink')}>
+                Replace with the GitHub account I sign in with
+              </button>
+            )}
           </Notice>
         )}
         {reputation.legacyRecords > 0 && (
