@@ -63,7 +63,14 @@ export async function POST(req: NextRequest) {
           'consume_agent_event_quota',
           { p_project_id: auth.projectId, p_count: 1 }
         )
-        if (!quotaErr && quotaRows && quotaRows[0] && !quotaRows[0].allowed) {
+        if (quotaErr || !quotaRows || !quotaRows[0]) {
+          console.error('Atomic quota check failed:', quotaErr)
+          return NextResponse.json(
+            { error: 'Usage quota service unavailable; event was not accepted' },
+            { status: 503 }
+          )
+        }
+        if (!quotaRows[0].allowed) {
           return NextResponse.json(
             {
               error: `Monthly event quota exceeded (${quotaRows[0].monthly_events_used}/${quotaRows[0].monthly_event_limit}). Upgrade tier for more capacity.`,
