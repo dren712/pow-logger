@@ -1,101 +1,130 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 import Link from 'next/link'
+import LegalPage from '@/app/components/docs-legal/LegalPage'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — PROVN — Proof-of-Work Logger 🗿',
-  description: 'Privacy Policy and data governance specs for PROVN — Proof-of-Work Logger.',
+  title: 'Privacy — PROVN',
+  description: 'What PROVN reads, stores and shares: public GitHub data for profiles, and wallet-signed proofs for the proof logger.',
 }
 
 export default function PrivacyPage() {
   return (
-    <main
-      style={{
-        maxWidth: '820px',
-        margin: '0 auto',
-        padding: '48px 20px 100px 20px',
-        fontFamily: 'var(--font-geist-mono), monospace',
-        color: '#e0e0e0',
-      }}
+    <LegalPage
+      current="/privacy"
+      title="Privacy"
+      lead="PROVN builds developer profiles from public GitHub data and lets people sign proofs of their work with a Solana wallet. This page says what is read, what is stored and what cannot be undone."
     >
-      <div style={{ marginBottom: '32px' }}>
-        <Link
-          href="/"
-          className="btn-primary"
-          style={{
-            fontSize: '12px',
-            padding: '6px 14px',
-            display: 'inline-flex',
-            marginBottom: '20px',
-          }}
-        >
-          ← Back to PROVN Terminal 🗿
-        </Link>
+      <h2 id="summary">In short</h2>
+      <ul>
+        <li>Profiles use only data that is already public on GitHub. There is no login and no access to private repositories.</li>
+        <li>A generated profile is cached for up to a day, and a summary row is stored for the leaderboard.</li>
+        <li>The proof logger stores what you sign. Archived proofs are permanent.</li>
+        <li>PROVN sets no cookies, shows no ads, and does not sell data.</li>
+      </ul>
 
-        <h1 style={{ color: '#00ff88', fontSize: '2.2rem', fontWeight: 900, margin: '0 0 10px 0', letterSpacing: '-0.8px' }}>
-          Privacy Policy
-        </h1>
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>
-          Last Updated: August 1, 2026 • PROVN Protocol (Version 1.0)
-        </p>
-      </div>
+      <h2 id="profiles">GitHub profiles and résumés</h2>
+      <p>
+        When anyone opens <code>/gh/username</code>, PROVN asks the public GitHub API for that account&apos;s public
+        profile, public repositories and merged pull requests, and computes a score and tier from them. You do not sign
+        in, and PROVN never asks for a GitHub password or token from you.
+      </p>
+      <p>
+        Because the data is public, a profile can be generated for any public GitHub account, including by someone other
+        than its owner.
+      </p>
+      <h3>What is stored</h3>
+      <ul>
+        <li>
+          <strong>Profile cache.</strong> The generated profile is kept in a server cache for up to 24 hours so that
+          repeat visits do not call GitHub again. After that it is rebuilt from GitHub on the next visit.
+        </li>
+        <li>
+          <strong>Leaderboard row.</strong> For each generated profile, one row is saved: GitHub account ID, username,
+          display name, avatar URL, score, tier, number of merged pull requests in other projects, number of projects
+          contributed to, stars, top language, a fingerprint of the profile and the time it was generated. These rows
+          are shown on the <Link href="/leaderboard">leaderboard</Link>.
+        </li>
+      </ul>
+      <p>
+        If GitHub no longer finds a username, its leaderboard row is deleted the next time that profile is requested. To
+        have your row removed sooner, use the contact details below.
+      </p>
 
-      <div className="glass-card" style={{ padding: '32px', display: 'grid', gap: '24px', lineHeight: '1.7', fontSize: '13.5px' }}>
-        <section>
-          <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>1. Overview</h2>
-          <p style={{ color: '#ccc', margin: 0 }}>
-            PROVN (&quot;Proof-of-Work Logger&quot;) is a Solana-native builder reputation protocol archived on Arweave. We respect your privacy and do not use advertising tracking pixels, behavioral profiling, or user data monetization.
-          </p>
-        </section>
+      <h2 id="proofs">Wallets and proofs</h2>
+      <p>The <Link href="/log">proof logger</Link> is optional and separate from GitHub profiles. If you use it:</p>
+      <ul>
+        <li>
+          <strong>Wallet address.</strong> Your public Solana address is stored with every proof you submit and is shown
+          on your passport page.
+        </li>
+        <li>
+          <strong>Proof content.</strong> The text you write, any links, skills and categories you attach, the signature
+          and the time are stored in the database. Proofs are public unless you mark them private.
+        </li>
+        <li>
+          <strong>Private keys.</strong> Signing happens in your wallet. PROVN never receives your private key or seed
+          phrase.
+        </li>
+        <li>
+          <strong>Linked GitHub account.</strong> If you choose to link GitHub to your wallet, you sign in with GitHub
+          once with read-only access to your public profile, and PROVN stores your GitHub account ID and username next
+          to your wallet address.
+        </li>
+        <li>
+          <strong>Signing challenges.</strong> When you request a message to sign, the short-lived challenge is stored
+          with your wallet address and IP address to prevent replay and abuse.
+        </li>
+        <li>
+          <strong>Feedback.</strong> If you send feedback, the text, the rating and your wallet address (if connected)
+          are stored.
+        </li>
+      </ul>
+      <p className="dl-note dl-note-warn">
+        <strong>Archived proofs are permanent.</strong> Proofs archived to Arweave through Irys, and hashes anchored on
+        Solana, are public and cannot be edited or deleted by anyone, including PROVN. Do not put secrets, API keys or
+        personal information in a proof.
+      </p>
 
-        <section>
-          <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>2. Data We Process &amp; Store</h2>
-          <ul style={{ color: '#ccc', paddingLeft: '20px', margin: 0, display: 'grid', gap: '8px' }}>
-            <li>
-              <strong style={{ color: '#ffb800' }}>Public Wallet Addresses:</strong> When you connect your wallet (Phantom, Backpack, Solflare), your public Base58 address is processed to authenticate log submissions and render your 365-day contribution heatmap.
-            </li>
-            <li>
-              <strong style={{ color: '#ffb800' }}>Work Logs &amp; Cryptographic Signatures:</strong> Text entries submitted via PROVN are signed offline using Ed25519 Sign-In With Solana (SIWS) signatures. Verified logs are archived permanently on Arweave via Irys Node #1 and indexed in Supabase (PostgreSQL).
-            </li>
-            <li>
-              <strong style={{ color: '#ffb800' }}>No Private Keys:</strong> Your private keys never leave your browser. All authentication takes place via offline Ed25519 message signing in your wallet.
-            </li>
-          </ul>
-        </section>
+      <h2 id="agents">Agent executions</h2>
+      <p>
+        Projects that use the agent protocol send signed events to PROVN. The agent&apos;s public key, event hashes,
+        signatures and the event metadata the project chose to include are stored. API keys are stored as hashes.
+      </p>
 
-        <section>
-          <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>3. Decentralized Immutability Notice</h2>
-          <p style={{ color: '#ccc', margin: 0 }}>
-            PROVN archives verified log entries on Arweave, a decentralized permanent blockweave storage network. Once a log is published to Arweave, it becomes permanent and immutable. Please do not submit confidential information, API keys, or personally identifiable info (PII) in your daily log entries.
-          </p>
-        </section>
+      <h2 id="browser">Cookies, browser storage and logs</h2>
+      <ul>
+        <li>PROVN does not set cookies and does not load advertising or analytics scripts.</li>
+        <li>If you connect a wallet, the wallet adapter remembers which wallet you chose in your browser&apos;s local storage so it can reconnect.</li>
+        <li>IP addresses are used to rate-limit requests. The hosting provider also keeps standard request logs.</li>
+      </ul>
 
-        <section>
-          <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>4. Third-Party Infrastructure</h2>
-          <p style={{ color: '#ccc', margin: '0 0 10px 0' }}>
-            PROVN utilizes reputable infrastructure providers:
-          </p>
-          <ul style={{ color: '#ccc', paddingLeft: '20px', margin: 0, display: 'grid', gap: '6px' }}>
-            <li><strong>Solana Network:</strong> Public RPC endpoints (Helius / Solana Labs).</li>
-            <li><strong>Irys &amp; Arweave:</strong> Permanent decentralized storage gateway (`gateway.irys.xyz`).</li>
-            <li><strong>Supabase:</strong> Database query indexing hosted on Supabase (PostgreSQL with RLS).</li>
-            <li><strong>Vercel:</strong> Static site hosting and serverless API execution with strict security headers.</li>
-          </ul>
-        </section>
+      <h2 id="providers">Services PROVN relies on</h2>
+      <ul>
+        <li><strong>GitHub</strong>: source of public profile data, and sign-in if you link an account to a wallet.</li>
+        <li><strong>Supabase</strong>: database for leaderboard rows, proofs and agent events.</li>
+        <li><strong>Vercel</strong>: hosting and server functions.</li>
+        <li><strong>Solana</strong>: public network where proof hashes are anchored.</li>
+        <li><strong>Irys and Arweave</strong>: permanent storage for archived proofs.</li>
+      </ul>
+      <p>PROVN does not sell personal data or share it with advertisers.</p>
 
-        <section>
-          <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>5. Cookies &amp; Tracking</h2>
-          <p style={{ color: '#ccc', margin: 0 }}>
-            PROVN does not use tracking cookies, behavioral analytics scripts, advertising pixels, or invasive surveillance tools. Client IP addresses are processed transiently in serverless memory strictly for rate limiting and EDoS protection.
-          </p>
-        </section>
+      <h2 id="choices">Your choices</h2>
+      <ul>
+        <li>To change what a profile shows, change what is public on GitHub. The profile updates when its cache expires.</li>
+        <li>To remove a leaderboard row or database records tied to your wallet, get in touch. Data already on Arweave or Solana cannot be removed.</li>
+        <li>To stop the wallet reconnecting, disconnect it in the app or clear this site&apos;s storage in your browser.</li>
+      </ul>
 
-        <section>
-          <h2 style={{ color: '#00e5ff', fontSize: '1.2rem', fontWeight: 800, marginTop: 0 }}>6. Contact &amp; Security Inquiries</h2>
-          <p style={{ color: '#ccc', margin: 0 }}>
-            For privacy queries or security disclosures, reach out directly to <strong>darshangaikwad712@gmail.com</strong> or via GitHub <a href="https://github.com/dren712" rel="noopener noreferrer" style={{ color: '#00ff88' }}>@dren712</a>.
-          </p>
-        </section>
-      </div>
-    </main>
+      <h2 id="changes">Changes</h2>
+      <p>If this page changes, the date at the top changes with it.</p>
+
+      <h2 id="contact">Contact</h2>
+      <p>
+        For privacy questions, removal requests or security reports, email{' '}
+        <a href="mailto:darshangaikwad712@gmail.com">darshangaikwad712@gmail.com</a> or open an issue on{' '}
+        <a href="https://github.com/dren712/pow-logger" rel="noopener noreferrer" target="_blank">GitHub</a>.
+        See also the <Link href="/terms">terms</Link>.
+      </p>
+    </LegalPage>
   )
 }
