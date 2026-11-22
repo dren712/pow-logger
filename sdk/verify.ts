@@ -109,14 +109,27 @@ export class ProvnVerify {
     return new ProvnVerify(execution, params.mandate, mandateHash)
   }
 
-  private async request(
+  private requestLock: Promise<unknown> = Promise.resolve()
+
+  /** Evaluates and records one request at a time, so every decision sees only reservations backed by a recorded intent. */
+  private request(
+    request: MandateActionRequest,
+    eventType: 'tool' | 'payment.intent',
+    extra: Record<string, unknown>
+  ): Promise<{ actionId: string; evaluation: MandateEvaluation; payloadHash: string }> {
+    const run = this.requestLock.then(() => this.evaluateAndRecord(request, eventType, extra))
+    this.requestLock = run.catch(() => undefined)
+    return run
+  }
+
+  private async evaluateAndRecord(
     request: MandateActionRequest,
     eventType: 'tool' | 'payment.intent',
     extra: Record<string, unknown>
   ): Promise<{ actionId: string; evaluation: MandateEvaluation; payloadHash: string }> {
     const actionId = generateId()
     const evaluation = evaluateMandate(this.mandate, request, this.spent)
-    // Reserve the amount before any await so overlapping pay() calls cannot share the same budget.
+    // Reserve the amount at approval so overlapping pay() calls cannot share the same budget.
     if (evaluation.decision === 'allow' && request.kind === 'payment' && request.amount) {
       this.spent = formatAmount(parseAmount(this.spent) + parseAmount(request.amount))
     }
