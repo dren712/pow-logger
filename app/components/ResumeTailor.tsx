@@ -98,6 +98,7 @@ export default function ResumeTailor({ githubUsername }: { githubUsername: strin
           disabled={pending || exhausted}
           placeholder="Paste the role description, responsibilities and requirements"
           className="pv-input mt-2 min-h-40 w-full resize-y py-3 leading-relaxed"
+          style={{ paddingLeft: 14 }}
         />
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <span className="pv-faint text-xs">{length.toLocaleString('en-US')} / {MAX.toLocaleString('en-US')} characters</span>
