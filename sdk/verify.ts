@@ -116,6 +116,10 @@ export class ProvnVerify {
   ): Promise<{ actionId: string; evaluation: MandateEvaluation; payloadHash: string }> {
     const actionId = generateId()
     const evaluation = evaluateMandate(this.mandate, request, this.spent)
+    // Reserve the amount before any await so overlapping pay() calls cannot share the same budget.
+    if (evaluation.decision === 'allow' && request.kind === 'payment' && request.amount) {
+      this.spent = formatAmount(parseAmount(this.spent) + parseAmount(request.amount))
+    }
     const commitment: RequestCommitment = {
       actionId,
       mandateHash: this.mandateHash,
@@ -217,11 +221,23 @@ export class ProvnVerify {
     })
     if (evaluation.decision === 'reject') return this.reject<X402Settlement>(actionId, evaluation, payloadHash, `x402.pay ${requirements.amount} ${requirements.asset}`)
 
-    const settlement = await payer({ ...requirements, network })
-    if (settlement.network && settlement.network !== X402_DEVNET_NETWORK) {
-      throw new Error(`UNSUPPORTED_NETWORK: settlement reported ${settlement.network}`)
+    let settlement: X402Settlement
+    try {
+      settlement = await payer({ ...requirements, network })
+      if (settlement.network && settlement.network !== X402_DEVNET_NETWORK) {
+        throw new Error(`UNSUPPORTED_NETWORK: settlement reported ${settlement.network}`)
+      }
+    } catch (err) {
+      // The approved budget is released and the failure is receipted so the run still verifies.
+      this.spent = formatAmount(parseAmount(this.spent) - parseAmount(requirements.amount))
+      const message = err instanceof Error ? err.message : String(err)
+      await this.settle(actionId, evaluation, payloadHash, 'outcome.attestation', hashEvidence({ error: message }), {
+        outcomeType: 'payment.failed',
+        success: false,
+        summary: `Payment not completed: ${message.slice(0, 200)}`,
+      })
+      throw err
     }
-    this.spent = formatAmount(parseAmount(this.spent) + parseAmount(requirements.amount))
     return this.settle(
       actionId,
       evaluation,
