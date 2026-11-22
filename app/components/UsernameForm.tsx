@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 function extractLogin(input: string): string {
@@ -13,7 +13,7 @@ export default function UsernameForm({ cta = 'Get my profile' }: { cta?: string 
   const router = useRouter()
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, startNavigation] = useTransition()
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,8 +23,7 @@ export default function UsernameForm({ cta = 'Get my profile' }: { cta?: string 
       return
     }
     setError('')
-    setLoading(true)
-    router.push(`/gh/${login}`)
+    startNavigation(() => router.push(`/gh/${login}`))
   }
 
   return (
