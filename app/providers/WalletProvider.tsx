@@ -5,8 +5,9 @@ import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { clusterApiUrl } from '@solana/web3.js'
 
-// Wallet adapter's built-in modal styles (dark theme, looks good out of the box)
+// Wallet adapter's built-in modal styles, then our overrides so the button and modal match the product UI
 import '@solana/wallet-adapter-react-ui/styles.css'
+import '../styles/logger.css'
 
 export default function WalletContextProvider({ children }: { children: React.ReactNode }) {
   const endpoint = useMemo(() => {

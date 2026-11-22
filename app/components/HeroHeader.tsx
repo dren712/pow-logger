@@ -15,6 +15,14 @@ interface HeroHeaderProps {
   walletAddress?: string
 }
 
+const RELATED = [
+  { href: '/agent-proof', label: 'Agent console' },
+  { href: '/docs/agent-sdk', label: 'Agent SDK' },
+  { href: '/docs/api', label: 'API docs' },
+  { href: '/demo/bounty', label: 'Bounty demo' },
+  { href: '/admin/evidence', label: 'Evidence' },
+]
+
 export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps) {
   const [verifyWalletInput, setVerifyWalletInput] = useState('')
   const [stats, setStats] = useState<NetworkStats | null>(null)
@@ -38,188 +46,79 @@ export default function HeroHeader({ connected, walletAddress }: HeroHeaderProps
   const walletShort = walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : ''
 
   return (
-    <>
-      {/* Header Navigation Bar */}
-      <header
-        className="header-bar"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '28px',
-          paddingBottom: '20px',
-          borderBottom: '1px solid #161a24',
-        }}
-      >
-        <div>
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h1 style={{ color: '#00ff88', margin: 0, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
-              PROVN
-            </h1>
-            <span style={{ fontSize: '18px' }}>🗿</span>
-          </Link>
-          <p style={{ color: '#667', margin: '4px 0 0 0', fontSize: '11px', letterSpacing: '0.2px' }}>
-            Solana Evidence Protocol • Optional Arweave Archival
-          </p>
-        </div>
+    <header className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-10">
+      <div className="flex min-w-0 flex-col items-start gap-4">
+        <p className="pv-eyebrow">Proof logger · Solana</p>
+        <h1 className="text-[30px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[38px]">
+          Log a signed proof of your work
+        </h1>
+        <p className="pv-muted max-w-xl text-[15px] leading-relaxed">
+          Describe what you shipped and sign it with your Solana wallet. The signature ties the statement to your
+          wallet and a timestamp, so anyone can check who wrote it and that it was not changed. Records can also be
+          archived to Arweave.
+        </p>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-          <nav style={{ display: 'flex', gap: '12px', fontSize: '11px', fontFamily: 'var(--font-geist-mono), monospace' }}>
-            <Link href="/agent-proof" style={{ color: '#00ff88', fontWeight: 600, textDecoration: 'none', transition: 'color 0.15s' }}>
-              Agent Console
+        {connected && walletAddress ? (
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <WalletMultiButton />
+            <Link href={`/u/${walletAddress}`} className="pv-btn-ghost !h-10 !py-0" aria-label={`View passport for wallet ${walletShort}`}>
+              View my passport
             </Link>
-            <Link href="/docs/agent-sdk" style={{ color: '#00e5ff', fontWeight: 600, textDecoration: 'none', transition: 'color 0.15s' }}>
-              Agent SDK
-            </Link>
-            <Link href="/docs/api" style={{ color: '#889', textDecoration: 'none', transition: 'color 0.15s' }}>
-              API Docs
-            </Link>
-            <Link href="/demo/bounty" style={{ color: '#889', textDecoration: 'none', transition: 'color 0.15s' }}>
-              Bounties
-            </Link>
-            <Link href="/admin/evidence" style={{ color: '#889', textDecoration: 'none', transition: 'color 0.15s' }}>
-              Evidence
-            </Link>
-            {connected && walletAddress && (
-              <Link
-                href={`/u/${walletAddress}`}
-                style={{
-                  color: '#00e5ff',
-                  textDecoration: 'none',
-                  fontWeight: 700,
-                  borderBottom: '1px solid rgba(0, 229, 255, 0.4)',
-                }}
-              >
-                My Passport ({walletShort}) ↗
-              </Link>
-            )}
-          </nav>
-          <WalletMultiButton />
-        </div>
-      </header>
+          </div>
+        ) : (
+          <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2">
+            <WalletMultiButton />
+            <span className="pv-faint text-[13px]">Signing a message is free. No transaction is sent.</span>
+          </div>
+        )}
 
-      {/* Clean Intro Banner */}
-      {!connected ? (
-        <section
-          className="glass-card"
-          style={{
-            marginBottom: '28px',
-            padding: '24px 20px',
-            borderRadius: '12px',
-          }}
-        >
-          <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 style={{ color: '#f0f4fc', fontSize: '1.6rem', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-              Wallet-Signed Evidence Records on Solana
-            </h2>
-            <p style={{ color: '#889', fontSize: '13px', lineHeight: '1.6', margin: '0 0 20px 0' }}>
-              Sign daily engineering logs with your Ed25519 wallet. Immutable timestamped records, self-attested tags, and optional Arweave storage.
-            </p>
+        <nav aria-label="Related tools" className="pv-muted flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-[13px]">
+          {RELATED.map((l) => (
+            <Link key={l.href} href={l.href} className="pv-link !text-[#8a93a3] hover:!text-[#2ee59d]">
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
 
-            <form
-              onSubmit={handleVerifySubmit}
-              style={{
-                display: 'flex',
-                gap: '8px',
-                maxWidth: '440px',
-                margin: '0 auto',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Inspect any Solana wallet passport..."
-                value={verifyWalletInput}
-                onChange={(e) => setVerifyWalletInput(e.target.value)}
-                style={{
-                  background: '#060709',
-                  border: '1px solid #1c2230',
-                  color: '#00ff88',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  fontFamily: 'monospace',
-                  fontSize: '12px',
-                  flex: '1',
-                  minWidth: '220px',
-                  outline: 'none',
-                }}
-              />
-              <button
-                type="submit"
-                disabled={!verifyWalletInput.trim()}
-                className="btn-primary"
-                style={{
-                  padding: '8px 14px',
-                  fontSize: '12px',
-                  opacity: verifyWalletInput.trim() ? 1 : 0.5,
-                  cursor: verifyWalletInput.trim() ? 'pointer' : 'not-allowed',
-                }}
-              >
-                Inspect Passport →
-              </button>
-            </form>
+      <aside className="pv-card p-5">
+        <form onSubmit={handleVerifySubmit} className="flex flex-col gap-2">
+          <label htmlFor="lookup-wallet" className="pv-h2">
+            Look up a wallet
+          </label>
+          <p className="pv-muted text-[13px] leading-relaxed">Open the public passport for any Solana address.</p>
+          <div className="mt-1 flex gap-2">
+            <input
+              id="lookup-wallet"
+              type="text"
+              placeholder="Wallet address"
+              value={verifyWalletInput}
+              onChange={(e) => setVerifyWalletInput(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              className="pv-input lg-field pv-mono min-w-0 flex-1 !py-2 !text-[13px]"
+            />
+            <button type="submit" disabled={!verifyWalletInput.trim()} className="pv-btn-ghost lg-lookup shrink-0 !py-2 disabled:cursor-not-allowed disabled:opacity-50">
+              Open
+            </button>
+          </div>
+        </form>
 
-            {/* Network Stats */}
-            {stats && (
-              <div style={{
-                marginTop: '28px',
-                display: 'flex',
-                justifyContent: 'center',
-                gap: '24px',
-                borderTop: '1px solid #161a24',
-                paddingTop: '20px'
-              }}>
-                <div>
-                  <div style={{ color: '#00ff88', fontSize: '18px', fontWeight: 800 }}>{stats.totalBuilders}</div>
-                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Builders</div>
-                </div>
-                <div>
-                  <div style={{ color: '#00e5ff', fontSize: '18px', fontWeight: 800 }}>{stats.totalProofs}</div>
-                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Proofs</div>
-                </div>
-                <div>
-                  <div style={{ color: '#ffb800', fontSize: '18px', fontWeight: 800 }}>{stats.totalArchived}</div>
-                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Archived</div>
-                </div>
+        {stats && (
+          <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-[#1c222c] pt-4">
+            {[
+              [stats.totalBuilders, 'wallets'],
+              [stats.totalProofs, 'proofs'],
+              [stats.totalArchived, 'archived'],
+            ].map(([value, label]) => (
+              <div key={label} className="min-w-0">
+                <dd className="truncate text-[18px] font-semibold leading-none text-white">{value}</dd>
+                <dt className="pv-muted mt-1.5 text-[12px]">{label}</dt>
               </div>
-            )}
-          </div>
-        </section>
-      ) : (
-        <div
-          style={{
-            background: 'rgba(0, 255, 136, 0.04)',
-            border: '1px solid rgba(0, 255, 136, 0.15)',
-            borderRadius: '8px',
-            padding: '10px 14px',
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '8px',
-            fontSize: '11px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: '#00ff88' }}>●</span>
-            <span style={{ color: '#aaa' }}>Connected:</span>
-            <code style={{ color: '#00ff88' }}>{walletShort}</code>
-          </div>
-          <Link
-            href={`/u/${walletAddress}`}
-            style={{
-              color: '#00e5ff',
-              textDecoration: 'none',
-              fontWeight: 700,
-              fontSize: '11px',
-            }}
-          >
-            Open 3D Metallic Passport & Studio →
-          </Link>
-        </div>
-      )}
-    </>
+            ))}
+          </dl>
+        )}
+      </aside>
+    </header>
   )
 }

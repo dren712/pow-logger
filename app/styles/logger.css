@@ -1,0 +1,199 @@
+/* Proof logger (/log) and the wallet adapter button/modal, matched to the .pv product UI. */
+
+/* Wallet adapter: primary action when disconnected, quiet chip once a wallet is connected. */
+body .wallet-adapter-button {
+  background-color: #2ee59d !important;
+  color: #04130c !important;
+  border: 1px solid #2ee59d !important;
+  border-radius: 10px !important;
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  height: 40px !important;
+  line-height: 1.2 !important;
+  padding: 0 16px !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+}
+body .wallet-adapter-button:not([disabled]):hover {
+  background-color: #5cf0b4 !important;
+  border-color: #5cf0b4 !important;
+  box-shadow: 0 0 0 4px rgba(46, 229, 157, 0.14) !important;
+  transform: none !important;
+}
+body .wallet-adapter-button:focus-visible {
+  outline: 2px solid #2ee59d;
+  outline-offset: 2px;
+}
+body .wallet-adapter-button[disabled] {
+  background-color: #11151c !important;
+  border-color: #1c222c !important;
+  color: #8a93a3 !important;
+  cursor: default;
+}
+body .wallet-adapter-button:has(.wallet-adapter-button-start-icon) {
+  background-color: transparent !important;
+  color: #e8ecf2 !important;
+  border-color: #272e3a !important;
+  font-family: var(--font-geist-mono), ui-monospace, monospace !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0;
+}
+body .wallet-adapter-button:has(.wallet-adapter-button-start-icon):not([disabled]):hover {
+  background-color: transparent !important;
+  border-color: #2ee59d !important;
+  color: #2ee59d !important;
+  box-shadow: none !important;
+}
+body .wallet-adapter-button-start-icon,
+body .wallet-adapter-button-start-icon img {
+  width: 18px;
+  height: 18px;
+}
+
+body .wallet-adapter-dropdown-list {
+  background: #0c0f14;
+  border: 1px solid #1c222c;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  padding: 6px;
+}
+body .wallet-adapter-dropdown-list-item {
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e8ecf2;
+  height: 36px;
+}
+body .wallet-adapter-dropdown-list-item:not([disabled]):hover {
+  background-color: #11151c;
+}
+
+body .wallet-adapter-modal-wrapper {
+  background: #0c0f14 !important;
+  border: 1px solid #1c222c !important;
+  border-radius: 16px !important;
+  color: #e8ecf2 !important;
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7) !important;
+}
+body .wallet-adapter-modal-title {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+body .wallet-adapter-modal-button-close {
+  background: #11151c !important;
+}
+/* Wallet rows inside the modal stay neutral list items, not primary buttons. */
+body .wallet-adapter-modal-list .wallet-adapter-button,
+body .wallet-adapter-modal-list-more {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #e8ecf2 !important;
+  font-family: inherit !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+}
+body .wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
+  background-color: #11151c !important;
+  border-color: transparent !important;
+  color: #e8ecf2 !important;
+  box-shadow: none !important;
+}
+body .wallet-adapter-modal-middle-button {
+  width: 100%;
+}
+
+/* Logger page */
+.pv button:focus-visible,
+.pv textarea:focus-visible,
+.pv summary:focus-visible {
+  outline: 2px solid var(--pv-accent);
+  outline-offset: 2px;
+}
+.lg-field {
+  padding-left: 14px;
+}
+textarea.lg-field {
+  display: block;
+  resize: vertical;
+  min-height: 104px;
+  line-height: 1.55;
+}
+.lg-field[aria-invalid='true'] {
+  border-color: #f0736a;
+}
+.lg-type {
+  border: 1px solid var(--pv-line);
+  background: var(--pv-surface-2);
+  color: #c3cad6;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.lg-type:hover { border-color: #3a4352; color: var(--pv-text); }
+.lg-type[aria-pressed='true'] {
+  border-color: rgba(46, 229, 157, 0.55);
+  background: rgba(46, 229, 157, 0.08);
+  color: var(--pv-accent);
+}
+.lg-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pv-muted);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.lg-action:hover { color: var(--pv-text); background: var(--pv-surface-2); }
+.lg-action:disabled { opacity: 0.6; cursor: progress; }
+.lg-action-warn { color: #f5c451; border-color: rgba(245, 196, 81, 0.35); }
+.lg-action-warn:hover { color: #f5c451; background: rgba(245, 196, 81, 0.08); }
+.lg-pre {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  background: #080a0e;
+  border: 1px solid var(--pv-line);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #c3cad6;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.lg-note {
+  border-radius: 10px;
+  border: 1px solid var(--pv-line);
+  background: var(--pv-surface-2);
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c3cad6;
+}
+.lg-note-error { border-color: rgba(240, 115, 106, 0.4); background: rgba(240, 115, 106, 0.07); color: #f6a19a; }
+.lg-note-success { border-color: rgba(46, 229, 157, 0.35); background: rgba(46, 229, 157, 0.07); color: #8ff0c8; }
+.lg-note-warn { border-color: rgba(245, 196, 81, 0.35); background: rgba(245, 196, 81, 0.07); color: #f5d98a; }
+.pv .pv-btn:disabled.lg-blocked { cursor: not-allowed; opacity: 0.45; box-shadow: none; background: var(--pv-accent); }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useId, useState } from 'react'
 import { classifyLog } from '@/app/lib/classifier'
 import { buildCanonicalSubmitMessageV2 } from '@/app/lib/canonicalMessage'
 
@@ -106,6 +106,17 @@ export default function TerminalStudio({
 }: TerminalStudioProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('custom')
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [githubUrlError, setGithubUrlError] = useState('')
+  const uid = useId()
+
+  useEffect(() => {
+    if (!isPreviewOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsPreviewOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isPreviewOpen])
 
   const liveClassification = log.trim() ? classifyLog(log.trim()) : null
   const charPercent = Math.min(100, Math.round((log.length / maxChars) * 100))
@@ -136,15 +147,16 @@ export default function TerminalStudio({
       try {
         const u = new URL(githubUrl.trim())
         if (!u.hostname.includes('github.com')) {
-          alert('GitHub URL must be a valid github.com PR or Commit URL.')
+          setGithubUrlError('Enter a github.com pull request or commit URL.')
           return
         }
       } catch {
-        alert('Invalid GitHub URL format.')
+        setGithubUrlError('That is not a valid URL. It should start with https://github.com/')
         return
       }
     }
-    
+
+    setGithubUrlError('')
     setIsPreviewOpen(true)
   }
 
@@ -153,426 +165,245 @@ export default function TerminalStudio({
     onSubmitLog()
   }
 
-  return (
-    <section
-      id="log-terminal"
-      className="terminal-card"
-      style={{
-        padding: '22px',
-        marginBottom: '36px',
-      }}
-    >
-      <div className="corner-accent corner-top-left" />
-      <div className="corner-accent corner-top-right" />
+  const overLimit = log.length > maxChars
+  const blocked = loading || !log.trim() || !connected || isDailyLimitReached || overLimit
+  const activeTemplate = PROOF_TEMPLATES.find((t) => t.id === selectedTemplate)
 
-      {/* Terminal Title Bar */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-          paddingBottom: '12px',
-          borderBottom: '1px solid #161a24',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }} />
-          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }} />
-          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }} />
-          <span style={{ color: '#888', fontSize: '11px', marginLeft: '8px' }}>PROVN_EVIDENCE_STUDIO_v1.0</span>
-        </div>
-        <div style={{ color: '#00ff88', fontSize: '11px' }}>[READY TO ATTEST]</div>
+  return (
+    <section id="log-terminal" className="pv-card scroll-mt-20" aria-labelledby={`${uid}-title`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[#1c222c] px-5 py-4 sm:px-6">
+        <h2 id={`${uid}-title`} className="pv-h2">New proof</h2>
+        <p className="pv-faint text-[12px]">Draft, review the exact message, then sign.</p>
       </div>
 
-      {/* Proof Templates Selector */}
-      <div style={{ marginBottom: '14px' }}>
-        <div style={{ fontSize: '10px', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Select Contribution Type:
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: '6px',
-            overflowX: 'auto',
-            paddingBottom: '4px',
-            scrollbarWidth: 'none',
-          }}
-        >
-          {PROOF_TEMPLATES.map((tmpl) => {
-            const isActive = selectedTemplate === tmpl.id
-            return (
+      <div className="flex flex-col gap-5 px-5 py-5 sm:px-6 sm:py-6">
+        {/* Contribution type */}
+        <div role="group" aria-labelledby={`${uid}-type`}>
+          <div id={`${uid}-type`} className="mb-2 text-[13px] font-medium text-[#c3cad6]">
+            Type of work
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {PROOF_TEMPLATES.map((tmpl) => (
               <button
                 key={tmpl.id}
                 type="button"
+                aria-pressed={selectedTemplate === tmpl.id}
                 onClick={() => handleSelectTemplate(tmpl)}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  background: isActive ? 'rgba(0, 255, 136, 0.12)' : '#0a0d14',
-                  border: isActive ? '1px solid rgba(0, 255, 136, 0.5)' : '1px solid #1c2230',
-                  color: isActive ? '#00ff88' : '#888',
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  transition: 'all 0.15s ease',
-                }}
+                className="lg-type"
               >
-                <span>{tmpl.icon}</span>
-                <span>{tmpl.label}</span>
+                {tmpl.label}
               </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Log Input Area */}
-      <div style={{ marginBottom: '14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px', color: '#888' }}>
-          <span>Add Evidence...</span>
-          <span style={{ color: log.length > maxChars ? '#ff4444' : charPercent > 80 ? '#ffb800' : '#888' }}>
-            {log.length}/{maxChars}
-          </span>
-        </div>
-        <textarea
-          value={log}
-          onChange={(e) => setLog(e.target.value)}
-          placeholder={
-            PROOF_TEMPLATES.find((t) => t.id === selectedTemplate)?.placeholder ||
-            'e.g. Built TweetNaCl SIWS verification logic, deployed RLS security migration, tested Arweave archival...'
-          }
-          rows={3}
-          style={{
-            width: '100%',
-            background: '#060709',
-            border: '1px solid #1c2230',
-            borderRadius: '6px',
-            color: '#00ff88',
-            padding: '12px',
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            lineHeight: '1.5',
-            resize: 'none',
-            outline: 'none',
-            boxSizing: 'border-box',
-          }}
-        />
-
-        {/* Live Auto-Classifier Tag Badge */}
-        {liveClassification && (
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '10px', color: '#555' }}>CLASSIFIED:</span>
-            <span
-              style={{
-                fontSize: '10px',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                background: 'rgba(0,255,136,0.1)',
-                border: '1px solid rgba(0,255,136,0.3)',
-                color: '#00ff88',
-                fontWeight: 700,
-              }}
-            >
-              {liveClassification.category}
-            </span>
-            {liveClassification.skills.map((s) => (
-              <span
-                key={s}
-                style={{
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  background: '#0d1117',
-                  border: '1px solid #1c2230',
-                  color: '#00e5ff',
-                }}
-              >
-                {s}
-              </span>
-            ))}
-            {liveClassification.protocols.map((p) => (
-              <span
-                key={p}
-                style={{
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  background: 'rgba(171, 159, 242, 0.1)',
-                  border: '1px solid rgba(171, 159, 242, 0.3)',
-                  color: '#ab9ff2',
-                }}
-              >
-                ⚡ {p}
-              </span>
             ))}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Optional Proof URLs Inputs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+        {/* Work description */}
         <div>
-          <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>
-            GitHub PR / Commit URL (Source-verified evidence)
-          </label>
-          <input
-            type="url"
-            value={githubUrl}
-            onChange={(e) => setGithubUrl(e.target.value)}
-            placeholder="https://github.com/org/repo/pull/1"
-            style={{
-              width: '100%',
-              background: '#060709',
-              border: '1px solid #1c2230',
-              borderRadius: '6px',
-              color: '#ab9ff2',
-              padding: '8px 12px',
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
+          <div className="mb-2 flex items-baseline justify-between gap-3">
+            <label htmlFor={`${uid}-log`} className="text-[13px] font-medium text-[#c3cad6]">
+              What did you do?
+            </label>
+            <span
+              className={`pv-mono text-[12px] ${overLimit ? 'text-[#f0736a]' : charPercent > 80 ? 'text-[#f5c451]' : 'pv-faint'}`}
+              aria-live="polite"
+            >
+              {log.length}/{maxChars}
+            </span>
+          </div>
+          <textarea
+            id={`${uid}-log`}
+            value={log}
+            onChange={(e) => setLog(e.target.value)}
+            placeholder={
+              activeTemplate?.placeholder ||
+              'e.g. Built TweetNaCl SIWS verification logic, deployed RLS security migration, tested Arweave archival...'
+            }
+            rows={4}
+            aria-invalid={overLimit}
+            aria-describedby={`${uid}-log-help`}
+            className="pv-input lg-field"
           />
-          {connected && walletAddress && (
-            <div style={{ marginTop: '6px', textAlign: 'right' }}>
-              <a 
-                href={`/u/${walletAddress}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ fontSize: '10px', color: '#00e5ff', textDecoration: 'underline' }}
-              >
-                Link your GitHub account in your Profile →
-              </a>
+          <p id={`${uid}-log-help`} className={`mt-2 text-[12px] ${overLimit ? 'text-[#f0736a]' : 'pv-faint'}`}>
+            {overLimit
+              ? `Shorten this by ${log.length - maxChars} characters to continue.`
+              : 'One or two sentences. This text is signed exactly as written.'}
+          </p>
+
+          {liveClassification && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="pv-faint mr-1 text-[12px]">Detected</span>
+              <span className="pv-chip !border-[rgba(46,229,157,0.35)] !text-[#2ee59d]">{liveClassification.category}</span>
+              {liveClassification.skills.map((s) => (
+                <span key={s} className="pv-chip">{s}</span>
+              ))}
+              {liveClassification.protocols.map((p) => (
+                <span key={p} className="pv-chip">{p}</span>
+              ))}
             </div>
           )}
         </div>
 
-        <div>
-          <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>
-            Evidence / Demo URL (Optional HTTPS Link)
-          </label>
-          <input
-            type="url"
-            value={evidenceUrl}
-            onChange={(e) => setEvidenceUrl(e.target.value)}
-            placeholder="https://my-app.vercel.app"
-            style={{
-              width: '100%',
-              background: '#060709',
-              border: '1px solid #1c2230',
-              borderRadius: '6px',
-              color: '#00e5ff',
-              padding: '8px 12px',
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
+        {/* Optional evidence links */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="min-w-0">
+            <label htmlFor={`${uid}-github`} className="mb-2 block text-[13px] font-medium text-[#c3cad6]">
+              GitHub PR or commit URL <span className="pv-faint font-normal">(optional)</span>
+            </label>
+            <input
+              id={`${uid}-github`}
+              type="url"
+              inputMode="url"
+              value={githubUrl}
+              onChange={(e) => {
+                setGithubUrl(e.target.value)
+                if (githubUrlError) setGithubUrlError('')
+              }}
+              placeholder="https://github.com/org/repo/pull/1"
+              aria-invalid={Boolean(githubUrlError)}
+              aria-describedby={`${uid}-github-help`}
+              className="pv-input lg-field pv-mono !text-[13px]"
+            />
+            <p id={`${uid}-github-help`} role={githubUrlError ? 'alert' : undefined} className={`mt-2 text-[12px] leading-relaxed ${githubUrlError ? 'text-[#f0736a]' : 'pv-faint'}`}>
+              {githubUrlError || 'Checked against the GitHub API when you submit.'}
+              {!githubUrlError && connected && walletAddress && (
+                <>
+                  {' '}
+                  <a href={`/u/${walletAddress}`} target="_blank" rel="noreferrer" className="pv-link underline underline-offset-2 !text-[#8a93a3] hover:!text-[#2ee59d]">
+                    Link your GitHub account on your profile
+                  </a>
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="min-w-0">
+            <label htmlFor={`${uid}-evidence`} className="mb-2 block text-[13px] font-medium text-[#c3cad6]">
+              Demo or evidence URL <span className="pv-faint font-normal">(optional)</span>
+            </label>
+            <input
+              id={`${uid}-evidence`}
+              type="url"
+              inputMode="url"
+              value={evidenceUrl}
+              onChange={(e) => setEvidenceUrl(e.target.value)}
+              placeholder="https://my-app.vercel.app"
+              aria-describedby={`${uid}-evidence-help`}
+              className="pv-input lg-field pv-mono !text-[13px]"
+            />
+            <p id={`${uid}-evidence-help`} className="pv-faint mt-2 text-[12px]">Any HTTPS link that shows the work.</p>
+          </div>
         </div>
+
+        <details className="group rounded-[10px] border border-[#1c222c] bg-[#11151c] px-4 py-3 text-[13px]">
+          <summary className="cursor-pointer rounded font-medium text-[#c3cad6] hover:text-white">
+            What does PROVN verify?
+          </summary>
+          <div className="pv-muted mt-3 flex flex-col gap-2 leading-relaxed">
+            <p>
+              <span className="text-[#c3cad6]">Signature.</span> PROVN verifies that your connected Solana wallet signed
+              this exact payload.
+            </p>
+            <p>
+              <span className="text-[#c3cad6]">Source.</span> If you provide a GitHub PR or commit URL, PROVN checks via
+              the GitHub API that it exists, and records its state (for example merged or open) and its author.
+            </p>
+            <p className="pv-faint">
+              PROVN verifies that the source exists. It does not prove you own the GitHub account unless you link it on
+              your profile.
+            </p>
+          </div>
+        </details>
+
+        {statusStep !== 'idle' && (
+          <div
+            role={statusStep === 'error' ? 'alert' : 'status'}
+            className={`lg-note ${statusStep === 'error' ? 'lg-note-error' : statusStep === 'success' ? 'lg-note-success' : ''}`}
+          >
+            {statusMsg}
+          </div>
+        )}
       </div>
 
-      {/* Status Bar */}
-      {statusStep !== 'idle' && (
-        <div
-          style={{
-            padding: '10px 14px',
-            borderRadius: '6px',
-            marginBottom: '16px',
-            fontSize: '12px',
-            background:
-              statusStep === 'error'
-                ? 'rgba(255, 68, 68, 0.1)'
-                : statusStep === 'success'
-                ? 'rgba(0, 255, 136, 0.1)'
-                : 'rgba(0, 229, 255, 0.1)',
-            border:
-              statusStep === 'error'
-                ? '1px solid rgba(255, 68, 68, 0.3)'
-                : statusStep === 'success'
-                ? '1px solid rgba(0, 255, 136, 0.3)'
-                : '1px solid rgba(0, 229, 255, 0.3)',
-            color:
-              statusStep === 'error'
-                ? '#ff4444'
-                : statusStep === 'success'
-                ? '#00ff88'
-                : '#00e5ff',
-          }}
+      <div className="flex flex-col gap-3 border-t border-[#1c222c] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <p className={`text-[13px] ${isDailyLimitReached ? 'text-[#f5c451]' : 'pv-muted'}`}>
+          {!connected
+            ? 'Connect a wallet to sign and submit.'
+            : isDailyLimitReached
+            ? 'Daily limit reached (3 of 3 today). Come back tomorrow.'
+            : 'Nothing is signed until you confirm in the next step.'}
+        </p>
+        <button
+          type="button"
+          onClick={handleReviewAndSign}
+          disabled={blocked}
+          className={`pv-btn w-full sm:w-auto ${blocked && !loading ? 'lg-blocked' : ''}`}
         >
-          {statusMsg}
-        </div>
-      )}
+          {loading ? 'Waiting for signature…' : 'Review and sign'}
+        </button>
+      </div>
 
-      {/* What does PROVN verify? */}
-      <details style={{ marginBottom: '16px', fontSize: '11px', color: '#888', border: '1px solid #1c2230', borderRadius: '6px', padding: '10px 14px', background: '#0a0d14' }}>
-        <summary style={{ cursor: 'pointer', color: '#00e5ff', fontWeight: 600, outline: 'none' }}>
-          What does PROVN verify?
-        </summary>
-        <div style={{ marginTop: '8px', lineHeight: '1.5' }}>
-          <strong>Cryptographic Signature:</strong> PROVN verifies that your connected Solana wallet signed this exact payload.<br/>
-          <strong>Source Verification:</strong> If you provide a GitHub PR/Commit URL, PROVN will verify via the GitHub API that the PR or commit actually exists, and record its state (e.g., merged, open) and author.<br/>
-          <em style={{ color: '#555' }}>Note: PROVN verifies the source exists, but does not definitively prove you own the GitHub account, unless you link it on your profile.</em>
-        </div>
-      </details>
-
-      {/* Review & Preview Button */}
-      <button
-        onClick={handleReviewAndSign}
-        disabled={loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars}
-        className="btn-primary"
-        style={{
-          width: '100%',
-          padding: '12px',
-          fontSize: '13px',
-          fontWeight: 800,
-          opacity: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 0.5 : 1,
-          cursor: loading || !log.trim() || !connected || isDailyLimitReached || log.length > maxChars ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {loading
-          ? '⚡ Processing SIWS Cryptographic Signature...'
-          : isDailyLimitReached
-          ? '🔒 Daily Limit Reached (3/3 logs today)'
-          : !connected
-          ? '🔌 Connect Solana Wallet to Log Proof'
-          : '🔍 Review & Preview Signature →'}
-      </button>
-
-      {/* Draft → Review → Sign Modal */}
+      {/* Draft → Review → Sign dialog */}
       {isPreviewOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
+          className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsPreviewOpen(false)
           }}
         >
           <div
-            style={{
-              background: '#0c0e14',
-              border: '1px solid #1f293d',
-              borderRadius: '12px',
-              maxWidth: '640px',
-              width: '100%',
-              padding: '24px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.9)',
-              color: '#eee',
-              fontFamily: 'monospace',
-            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`${uid}-review-title`}
+            className="pv-card flex max-h-[92dvh] w-full max-w-[640px] flex-col overflow-hidden rounded-b-none shadow-[0_24px_80px_rgba(0,0,0,0.7)] sm:rounded-b-2xl"
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #1c2230', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '18px' }}>🛡️</span>
-                <span style={{ fontWeight: 700, fontSize: '15px', color: '#00ff88' }}>Review Canonical Proof Statement</span>
+            <div className="flex items-start justify-between gap-4 border-b border-[#1c222c] px-5 py-4 sm:px-6">
+              <div>
+                <h3 id={`${uid}-review-title`} className="text-[17px] font-semibold tracking-[-0.02em] text-white">
+                  Review before you sign
+                </h3>
+                <p className="pv-muted mt-1 text-[13px]">Your wallet will ask you to sign the message below.</p>
               </div>
               <button
                 type="button"
+                aria-label="Close review"
                 onClick={() => setIsPreviewOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '18px' }}
+                className="lg-action -mr-2 !h-9 !w-9 shrink-0 justify-center !p-0 text-[18px] leading-none"
               >
-                ✕
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
-            {/* Quality Breakdown */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginBottom: '16px' }}>
-              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
-                <div style={{ color: '#666' }}>SIGNER</div>
-                <div style={{ color: '#00ff88', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Connected Wallet'}
-                </div>
+            <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5 sm:px-6">
+              <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {[
+                  ['Signer', walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Connected wallet', true],
+                  ['Algorithm', 'Ed25519 detached', false],
+                  ['Storage', 'Arweave via Irys', false],
+                ].map(([label, value, mono]) => (
+                  <div key={label as string} className="flex items-baseline justify-between gap-3 rounded-[10px] border border-[#1c222c] bg-[#11151c] px-3 py-2.5 sm:block">
+                    <dt className="pv-muted text-[12px]">{label}</dt>
+                    <dd className={`text-[13px] font-medium text-white sm:mt-1 ${mono ? 'pv-mono' : ''}`}>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <div>
+                <div className="mb-2 text-[13px] font-medium text-[#c3cad6]">Message to sign</div>
+                <pre className="lg-pre" tabIndex={0} aria-label="Message to sign">{previewMessage}</pre>
               </div>
-              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
-                <div style={{ color: '#666' }}>ALGORITHM</div>
-                <div style={{ color: '#00e5ff', fontWeight: 600 }}>Ed25519 Detached</div>
-              </div>
-              <div style={{ background: '#07080c', border: '1px solid #1c2230', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
-                <div style={{ color: '#666' }}>STORAGE</div>
-                <div style={{ color: '#ab9ff2', fontWeight: 600 }}>Arweave via Irys</div>
-              </div>
+
+              <p className="lg-note">
+                Your wallet signs this proof statement only. It does not sign your source code and does not send a
+                transaction.
+              </p>
             </div>
 
-            {/* Canonical SIWS Message Box */}
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>
-                Exact Message Payload for Wallet Signature:
-              </div>
-              <pre
-                style={{
-                  background: '#040507',
-                  border: '1px solid #161b26',
-                  borderRadius: '6px',
-                  padding: '12px',
-                  fontSize: '11px',
-                  color: '#00ff88',
-                  lineHeight: '1.45',
-                  maxHeight: '160px',
-                  overflowY: 'auto',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-all',
-                }}
-              >
-                {previewMessage}
-              </pre>
-            </div>
-
-            {/* Clear Disclaimer */}
-            <div
-              style={{
-                background: 'rgba(255, 184, 0, 0.08)',
-                border: '1px solid rgba(255, 184, 0, 0.3)',
-                padding: '10px 12px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                color: '#ffb800',
-                marginBottom: '20px',
-                lineHeight: '1.4',
-              }}
-            >
-              ℹ️ <strong>Attestation Guarantee:</strong> Your Solana wallet is signing this tamper-evident proof statement. Your wallet is <em>not</em> signing your source code.
-            </div>
-
-            {/* Modal Actions */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setIsPreviewOpen(false)}
-                style={{
-                  background: '#161b26',
-                  border: '1px solid #283144',
-                  color: '#ccc',
-                  padding: '10px 16px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  fontFamily: 'monospace',
-                }}
-              >
-                ← Edit Draft
+            <div className="flex flex-col-reverse gap-2 border-t border-[#1c222c] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+              <button type="button" onClick={() => setIsPreviewOpen(false)} className="pv-btn-ghost">
+                Back to edit
               </button>
-              <button
-                type="button"
-                onClick={handleConfirmSign}
-                className="btn-primary"
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                🗿 Sign With Wallet & Publish
+              <button type="button" onClick={handleConfirmSign} className="pv-btn" autoFocus>
+                Sign and publish
               </button>
             </div>
           </div>

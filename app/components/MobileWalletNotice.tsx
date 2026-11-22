@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from 'react'
 
+const WALLET_BROWSERS = [
+  { name: 'Phantom', base: 'https://phantom.app/ul/browse/' },
+  { name: 'Solflare', base: 'https://solflare.com/ul/v1/browse/' },
+  { name: 'Backpack', base: 'https://backpack.app/ul/browse/' },
+]
+
 export default function MobileWalletNotice() {
   const [isMobile, setIsMobile] = useState(false)
 
@@ -17,69 +23,23 @@ export default function MobileWalletNotice() {
   const currentHost = typeof window !== 'undefined' ? encodeURIComponent(`${window.location.origin}/log`) : 'https%3A%2F%2Fprovn-sol.vercel.app%2Flog'
 
   return (
-    <section
-      className="terminal-card"
-      style={{
-        padding: '16px 20px',
-        marginBottom: '24px',
-        background: 'rgba(0, 229, 255, 0.05)',
-        border: '1px solid rgba(0, 229, 255, 0.25)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-        <span style={{ fontSize: '16px' }}>📱</span>
-        <strong style={{ color: '#00e5ff', fontSize: '13px' }}>Mobile Browser Detected</strong>
-      </div>
-      <p style={{ color: '#aaa', fontSize: '11px', margin: '0 0 12px 0', lineHeight: '1.5' }}>
-        For seamless Ed25519 message signing, open PROVN inside your Solana wallet&apos;s in-app browser:
+    <section className="pv-card p-5" aria-labelledby="mobile-wallet-title">
+      <h2 id="mobile-wallet-title" className="pv-h2">On a phone? Open this page in your wallet</h2>
+      <p className="pv-muted mt-1.5 text-[13px] leading-relaxed">
+        Mobile browsers cannot reach your wallet to sign. Open the logger in your wallet&apos;s built-in browser instead.
       </p>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        <a
-          href={`https://phantom.app/ul/browse/${currentHost}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-primary"
-          style={{
-            fontSize: '11px',
-            padding: '6px 12px',
-            borderColor: '#ab9ff2',
-            color: '#ab9ff2',
-            textDecoration: 'none',
-          }}
-        >
-          👻 Phantom Mobile
-        </a>
-        <a
-          href={`https://solflare.com/ul/v1/browse/${currentHost}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-primary"
-          style={{
-            fontSize: '11px',
-            padding: '6px 12px',
-            borderColor: '#ffb800',
-            color: '#ffb800',
-            textDecoration: 'none',
-          }}
-        >
-          ☀️ Solflare Mobile
-        </a>
-        <a
-          href={`https://backpack.app/ul/browse/${currentHost}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-primary"
-          style={{
-            fontSize: '11px',
-            padding: '6px 12px',
-            borderColor: '#00e5ff',
-            color: '#00e5ff',
-            textDecoration: 'none',
-          }}
-        >
-          🎒 Backpack Mobile
-        </a>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {WALLET_BROWSERS.map((w) => (
+          <a
+            key={w.name}
+            href={`${w.base}${currentHost}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pv-btn-ghost !px-3 !py-2 !text-[13px]"
+          >
+            Open in {w.name}
+          </a>
+        ))}
       </div>
     </section>
   )

@@ -13,20 +13,9 @@ const WalletMultiButton = dynamic(
       <button
         disabled
         aria-label="Loading wallet connection"
-        style={{
-          backgroundColor: '#12151c',
-          color: '#555',
-          border: '1px solid rgba(0, 255, 136, 0.2)',
-          borderRadius: '8px',
-          fontFamily: 'var(--font-geist-mono), monospace',
-          fontSize: '13px',
-          fontWeight: 700,
-          height: '42px',
-          padding: '0 18px',
-          cursor: 'default',
-        }}
+        className="wallet-adapter-button"
       >
-        Connecting...
+        Loading wallet…
       </button>
     ),
   }

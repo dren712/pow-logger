@@ -36,65 +36,28 @@ export default function NetworkBanner() {
 
   return (
     <div
-      style={{
-        padding: '10px 16px',
-        background: isMainnet ? 'rgba(0, 255, 136, 0.08)' : 'rgba(255, 184, 0, 0.08)',
-        border: `1px solid ${isMainnet ? 'rgba(0, 255, 136, 0.2)' : 'rgba(255, 184, 0, 0.2)'}`,
-        borderRadius: '8px',
-        color: isMainnet ? '#00ff88' : '#ffb800',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        marginBottom: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-      }}
-      className="animate-fade-in"
+      role="status"
+      className={`lg-note animate-fade-in flex items-center justify-between gap-3 !py-1.5 !pr-1.5 ${isMainnet ? '' : 'lg-note-warn'}`}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '14px' }}>{isMainnet ? '⚡' : '🧪'}</span>
-        <span>
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="pv-chip pv-mono !text-[11px] font-semibold uppercase tracking-wider">
+          <span className={isMainnet ? 'pv-accent' : 'text-[#f5c451]'} aria-hidden="true">●</span>
+          {isMainnet ? 'Mainnet' : 'Devnet'}
+        </span>
+        <span className="text-[13px]">
           {isMainnet
-            ? 'Connected Wallet RPC: Solana Mainnet Beta. Off-chain SIWS identity verification active.'
-            : 'Connected Wallet RPC: Solana Devnet. Off-chain SIWS identity verification active.'}
+            ? 'Wallet RPC is Solana mainnet-beta. Proofs are verified off-chain from your wallet signature.'
+            : 'Wallet RPC is Solana devnet. Proofs are verified off-chain from your wallet signature.'}
         </span>
       </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span
-          style={{
-            background: isMainnet ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255, 184, 0, 0.15)',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            letterSpacing: '0.5px'
-          }}
-        >
-          {isMainnet ? 'MAINNET' : 'DEVNET'}
-        </span>
-        <button
-          aria-label="Dismiss network banner"
-          onClick={() => setDismissed(true)}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: isMainnet ? '#00ff88' : '#ffb800',
-            cursor: 'pointer',
-            fontSize: '16px',
-            padding: '8px 12px',
-            minWidth: '44px',
-            minHeight: '44px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            lineHeight: 1
-          }}
-        >
-          ×
-        </button>
-      </div>
+      <button
+        type="button"
+        aria-label="Dismiss network banner"
+        onClick={() => setDismissed(true)}
+        className="lg-action shrink-0 !h-9 !w-9 justify-center !p-0 text-[18px] leading-none"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
     </div>
   )
 }

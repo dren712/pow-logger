@@ -4,7 +4,9 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
+import SiteNav from '../components/SiteNav'
 import HeroHeader from '../components/HeroHeader'
+import StatsDashboard from '../components/StatsDashboard'
 import TerminalStudio from '../components/TerminalStudio'
 import ContributionHeatmap from '../components/ContributionHeatmap'
 import ShareCardModal from '../components/ShareCardModal'
@@ -16,6 +18,7 @@ import { generateSingleLogNFTBadgeSVG } from '../lib/badgeGenerator'
 import { fetchAllWalletLogs, toLocalDateString, PROTOCOL_TIMEZONE } from '../lib/milestones'
 import { LogItem } from '@/app/u/[wallet]/ProfileClient'
 import { calculateReputation } from '../lib/reputationEngine'
+import '../styles/logger.css'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
@@ -51,11 +54,13 @@ export default function LoggerApp() {
   const [statusMsg, setStatusMsg] = useState('')
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null)
+  const [logsState, setLogsState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [reloadKey, setReloadKey] = useState(0)
 
   // NFT Modal State
   const [modalOpen, setModalOpen] = useState(false)
   const [modalSvg, setModalSvg] = useState('')
-  const [modalTitle, setModalTitle] = useState('PROVN Proof Card 🗿')
+  const [modalTitle, setModalTitle] = useState('PROVN Proof Card')
   const [modalLogId, setModalLogId] = useState<number | undefined>(undefined)
   const [modalLogContent, setModalLogContent] = useState<string>('')
   const [modalIrysTxId, setModalIrysTxId] = useState<string | undefined>(undefined)
@@ -66,19 +71,22 @@ export default function LoggerApp() {
 
     let active = true
     const fetchLogs = async () => {
+      setLogsState('loading')
       try {
         const walletAddress = publicKey.toBase58()
         const data = await fetchAllWalletLogs(supabase, walletAddress)
         if (data && active) setLogs(data as LogItem[])
+        if (active) setLogsState('ready')
       } catch (err) {
         console.error('Fetch logs error:', err)
+        if (active) setLogsState('error')
       }
     }
     fetchLogs()
     return () => {
       active = false
     }
-  }, [connected, publicKey])
+  }, [connected, publicKey, reloadKey])
 
   // Calculate today's log count & daily limit (standardized to PROTOCOL_TIMEZONE midnight)
   const todayLogsCount = useMemo(() => {
@@ -100,7 +108,7 @@ export default function LoggerApp() {
     if (log.length > MAX_CHARS) return
     if (isDailyLimitReached) {
       setStatusStep('error')
-      setStatusMsg('Daily limit reached (3/3 logs today). Come back tomorrow 🗿')
+      setStatusMsg('Daily limit reached (3 of 3 today). Come back tomorrow.')
       return
     }
     if (!signMessage) {
@@ -115,7 +123,7 @@ export default function LoggerApp() {
 
     try {
       setStatusStep('saving')
-      setStatusMsg('Please sign the cryptographic prompt in your wallet...')
+      setStatusMsg('Waiting for your wallet. Approve the signature request to continue.')
 
       const result = await submitVerifiedLog(signMessage, walletAddress, logContent, evidenceUrl, githubUrl)
 
@@ -127,17 +135,17 @@ export default function LoggerApp() {
 
         if (result.newMilestone) {
           setStatusStep('success')
-          setStatusMsg(`🏆 MILESTONE UNLOCKED: ${result.newMilestone.emoji} ${result.newMilestone.title}!`)
+          setStatusMsg(`Proof verified and stored. Milestone unlocked: ${result.newMilestone.title}.`)
         } else if (result.builderLevel) {
           setStatusStep('success')
-          setStatusMsg(`✓ Verified & stored! ${result.builderLevel.emoji} Level ${result.builderLevel.level}`)
+          setStatusMsg(`Proof verified and stored. You are at level ${result.builderLevel.level}.`)
         } else {
           setStatusStep('success')
-          setStatusMsg('✓ Wallet signature verified & stored in database!')
+          setStatusMsg('Proof verified and stored.')
         }
       } else {
         setStatusStep('error')
-        setStatusMsg('Verification or upload failed.')
+        setStatusMsg('Verification or upload failed. Nothing was stored; try again.')
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : 'Signature rejected or verification failed'
@@ -185,351 +193,252 @@ export default function LoggerApp() {
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank', 'noopener')
   }
 
+  const walletAddress = publicKey?.toBase58()
+  const showProofs = connected && logs.length > 0
+  const logsLoading = connected && logsState === 'loading' && logs.length === 0
+
   return (
-    <main
-      style={{
-        width: 'min(820px, 94vw)',
-        margin: '0 auto',
-        padding: '24px 16px 100px 16px',
-        fontFamily: 'var(--font-geist-mono), monospace',
-        boxSizing: 'border-box',
-      }}
-    >
-      <HeroHeader connected={connected} walletAddress={publicKey?.toBase58()} />
+    <div className="pv flex flex-1 flex-col">
+      <SiteNav cta={false} />
+      <main className="pv-main mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-5 py-8 lg:py-12">
+        <HeroHeader connected={connected} walletAddress={walletAddress} />
 
-      {/* Connected Builder Quick Status Bar */}
-      {connected && (
-        <div
-          style={{
-            background: '#090b10',
-            border: '1px solid #1a2233',
-            borderRadius: '10px',
-            padding: '12px 16px',
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Rank
+        <NetworkBanner />
+
+        {!connected && <MobileWalletNotice />}
+
+        {connected && (
+          <section aria-label="Your logging stats">
+            <StatsDashboard
+              connected={connected}
+              streakCount={displayReputation.currentStreak}
+              totalLogsCount={displayReputation.totalProofs}
+              todayLogsCount={todayLogsCount}
+              isDailyLimitReached={isDailyLimitReached}
+              levelLabel={`${displayReputation.builderLevel.level} · ${displayReputation.builderLevel.title}`}
+              archivedPercent={displayReputation.archivalSuccessRate}
+            />
+          </section>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+          <div className="flex min-w-0 flex-col gap-6">
+            <TerminalStudio
+              log={log}
+              setLog={setLog}
+              evidenceUrl={evidenceUrl}
+              setEvidenceUrl={setEvidenceUrl}
+              githubUrl={githubUrl}
+              setGithubUrl={setGithubUrl}
+              loading={loading}
+              connected={connected}
+              walletAddress={walletAddress}
+              isDailyLimitReached={isDailyLimitReached}
+              statusStep={statusStep}
+              statusMsg={statusMsg}
+              onSubmitLog={submitLog}
+              maxChars={MAX_CHARS}
+            />
+
+            <section className="pv-card" aria-labelledby="proofs-title">
+              <div className="flex items-baseline justify-between gap-4 border-b border-[#1c222c] px-5 py-4 sm:px-6">
+                <h2 id="proofs-title" className="pv-h2">Your proofs</h2>
+                {showProofs && (
+                  <span className="pv-faint text-[12px]">
+                    {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
+                  </span>
+                )}
               </div>
-              <div style={{ color: '#00ff88', fontWeight: 800, fontSize: '13px' }}>
-                {displayReputation.builderLevel.emoji} Level {displayReputation.builderLevel.level} — {displayReputation.builderLevel.title}
-              </div>
-            </div>
 
-            <div style={{ borderLeft: '1px solid #1a2233', paddingLeft: '14px' }}>
-              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Streak
-              </div>
-              <div style={{ color: '#ffb800', fontWeight: 800, fontSize: '13px' }}>
-                🔥 {displayReputation.currentStreak} {displayReputation.currentStreak === 1 ? 'Day' : 'Days'}
-              </div>
-            </div>
-
-            <div style={{ borderLeft: '1px solid #1a2233', paddingLeft: '14px' }}>
-              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Proofs
-              </div>
-              <div style={{ color: '#00e5ff', fontWeight: 800, fontSize: '13px' }}>
-                ⚡ {displayReputation.totalProofs} ({displayReputation.archivalSuccessRate}% Archived)
-              </div>
-            </div>
-
-            <div style={{ borderLeft: '1px solid #1a2233', paddingLeft: '14px' }}>
-              <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Quota
-              </div>
-              <div style={{ color: isDailyLimitReached ? '#ff4444' : '#aaa', fontWeight: 800, fontSize: '13px' }}>
-                {todayLogsCount}/3 {isDailyLimitReached ? '🔒' : '⚡'}
-              </div>
-            </div>
-          </div>
-
-          <Link
-            href={`/u/${publicKey?.toBase58()}`}
-            className="btn-primary"
-            style={{
-              fontSize: '11px',
-              padding: '6px 12px',
-              background: '#0d121c',
-              border: '1px solid #00e5ff',
-              color: '#00e5ff',
-              textDecoration: 'none',
-            }}
-          >
-            🎴 View 3D Metal Passport →
-          </Link>
-        </div>
-      )}
-
-      <NetworkBanner />
-
-      <MobileWalletNotice />
-
-      {/* Onboarding Zero State */}
-      {connected && logs.length === 0 && (
-        <div style={{
-          background: 'rgba(0, 229, 255, 0.05)',
-          border: '1px dashed rgba(0, 229, 255, 0.3)',
-          padding: '20px',
-          borderRadius: '12px',
-          marginBottom: '24px',
-          textAlign: 'center'
-        }}>
-          <h3 style={{ color: '#00e5ff', margin: '0 0 8px 0', fontSize: '1.2rem' }}>Welcome to PROVN! 🗿</h3>
-          <p style={{ color: '#889', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
-            Your builder passport is currently empty. Start by logging your first piece of engineering work below. 
-            Once you sign and submit, you&apos;ll instantly unlock the Level 1 badge and your verifiable profile link will be active.
-          </p>
-        </div>
-      )}
-
-      {/* Primary Work Logging Terminal */}
-      <TerminalStudio
-        log={log}
-        setLog={setLog}
-        evidenceUrl={evidenceUrl}
-        setEvidenceUrl={setEvidenceUrl}
-        githubUrl={githubUrl}
-        setGithubUrl={setGithubUrl}
-        loading={loading}
-        connected={connected}
-        walletAddress={publicKey?.toBase58()}
-        isDailyLimitReached={isDailyLimitReached}
-        statusStep={statusStep}
-        statusMsg={statusMsg}
-        onSubmitLog={submitLog}
-        maxChars={MAX_CHARS}
-      />
-
-      {/* Log Feed & Activity Section */}
-      {connected && logs.length > 0 && (
-        <section style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ color: '#00ff88', fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>
-              Recent Proof Activity Feed
-            </h3>
-            <span style={{ fontSize: '11px', color: '#666' }}>{logs.length} Total Entries</span>
-          </div>
-
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {logs.map((l) => {
-              const classification = classifyLog(l.content)
-              const skills = l.skills && l.skills.length > 0 ? l.skills : classification.skills
-              const category = l.category || classification.category
-              const isExpanded = expandedLogId === l.id
-
-              return (
-                <div key={l.id} className="terminal-card" style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '11px' }}>
-                    <span style={{ color: '#888' }}>
-                      {formatDate(l.created_at)} • {formatTime(l.created_at)}
-                    </span>
-                    <span
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        background: 'rgba(0,255,136,0.1)',
-                        border: '1px solid rgba(0,255,136,0.25)',
-                        color: '#00ff88',
-                      }}
-                    >
-                      {category}
-                    </span>
-                  </div>
-
-                  <p
-                    style={{
-                      color: '#eee',
-                      fontSize: '13px',
-                      lineHeight: '1.5',
-                      margin: '0 0 10px 0',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {isExpanded || l.content.length <= 140 ? l.content : `${l.content.slice(0, 140)}...`}
-                    {l.content.length > 140 && (
-                      <button
-                        onClick={() => setExpandedLogId(isExpanded ? null : l.id)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#00e5ff',
-                          cursor: 'pointer',
-                          fontSize: '11px',
-                          marginLeft: '6px',
-                        }}
-                      >
-                        {isExpanded ? '[show less]' : '[read more]'}
-                      </button>
-                    )}
+              {!connected ? (
+                <div className="px-5 py-10 text-center sm:px-6">
+                  <p className="text-[15px] font-medium text-white">Connect a wallet to see your proofs</p>
+                  <p className="pv-muted mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed">
+                    Proofs are listed per wallet. Use the connect button at the top of the page.
                   </p>
-
-                  {/* Skills Pills */}
-                  {skills.length > 0 && (
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                      {skills.map((s) => (
-                        <span
-                          key={s}
-                          style={{
-                            fontSize: '10px',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            background: '#0a0c10',
-                            border: '1px solid #1c2230',
-                            color: '#00e5ff',
-                          }}
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingTop: '10px',
-                      borderTop: '1px solid #141822',
-                      fontSize: '11px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <Link
-                        href={`/proof/${l.id}`}
-                        style={{ color: '#00e5ff', textDecoration: 'none', fontWeight: 600, fontSize: '11px' }}
-                      >
-                        🔍 Proof #{l.id} ↗
-                      </Link>
-                      {l.irys_tx_id ? (
-                        <a
-                          href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: '#00ff88', textDecoration: 'none', fontWeight: 600 }}
-                        >
-                          🔗 Arweave ↗
-                        </a>
-                      ) : (
-                        <button
-                          onClick={() => retryArchival(l.id)}
-                          disabled={retryingLogId === l.id}
-                          style={{
-                            background: 'none',
-                            border: '1px solid #ffb800',
-                            color: '#ffb800',
-                            borderRadius: '4px',
-                            padding: '2px 8px',
-                            cursor: 'pointer',
-                            fontSize: '10px',
-                          }}
-                        >
-                          {retryingLogId === l.id ? '⚡ Archiving...' : '⚠️ Retry Archival'}
-                        </button>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {l.irys_tx_id && (
-                        <button
-                          onClick={() => copyIrysLink(l.irys_tx_id!, l.id)}
-                          style={{
-                            background: 'none',
-                            border: '1px solid #1c2230',
-                            color: copiedId === l.id ? '#00e5ff' : '#888',
-                            borderRadius: '4px',
-                            padding: '4px 8px',
-                            cursor: 'pointer',
-                            fontSize: '11px',
-                          }}
-                        >
-                          {copiedId === l.id ? '✓ Copied' : '📋 Copy Link'}
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => shareOnTwitter(l.content, l.irys_tx_id || undefined)}
-                        style={{
-                          background: 'none',
-                          border: '1px solid #1c2230',
-                          color: '#ab9ff2',
-                          borderRadius: '4px',
-                          padding: '4px 8px',
-                          cursor: 'pointer',
-                          fontSize: '11px',
-                        }}
-                      >
-                        🚀 Share on X
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          const svg = generateSingleLogNFTBadgeSVG(
-                            publicKey?.toBase58() || '',
-                            l.id,
-                            l.content,
-                            l.category || 'Development',
-                            l.skills || [],
-                            l.created_at || 'Just now',
-                            l.irys_tx_id || undefined
-                          )
-                          setModalSvg(svg)
-                          setModalTitle(`PROVN Proof Card #${l.id} 🗿`)
-                          setModalLogId(l.id)
-                          setModalLogContent(l.content)
-                          setModalIrysTxId(l.irys_tx_id || undefined)
-                          setModalOpen(true)
-                        }}
-                        style={{
-                          background: 'none',
-                          border: '1px solid #00e5ff',
-                          color: '#00e5ff',
-                          borderRadius: '4px',
-                          padding: '4px 10px',
-                          cursor: 'pointer',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                        }}
-                      >
-                        🖼️ Share Card
-                      </button>
-                    </div>
-                  </div>
                 </div>
-              )
-            })}
+              ) : logsLoading ? (
+                <div className="flex flex-col gap-3 px-5 py-5 sm:px-6" aria-busy="true" aria-label="Loading your proofs">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="pv-skeleton h-[72px] w-full" />
+                  ))}
+                </div>
+              ) : logsState === 'error' && logs.length === 0 ? (
+                <div className="px-5 py-10 text-center sm:px-6" role="alert">
+                  <p className="text-[15px] font-medium text-white">Your proofs could not be loaded</p>
+                  <p className="pv-muted mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed">
+                    The proof database did not respond. You can still try again in a moment.
+                  </p>
+                  <button type="button" className="pv-btn-ghost mt-4" onClick={() => setReloadKey((k) => k + 1)}>
+                    Try again
+                  </button>
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="px-5 py-10 text-center sm:px-6">
+                  <p className="text-[15px] font-medium text-white">No proofs yet</p>
+                  <p className="pv-muted mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed">
+                    Log your first piece of work above. Once it is signed and stored it appears here and on your public
+                    passport.
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-[#1c222c]">
+                  {logs.map((l) => {
+                    const classification = classifyLog(l.content)
+                    const skills = l.skills && l.skills.length > 0 ? l.skills : classification.skills
+                    const category = l.category || classification.category
+                    const isExpanded = expandedLogId === l.id
+
+                    return (
+                      <li key={l.id} className="px-5 py-5 sm:px-6">
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                          <span className="pv-mono pv-faint text-[12px]">
+                            #{l.id} · {formatDate(l.created_at)}
+                            {formatTime(l.created_at) ? ` · ${formatTime(l.created_at)}` : ''}
+                          </span>
+                          <span className="pv-chip">{category}</span>
+                        </div>
+
+                        <p className="mt-2.5 break-words text-[15px] leading-relaxed text-[#e8ecf2]">
+                          {isExpanded || l.content.length <= 140 ? l.content : `${l.content.slice(0, 140)}...`}
+                          {l.content.length > 140 && (
+                            <button
+                              type="button"
+                              aria-expanded={isExpanded}
+                              onClick={() => setExpandedLogId(isExpanded ? null : l.id)}
+                              className="pv-accent ml-1.5 cursor-pointer rounded text-[13px] font-medium hover:underline"
+                            >
+                              {isExpanded ? 'Show less' : 'Read more'}
+                            </button>
+                          )}
+                        </p>
+
+                        {skills.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {skills.map((s) => (
+                              <span key={s} className="pv-chip !text-[11px]">{s}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="-mx-2.5 mt-3 flex flex-wrap items-center gap-x-1 gap-y-1">
+                          <Link href={`/proof/${l.id}`} className="lg-action !text-[#e8ecf2]">
+                            View proof
+                          </Link>
+                          {l.irys_tx_id ? (
+                            <a
+                              href={`https://gateway.irys.xyz/${l.irys_tx_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="lg-action"
+                            >
+                              Arweave record <span aria-hidden="true">↗</span>
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => retryArchival(l.id)}
+                              disabled={retryingLogId === l.id}
+                              className="lg-action lg-action-warn mx-1.5"
+                            >
+                              {retryingLogId === l.id ? 'Archiving…' : 'Not archived · Retry'}
+                            </button>
+                          )}
+                          {l.irys_tx_id && (
+                            <button type="button" onClick={() => copyIrysLink(l.irys_tx_id!, l.id)} className="lg-action">
+                              {copiedId === l.id ? 'Copied' : 'Copy link'}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => shareOnTwitter(l.content, l.irys_tx_id || undefined)}
+                            className="lg-action"
+                          >
+                            Share on X
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const svg = generateSingleLogNFTBadgeSVG(
+                                publicKey?.toBase58() || '',
+                                l.id,
+                                l.content,
+                                l.category || 'Development',
+                                l.skills || [],
+                                l.created_at || 'Just now',
+                                l.irys_tx_id || undefined
+                              )
+                              setModalSvg(svg)
+                              setModalTitle(`PROVN Proof Card #${l.id}`)
+                              setModalLogId(l.id)
+                              setModalLogContent(l.content)
+                              setModalIrysTxId(l.irys_tx_id || undefined)
+                              setModalOpen(true)
+                            }}
+                            className="lg-action"
+                          >
+                            Share card
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+
+            {showProofs && (
+              <section aria-label="Contribution activity">
+                <ContributionHeatmap logs={logs} />
+              </section>
+            )}
           </div>
-        </section>
-      )}
 
-      {/* Contribution Heatmap */}
-      {connected && logs.length > 0 && (
-        <section style={{ marginBottom: '32px' }}>
-          <ContributionHeatmap logs={logs} />
-        </section>
-      )}
+          <aside className="flex flex-col gap-4">
+            <div className="pv-card p-5">
+              <h2 className="pv-h2">How it works</h2>
+              <ol className="mt-4 flex flex-col gap-4">
+                {[
+                  ['Connect', 'Connect a Solana wallet that supports message signing.'],
+                  ['Describe', 'Write what you did and, if you have one, add the GitHub PR or commit.'],
+                  ['Sign', 'Review the exact message, then approve the signature in your wallet.'],
+                  ['Share', 'The proof gets its own page and is added to your public passport.'],
+                ].map(([title, text], i) => (
+                  <li key={title} className="flex gap-3">
+                    <span className="pv-mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#272e3a] text-[11px] text-[#c3cad6]">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-medium text-white">{title}</div>
+                      <p className="pv-muted mt-0.5 text-[13px] leading-relaxed">{text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
 
-      {/* NFT Proof Card Modal */}
-      <ShareCardModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        svgString={modalSvg}
-        title={modalTitle}
-        logId={modalLogId}
-        logContent={modalLogContent}
-        irysTxId={modalIrysTxId}
-      />
-    </main>
+            <div className="pv-card p-5 text-[13px] leading-relaxed">
+              <p className="pv-eyebrow">Limits</p>
+              <ul className="pv-muted mt-3 flex flex-col gap-1.5">
+                <li>Up to 3 proofs per wallet per day.</li>
+                <li>{MAX_CHARS} characters per proof.</li>
+                <li>Archival to Arweave can be retried from the list if it fails.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+
+        {/* Proof card share modal */}
+        <ShareCardModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          svgString={modalSvg}
+          title={modalTitle}
+          logId={modalLogId}
+          logContent={modalLogContent}
+          irysTxId={modalIrysTxId}
+        />
+      </main>
+    </div>
   )
 }
