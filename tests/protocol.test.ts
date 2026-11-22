@@ -38,6 +38,7 @@ import {
 } from '../app/lib/canonicalMessage'
 import { parseIrysPrivateKey } from '../app/lib/irysUploader'
 import { checkRateLimit } from '../app/lib/rateLimiter'
+import { consumeSigningChallenge, isOAuthTimestampFresh } from '../app/lib/oauth'
 import { calculateStreak, toLocalDateString, getProtocolStartOfDay, fetchAllWalletLogs, PROTOCOL_TIMEZONE, BUILDER_LEVELS, getBuilderLevel, getEarnedSkillBadges, computeBadgeSummary } from '../app/lib/milestones'
 import { calculateReputation } from '../app/lib/reputationEngine'
 import { evaluateAchievements } from '../app/lib/achievements'
@@ -132,6 +133,37 @@ async function runProductionTestSuite() {
 
   const validLocalhost = getVerifiedDomain('localhost:3000')
   assert(validLocalhost === 'localhost', 'Localhost development host header accepted')
+
+  const oauthNow = Date.parse('2026-09-04T12:00:00.000Z')
+  assert(!isOAuthTimestampFresh('not-a-timestamp', oauthNow), 'OAuth rejects malformed timestamps')
+  assert(!isOAuthTimestampFresh('2026-09-04T12:02:00.000Z', oauthNow), 'OAuth rejects timestamps beyond future clock skew')
+  assert(!isOAuthTimestampFresh('2026-09-04T11:44:00.000Z', oauthNow), 'OAuth rejects timestamps older than freshness window')
+  assert(isOAuthTimestampFresh('2026-09-04T11:59:30.000Z', oauthNow), 'OAuth accepts timestamps within freshness bounds')
+
+  let challengeConsumed = false
+  const challengeClient = {
+    from: () => ({
+      update: () => ({
+        eq: () => ({
+          eq: () => ({
+            is: () => ({
+              gt: () => ({
+                select: () => ({
+                  maybeSingle: async () => {
+                    if (challengeConsumed) return { data: null, error: null }
+                    challengeConsumed = true
+                    return { data: { id: 'challenge-id' }, error: null }
+                  },
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    }),
+  } as unknown as Parameters<typeof consumeSigningChallenge>[0]
+  assert(await consumeSigningChallenge(challengeClient, 'challenge', testWallet, new Date(oauthNow).toISOString()), 'OAuth challenge first consumption succeeds')
+  assert(!(await consumeSigningChallenge(challengeClient, 'challenge', testWallet, new Date(oauthNow).toISOString())), 'OAuth challenge replay is rejected atomically')
 
   const dummyKeyArr = JSON.stringify(Array.from({ length: 64 }, (_, i) => i))
   const parsedKeyBytes = parseIrysPrivateKey(dummyKeyArr)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getVerifiedDomain, buildCanonicalIdentityLinkMessage, decodeBase58 } from '@/app/lib/canonicalMessage'
+import { consumeSigningChallenge, isOAuthTimestampFresh } from '@/app/lib/oauth'
 import nacl from 'tweetnacl'
 
 const supabase = createClient(
@@ -38,10 +39,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Verify Timestamp freshness (+/- 15 minutes)
-    const txDate = new Date(timestamp)
     const now = new Date()
-    const diffMins = Math.abs(now.getTime() - txDate.getTime()) / (1000 * 60)
-    if (diffMins > 15) {
+    if (!isOAuthTimestampFresh(timestamp, now.getTime())) {
       return NextResponse.json({ error: 'Signature expired (timestamp must be within 15 minutes)' }, { status: 400 })
     }
 
@@ -83,8 +82,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cryptographic verification error' }, { status: 401 })
     }
 
-    // 4. Delete the used challenge
-    await supabase.from('signing_challenges').delete().eq('challenge', challenge)
+    // 4. Atomically consume the used challenge before issuing OAuth state.
+    const challengeConsumed = await consumeSigningChallenge(supabase, challenge, walletAddress, now.toISOString())
+    if (!challengeConsumed) {
+      return NextResponse.json({ error: 'Invalid, expired, or already consumed challenge' }, { status: 400 })
+    }
 
     // 5. Generate secure OAuth state with PKCE
     const clientId = process.env.GITHUB_CLIENT_ID
