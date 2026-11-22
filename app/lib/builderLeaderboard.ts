@@ -39,7 +39,22 @@ export async function saveToLeaderboard(profile: BuilderProfile): Promise<boolea
   if (!serviceKey || !isConfiguredSupabaseUrl(supabaseUrl)) return false
   try {
     const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+    // A login can move to another account; drop the old holder's row so the unique login index accepts this one.
+    await supabase.from('builder_profiles').delete().ilike('login', profile.login).neq('github_id', profile.githubId)
     const { error } = await supabase.from('builder_profiles').upsert(toLeaderboardRow(profile), { onConflict: 'github_id' })
+    return !error
+  } catch {
+    return false
+  }
+}
+
+// Called when GitHub no longer resolves a login, so a retired account does not stay ranked.
+export async function removeFromLeaderboard(login: string): Promise<boolean> {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey || !isConfiguredSupabaseUrl(supabaseUrl)) return false
+  try {
+    const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+    const { error } = await supabase.from('builder_profiles').delete().ilike('login', login)
     return !error
   } catch {
     return false

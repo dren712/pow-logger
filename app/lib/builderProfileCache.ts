@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { fetchBuilderProfile, PROFILE_REVALIDATE_SECONDS, type ProfileResult } from './githubProfile'
-import { saveToLeaderboard } from './builderLeaderboard'
+import { removeFromLeaderboard, saveToLeaderboard } from './builderLeaderboard'
 
 class TransientProfileError extends Error {
   constructor(public reason: 'rate_limited' | 'unavailable') {
@@ -16,6 +16,7 @@ const cachedProfile = unstable_cache(
       throw new TransientProfileError(result.reason)
     }
     if (result.ok) await saveToLeaderboard(result.profile)
+    else if (result.reason === 'not_found') await removeFromLeaderboard(login)
     return result
   },
   ['builder-profile-v1'],
