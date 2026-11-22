@@ -154,7 +154,19 @@ async function run() {
     assert.strictEqual(report.checks.mandate, 'fail')
     assert.ok(report.problems.some((p) => /Recorded decision "reject"/.test(p)))
   })
-  await test('completes with the default summary for a short intent', async () => {
+  await test('a blocked parallel intent does not hold budget for the next request', async () => {
+    const r = await ProvnVerify.start({ intent: 'blocked', mandate, client: { gatewayUrl: '' } })
+    const ok = async () => ({ txSignature: 's' })
+    const [first, second] = await Promise.allSettled([
+      r.pay({ resource: 'https://x.test/?password=abcdefghijklmnopqrstuvwxyz', payTo: 'R1', amount: '400.00', asset: 'USDC' }, ok),
+      r.pay({ resource: 'r', payTo: 'R1', amount: '200.00', asset: 'USDC' }, ok),
+    ])
+    assert.strictEqual(first.status, 'rejected')
+    assert.strictEqual(second.status === 'fulfilled' && second.value.decision, 'allow')
+    const report = verifyProvnVerifyReceipt(await r.complete())
+    assert.strictEqual(report.verified, true, report.problems.join('\n'))
+  })
+    await test('completes with the default summary for a short intent', async () => {
     const r = await ProvnVerify.start({ intent: 'Rotate API keys', mandate, client: { gatewayUrl: '' } })
     assert.strictEqual(verifyProvnVerifyReceipt(await r.complete()).verified, true)
   })
