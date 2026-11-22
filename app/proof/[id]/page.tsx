@@ -5,6 +5,7 @@ import { reconstructCanonicalSubmitMessage, evaluateProofValidity } from '@/app/
 import { WalletLog } from '@/app/lib/types'
 import { PublicKey } from '@solana/web3.js'
 import { deriveProofAnchorPda } from '@/app/lib/solanaAnchor'
+import SiteNav from '@/app/components/SiteNav'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -27,16 +28,77 @@ export async function generateMetadata({ params }: ProofPageProps): Promise<Meta
   }
 }
 
+type Tone = 'ok' | 'warn' | 'bad' | 'neutral'
+
+const TONE: Record<Tone, { text: string; border: string; bg: string }> = {
+  ok: { text: '#2ee59d', border: 'rgba(46, 229, 157, 0.35)', bg: 'rgba(46, 229, 157, 0.07)' },
+  warn: { text: '#f5c451', border: 'rgba(245, 196, 81, 0.35)', bg: 'rgba(245, 196, 81, 0.07)' },
+  bad: { text: '#ff7b7b', border: 'rgba(255, 123, 123, 0.4)', bg: 'rgba(255, 123, 123, 0.07)' },
+  neutral: { text: '#9aa3b2', border: '#272e3a', bg: 'rgba(154, 163, 178, 0.06)' },
+}
+
+function StatusIcon({ tone, size = 16 }: { tone: Tone; size?: number }) {
+  const color = TONE[tone].text
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
+      {tone === 'ok' && <path d="M7.5 12.5l3 3 6-6.5" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />}
+      {tone === 'warn' && <path d="M12 7v6M12 16.5v.5" stroke={color} strokeWidth="2.2" strokeLinecap="round" />}
+      {tone === 'bad' && <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke={color} strokeWidth="2.2" strokeLinecap="round" />}
+      {tone === 'neutral' && <path d="M8 12h8" stroke={color} strokeWidth="2.2" strokeLinecap="round" />}
+    </svg>
+  )
+}
+
+function StatusPill({ tone, children }: { tone: Tone; children: React.ReactNode }) {
+  const t = TONE[tone]
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[12px] font-semibold leading-none"
+      style={{ color: t.text, borderColor: t.border, background: t.bg }}
+    >
+      <StatusIcon tone={tone} size={13} />
+      {children}
+    </span>
+  )
+}
+
+function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="break-all text-[#9fd8ff] hover:underline">
+      {children}
+    </a>
+  )
+}
+
+function Message({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) {
+  return (
+    <div className="pv flex flex-1 flex-col">
+      <SiteNav cta={false} />
+      <main className="pv-main mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 px-5 py-24 text-center">
+        <p className="pv-eyebrow">{eyebrow}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
+        <p className="pv-muted text-[15px]">{body}</p>
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
+          <Link href="/log" className="pv-btn">Open the proof logger</Link>
+          <Link href="/" className="pv-btn-ghost">Go to home</Link>
+        </div>
+      </main>
+    </div>
+  )
+}
+
 export default async function ProofDetailPage({ params }: ProofPageProps) {
   const resolvedParams = await params
   const proofId = parseInt(resolvedParams.id, 10)
 
   if (isNaN(proofId) || proofId <= 0) {
     return (
-      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ff4444', fontFamily: 'monospace' }}>
-        <h1>Invalid Proof ID</h1>
-        <Link href="/log" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
-      </main>
+      <Message
+        eyebrow="Invalid link"
+        title="This is not a valid proof ID"
+        body="Proof links end in a positive number, for example /proof/12. Check the link you were given."
+      />
     )
   }
 
@@ -48,11 +110,11 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
 
   if (!log) {
     return (
-      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ff4444', fontFamily: 'monospace' }}>
-        <h1>Proof #{proofId} Not Found</h1>
-        <p style={{ color: '#888' }}>No proof record exists with this identifier.</p>
-        <Link href="/log" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
-      </main>
+      <Message
+        eyebrow="Proof not found"
+        title={`Proof #${proofId} could not be found`}
+        body="No proof record with this ID could be loaded. It may not exist, or the proof database may be unavailable right now."
+      />
     )
   }
 
@@ -62,11 +124,11 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
   const isPrivate = proof.visibility === 'private' || (proof as unknown as Record<string, unknown>).is_public === false
   if (isPrivate) {
     return (
-      <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ffb800', fontFamily: 'monospace' }}>
-        <h1 style={{ color: '#ffb800' }}>🔒 Private Proof Record</h1>
-        <p style={{ color: '#888' }}>Proof #{proofId} was submitted with private visibility and is accessible only to the author wallet.</p>
-        <Link href="/log" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
-      </main>
+      <Message
+        eyebrow="Private record"
+        title={`Proof #${proofId} is private`}
+        body="This proof was submitted with private visibility and can only be viewed by the wallet that signed it."
+      />
     )
   }
 
@@ -87,393 +149,264 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
   const reconstructedMessage = reconstructCanonicalSubmitMessage(proof) || ''
   const walletShort = `${proof.wallet_address.slice(0, 4)}...${proof.wallet_address.slice(-4)}`
 
+  const sourceVerified = proof.provenance_level === 'source_verified'
+  const isArchived = Boolean(proof.irys_tx_id && !proof.irys_tx_id.startsWith('powl_'))
+  const archiveUrl = isArchived ? `https://gateway.irys.xyz/${proof.irys_tx_id}` : null
+  const archivalDone = proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized'
+  const hasPda = solanaAnchorPda !== 'N/A'
+  const sourceMeta = (proof.source_metadata || {}) as { author?: string; state?: string; merged_at?: string }
+  const mergeState =
+    sourceMeta.state === 'closed' ? (sourceMeta.merged_at ? 'Merged' : 'Closed') : sourceMeta.state === 'open' ? 'Open' : sourceMeta.state || 'Committed'
+
+  const overall: { tone: Tone; title: string; body: string } = isProtocolValid
+    ? {
+        tone: 'ok',
+        title: 'Verified',
+        body: 'The wallet signature, the server challenge and the submission receipt all check out for this record.',
+      }
+    : isSignatureValid
+      ? {
+          tone: 'warn',
+          title: 'Signature valid, receipt pending',
+          body: 'The wallet signature is valid. The record does not carry a full set of protocol checks yet (legacy format or pending server receipt).',
+        }
+      : {
+          tone: 'bad',
+          title: 'Not verified',
+          body: 'The signature on this record could not be verified against the signer wallet. Do not rely on this claim.',
+        }
+
+  const checks: { name: string; tone: Tone; status: string; detail: React.ReactNode }[] = [
+    {
+      name: 'Wallet signature (Ed25519)',
+      tone: isSignatureValid ? 'ok' : 'bad',
+      status: isSignatureValid ? 'Verified' : 'Failed',
+      detail: isSignatureValid ? (
+        <>Signed by Solana wallet <span className="pv-mono text-[#c3cad6]">{walletShort}</span> over the canonical message shown below.</>
+      ) : (
+        <>The stored signature does not match wallet <span className="pv-mono text-[#c3cad6]">{walletShort}</span> and the canonical message.</>
+      ),
+    },
+    {
+      name: 'Server challenge and replay protection',
+      tone: validityReport.challengeVerified ? 'ok' : 'warn',
+      status: validityReport.challengeVerified ? 'Verified' : 'Pending',
+      detail: 'A single-use, time-limited challenge issued by the PROVN server and bound to its active signing key.',
+    },
+    {
+      name: 'Source attribution (GitHub)',
+      tone: sourceVerified ? 'ok' : 'neutral',
+      status: sourceVerified ? 'Source verified' : proof.github_url ? 'Linked' : 'Self-attested',
+      detail: sourceVerified
+        ? 'The linked pull request or commit was confirmed to exist through the GitHub API.'
+        : proof.github_url
+          ? 'A public repository URL is attached to the claim. It has not been checked against GitHub.'
+          : 'No source link is attached. The claim rests on the signer’s word.',
+    },
+    {
+      name: 'Solana on-chain commitment',
+      tone: 'neutral',
+      status: 'Address derived',
+      detail: hasPda ? (
+        <>
+          Anchor address <span className="pv-mono text-[#c3cad6]">{solanaAnchorPda.slice(0, 8)}...{solanaAnchorPda.slice(-6)}</span> on program{' '}
+          <span className="pv-mono text-[#c3cad6]">FZomvFyB...jmZx</span>. This page does not check whether the anchor has been written on-chain.
+        </>
+      ) : (
+        'The anchor address could not be derived from the signer wallet.'
+      ),
+    },
+    {
+      name: 'Permanent archive (Irys / Arweave)',
+      tone: proof.irys_tx_id ? 'ok' : 'warn',
+      status: proof.irys_tx_id ? 'Archived' : 'Queued',
+      detail: proof.irys_tx_id ? (
+        <>Archived with transaction ID <span className="pv-mono break-all text-[#c3cad6]">{proof.irys_tx_id}</span>.</>
+      ) : (
+        'Archival is queued and retried automatically in the background.'
+      ),
+    },
+  ]
+
+  const details: { label: string; value: React.ReactNode }[] = [
+    {
+      label: 'Signer wallet',
+      value: <ExternalLink href={`https://explorer.solana.com/address/${proof.wallet_address}`}>{proof.wallet_address}</ExternalLink>,
+    },
+    ...(proof.signature ? [{ label: 'Signature', value: proof.signature as React.ReactNode }] : []),
+    { label: 'Domain', value: proof.domain || 'provn-sol.vercel.app' },
+    { label: 'Server challenge', value: proof.challenge || proof.nonce || 'N/A' },
+    ...(proof.submission_receipt
+      ? [{ label: 'Submission receipt', value: <>{proof.submission_receipt.slice(0, 24)}... <span className="text-[#2ee59d]">(verified)</span></> }]
+      : []),
+    {
+      label: 'Anchor address',
+      value: hasPda ? <ExternalLink href={`https://explorer.solana.com/address/${solanaAnchorPda}`}>{solanaAnchorPda}</ExternalLink> : 'N/A',
+    },
+    {
+      label: 'Archival state',
+      value: (
+        <span style={{ color: archivalDone ? TONE.ok.text : TONE.warn.text }}>
+          {(proof.archival_state || 'pending').replace(/_/g, ' ')}
+        </span>
+      ),
+    },
+  ]
+
   return (
-    <main
-      style={{
-        width: 'min(760px, 94vw)',
-        margin: '0 auto',
-        padding: '32px 16px 80px 16px',
-        fontFamily: 'var(--font-geist-mono), monospace',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ marginBottom: '24px' }}>
-        <Link
-          href={`/u/${proof.wallet_address}`}
-          style={{
-            color: '#666',
-            textDecoration: 'none',
-            fontSize: '12px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          ← Back to Builder Passport ({walletShort})
+    <div className="pv flex flex-1 flex-col">
+      <SiteNav cta={false} />
+      <main className="pv-main mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-5 py-8 lg:py-10">
+        <Link href={`/u/${proof.wallet_address}`} className="pv-muted self-start text-[13px] hover:text-white">
+          <span aria-hidden="true">&larr;</span> Builder passport <span className="pv-mono">({walletShort})</span>
         </Link>
-      </div>
 
-      {/* Header */}
-      <div
-        className="glass-card"
-        style={{
-          padding: '24px',
-          marginBottom: '20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>🗿</span>
-            <h1 style={{ color: '#00ff88', fontSize: '1.4rem', margin: 0, fontWeight: 800 }}>
-              Proof #{proof.id}
-            </h1>
+        <header className="pv-card overflow-hidden">
+          <div className="flex flex-wrap items-start justify-between gap-4 p-6">
+            <div className="min-w-0">
+              <p className="pv-eyebrow">Proof record</p>
+              <h1 className="mt-2 text-[28px] font-bold leading-tight tracking-tight text-white">Proof #{proof.id}</h1>
+              <p className="pv-muted mt-1.5 text-[13px]">
+                Recorded on {new Date(proof.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+              </p>
+            </div>
           </div>
-          <div style={{ color: '#888', fontSize: '11px', marginTop: '4px' }}>
-            Recorded on {new Date(proof.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+          <div
+            role="status"
+            className="flex items-start gap-3 border-t px-6 py-4"
+            style={{ borderColor: TONE[overall.tone].border, background: TONE[overall.tone].bg }}
+          >
+            <span className="mt-0.5"><StatusIcon tone={overall.tone} size={22} /></span>
+            <div className="min-w-0">
+              <p className="text-[16px] font-semibold" style={{ color: TONE[overall.tone].text }}>{overall.title}</p>
+              <p className="mt-0.5 text-[13.5px] leading-relaxed text-[#c3cad6]">{overall.body}</p>
+            </div>
           </div>
-        </div>
+        </header>
 
-        <div>
-          {isProtocolValid ? (
-            <span
-              style={{
-                background: 'rgba(0, 255, 136, 0.1)',
-                border: '1px solid #00ff88',
-                color: '#00ff88',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 700,
-              }}
-            >
-              ✓ PROTOCOL VERIFIED
-            </span>
-          ) : isSignatureValid ? (
-            <span
-              style={{
-                background: 'rgba(0, 229, 255, 0.1)',
-                border: '1px solid #00e5ff',
-                color: '#00e5ff',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 700,
-              }}
-            >
-              ✓ SIGNATURE VALID (V1 / PENDING RECEIPT)
-            </span>
-          ) : (
-            <span
-              style={{
-                background: 'rgba(255, 68, 68, 0.1)',
-                border: '1px solid #ff4444',
-                color: '#ff4444',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 700,
-              }}
-            >
-              ⚠ UNVERIFIED / INVALID
-            </span>
+        <section className="pv-card p-6" aria-labelledby="claim-heading">
+          <h2 id="claim-heading" className="pv-h2">Signed work claim</h2>
+          <p className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-white">{proof.content}</p>
+
+          {(proof.github_url || proof.evidence_url || archiveUrl) && (
+            <dl className="mt-5 grid gap-3 border-t border-[#1c222c] pt-5 text-[13px] sm:grid-cols-2">
+              {proof.github_url && (
+                <div className="min-w-0">
+                  <dt className="pv-faint text-[12px]">GitHub evidence ({sourceVerified ? 'source verified' : 'self-attested'})</dt>
+                  <dd className="mt-1"><ExternalLink href={proof.github_url}>{proof.github_url}</ExternalLink></dd>
+                </div>
+              )}
+              {proof.evidence_url && (
+                <div className="min-w-0">
+                  <dt className="pv-faint text-[12px]">Live demo or evidence URL</dt>
+                  <dd className="mt-1"><ExternalLink href={proof.evidence_url}>{proof.evidence_url}</ExternalLink></dd>
+                </div>
+              )}
+              {archiveUrl && (
+                <div className="min-w-0">
+                  <dt className="pv-faint text-[12px]">Permanent archive (Arweave via Irys)</dt>
+                  <dd className="pv-mono mt-1 text-[12px]"><ExternalLink href={archiveUrl}>{proof.irys_tx_id}</ExternalLink></dd>
+                </div>
+              )}
+            </dl>
           )}
-        </div>
-      </div>
+        </section>
 
-      {/* 5-Link Cryptographic Provenance Chain */}
-      <div className="terminal-card" style={{ padding: '20px', marginBottom: '20px', borderLeft: '3px solid #00e5ff' }}>
-        <h2 style={{ color: '#00e5ff', fontSize: '12px', textTransform: 'uppercase', margin: '0 0 14px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>⛓️</span> 5-Link Cryptographic Provenance Chain
-        </h2>
-
-        <div style={{ display: 'grid', gap: '10px' }}>
-          {/* Link 1: Solana Wallet Signature */}
-          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[1] Solana Wallet Identity (Ed25519)</span>
-              <span style={{ color: isSignatureValid ? '#00ff88' : '#ff4444', fontSize: '10px', fontWeight: 700 }}>
-                {isSignatureValid ? '✓ VERIFIED' : '✗ FAILED'}
-              </span>
-            </div>
-            <div style={{ color: '#888', fontSize: '10px' }}>
-              Authoritatively signed by Solana wallet <code style={{ color: '#ffb800' }}>{walletShort}</code> over the canonical SIWS envelope.
-            </div>
+        <section className="pv-card" aria-labelledby="checks-heading">
+          <div className="px-6 pt-6">
+            <h2 id="checks-heading" className="pv-h2">Verification checks</h2>
+            <p className="pv-muted mt-1 text-[13px]">Five independent links between this claim, the signer and the public record.</p>
           </div>
+          <ol className="mt-4 divide-y divide-[#1c222c] border-t border-[#1c222c]">
+            {checks.map((c, i) => (
+              <li key={c.name} className="flex flex-col gap-2 px-6 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="flex min-w-0 gap-3">
+                  <span className="pv-mono pv-faint mt-0.5 text-[12px]">{i + 1}</span>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold text-white">{c.name}</p>
+                    <p className="pv-muted mt-1 text-[13px] leading-relaxed">{c.detail}</p>
+                  </div>
+                </div>
+                <div className="pl-6 sm:pl-0"><StatusPill tone={c.tone}>{c.status}</StatusPill></div>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-          {/* Link 2: Protocol Epoch Challenge */}
-          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[2] Protocol Epoch Challenge & Anti-Replay</span>
-              <span style={{ color: validityReport.challengeVerified ? '#00ff88' : '#ffb800', fontSize: '10px', fontWeight: 700 }}>
-                {validityReport.challengeVerified ? '✓ VERIFIED' : 'PENDING'}
-              </span>
+        {sourceVerified && proof.source_metadata && typeof proof.source_metadata === 'object' && (
+          <section className="pv-card p-6" aria-labelledby="source-heading">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="source-heading" className="pv-h2">Source verification result</h2>
+              <StatusPill tone="ok">Source verified</StatusPill>
             </div>
-            <div style={{ color: '#888', fontSize: '10px' }}>
-              Single-use 15-minute observation epoch window bound to active server key.
-            </div>
-          </div>
-
-          {/* Link 3: GitHub Identity Attribution */}
-          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[3] GitHub / Source Attribution</span>
-              <span style={{ color: proof.provenance_level === 'source_verified' ? '#00ff88' : (proof.github_url ? '#ab9ff2' : '#888'), fontSize: '10px', fontWeight: 700 }}>
-                {proof.provenance_level === 'source_verified' ? '✓ SOURCE VERIFIED' : (proof.github_url ? 'LINKED' : 'SELF-ATTESTED')}
-              </span>
-            </div>
-            <div style={{ color: '#888', fontSize: '10px' }}>
-              {proof.provenance_level === 'source_verified'
-                ? `Cryptographically bound via SIWS OAuth to repository commit author.`
-                : (proof.github_url ? `Public repository URL linked to claim.` : `Self-attested builder action.`)}
-            </div>
-          </div>
-
-          {/* Link 4: Solana On-Chain Anchor PDA */}
-          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[4] Solana On-Chain Commitment (PDA)</span>
-              <span style={{ color: '#00e5ff', fontSize: '10px', fontWeight: 700 }}>
-                ANCHORABLE (PDA Ready)
-              </span>
-            </div>
-            <div style={{ color: '#888', fontSize: '10px' }}>
-              Deterministic PDA: <code style={{ color: '#00e5ff' }}>{solanaAnchorPda.slice(0, 8)}...{solanaAnchorPda.slice(-6)}</code> on program <code style={{ color: '#888' }}>FZomvFyB...jmZx</code>.
-            </div>
-          </div>
-
-          {/* Link 5: Irys Arweave Permanent Storage */}
-          <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '10px 12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>[5] Irys / Arweave Decentralized Archival</span>
-              <span style={{ color: proof.irys_tx_id ? '#00ff88' : '#ffb800', fontSize: '10px', fontWeight: 700 }}>
-                {proof.irys_tx_id ? '✓ CONFIRMED (ARWEAVE L1)' : 'AUTOMATIC QUEUE'}
-              </span>
-            </div>
-            <div style={{ color: '#888', fontSize: '10px' }}>
-              {proof.irys_tx_id
-                ? `Permanently archived with Arweave Tx ID: ${proof.irys_tx_id}`
-                : `Automatic background archival queued with retry engine.`}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Source Verification Details Section */}
-      {proof.provenance_level === 'source_verified' && proof.source_metadata && typeof proof.source_metadata === 'object' && (
-        <div className="terminal-card" style={{ padding: '24px', marginBottom: '20px', borderLeft: '3px solid #00ff88' }}>
-          <h2 style={{ color: '#00ff88', fontSize: '12px', textTransform: 'uppercase', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>✓</span> Source Verification API Result
-          </h2>
-          <div style={{ fontSize: '12px', color: '#ccc', marginBottom: '16px', lineHeight: '1.5' }}>
-            PROVN verified via the GitHub API that this source exists.<br />
-            <span style={{ color: '#ffb800' }}>Warning: PROVN verifies the source exists, but does not definitively prove this wallet holder owns the GitHub account.</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
-            <div>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Source Type</div>
-              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>{proof.evidence_type === 'github_pr' ? 'GitHub Pull Request' : 'GitHub Commit'}</div>
-            </div>
-            <div>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Author Handle</div>
-              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>{(proof.source_metadata as { author?: string })?.author || 'Unknown'}</div>
-            </div>
-            <div>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Merge State</div>
-              <div style={{ color: (proof.source_metadata as { state?: string, merged_at?: string })?.state === 'closed' ? ((proof.source_metadata as { merged_at?: string })?.merged_at ? '#ab9ff2' : '#ff4444') : '#27c93f', fontSize: '12px', marginTop: '4px' }}>
-                {(proof.source_metadata as { state?: string, merged_at?: string })?.state === 'closed' ? ((proof.source_metadata as { merged_at?: string })?.merged_at ? 'Merged' : 'Closed') : ((proof.source_metadata as { state?: string })?.state === 'open' ? 'Open' : (proof.source_metadata as { state?: string })?.state || 'Committed')}
-              </div>
-            </div>
-            <div>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Verified At</div>
-              <div style={{ color: '#fff', fontSize: '12px', marginTop: '4px' }}>
-                {proof.source_verified_at ? new Date(proof.source_verified_at).toLocaleString() : 'N/A'}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Proof Content Card */}
-      <div className="terminal-card" style={{ padding: '24px', marginBottom: '20px' }}>
-        <h2 style={{ color: '#aaa', fontSize: '12px', textTransform: 'uppercase', margin: '0 0 12px 0' }}>
-          Signed Work Claim
-        </h2>
-        <p
-          style={{
-            color: '#fff',
-            fontSize: '14px',
-            lineHeight: '1.6',
-            whiteSpace: 'pre-wrap',
-            margin: '0 0 20px 0',
-          }}
-        >
-          {proof.content}
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-          {proof.github_url && (
-            <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>
-                GitHub Evidence ({proof.provenance_level === 'source_verified' ? 'Source-Verified' : 'Self-Attested'})
-              </div>
-              <a
-                href={proof.github_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#ab9ff2', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
-              >
-                {proof.github_url} ↗
-              </a>
-            </div>
-          )}
-
-          {proof.evidence_url && (
-            <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Live Demo / Evidence URL</div>
-              <a
-                href={proof.evidence_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#00e5ff', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
-              >
-                {proof.evidence_url} ↗
-              </a>
-            </div>
-          )}
-
-          {proof.irys_tx_id && !proof.irys_tx_id.startsWith('powl_') && (
-            <div style={{ background: '#060709', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2030' }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>Arweave L1 Permanent Storage</div>
-              <a
-                href={`https://gateway.irys.xyz/${proof.irys_tx_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#27c93f', fontSize: '11px', textDecoration: 'none', wordBreak: 'break-all' }}
-              >
-                {proof.irys_tx_id} ↗
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Cryptographic Provenance Inspector */}
-      <div className="terminal-card" style={{ padding: '20px', marginBottom: '20px' }}>
-        <h3 style={{ color: '#00ff88', fontSize: '12px', margin: '0 0 12px 0', textTransform: 'uppercase' }}>
-          🔍 Cryptographic Provenance Inspector
-        </h3>
-
-        <div style={{ display: 'grid', gap: '8px', fontSize: '11px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Signer Wallet:</span>
-            <code style={{ color: '#ffb800', wordBreak: 'break-all', fontSize: '10px' }}>{proof.wallet_address}</code>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Domain Bound:</span>
-            <span style={{ color: '#00e5ff', wordBreak: 'break-all' }}>{proof.domain || 'provn-sol.vercel.app'}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Server Challenge Token:</span>
-            <span style={{ color: '#aaa', wordBreak: 'break-all', fontSize: '10px' }}>{proof.challenge || proof.nonce || 'N/A'}</span>
-          </div>
-          {proof.submission_receipt && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-              <span style={{ color: '#666' }}>Server Submission Receipt:</span>
-              <span style={{ color: '#00ff88', wordBreak: 'break-all', fontSize: '10px' }}>{proof.submission_receipt.slice(0, 24)}... (Verified ✓)</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #141824', paddingBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: '#666' }}>Archival State:</span>
-            <span style={{ color: (proof.archival_state === 'receipt_obtained' || proof.archival_state === 'finalized') ? '#00ff88' : '#ffb800' }}>
-              {proof.archival_state?.toUpperCase() || 'PENDING'}
-            </span>
-          </div>
-        </div>
-
-        {reconstructedMessage && (
-          <div style={{ marginTop: '16px' }}>
-            <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>
-              Reconstructed Canonical SIWS Message:
-            </div>
-            <pre
-              style={{
-                background: '#060709',
-                border: '1px solid #161c28',
-                padding: '12px',
-                borderRadius: '6px',
-                color: '#ab9ff2',
-                fontSize: '10px',
-                overflowX: 'auto',
-                whiteSpace: 'pre-wrap',
-                margin: 0,
-              }}
-            >
-              {reconstructedMessage}
-            </pre>
-          </div>
-        )}
-      </div>
-
-      {/* Independent Verification & Export Section */}
-      <div className="terminal-card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-          <div>
-            <h3 style={{ color: '#00e5ff', fontSize: '13px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
-              💻 Independent Verification & Portable Envelope
-            </h3>
-            <p style={{ color: '#888', fontSize: '11px', margin: 0 }}>
-              Verify this proof offline without trusting the PROVN web server or database.
+            <p className="pv-muted mt-2 text-[13px] leading-relaxed">PROVN confirmed through the GitHub API that this source exists.</p>
+            <p className="mt-3 rounded-lg border px-3 py-2 text-[13px] leading-relaxed" style={{ color: TONE.warn.text, borderColor: TONE.warn.border, background: TONE.warn.bg }}>
+              This confirms the source exists. It does not prove that the wallet holder owns the GitHub account.
             </p>
-          </div>
-          <a
-            href={`/api/proof/${proof.id}/export?download=true`}
-            download={`provn-proof-${proof.id}.json`}
-            style={{
-              background: 'rgba(0, 229, 255, 0.1)',
-              border: '1px solid #00e5ff',
-              color: '#00e5ff',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '11px',
-              fontWeight: 700,
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            📥 Download Proof Envelope (.json)
-          </a>
-        </div>
+            <dl className="mt-5 grid grid-cols-2 gap-4 text-[13px] sm:grid-cols-4">
+              <div>
+                <dt className="pv-faint text-[12px]">Source type</dt>
+                <dd className="mt-1 text-white">{proof.evidence_type === 'github_pr' ? 'GitHub pull request' : 'GitHub commit'}</dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="pv-faint text-[12px]">Author</dt>
+                <dd className="mt-1 break-words text-white">{sourceMeta.author || 'Unknown'}</dd>
+              </div>
+              <div>
+                <dt className="pv-faint text-[12px]">State</dt>
+                <dd className="mt-1" style={{ color: mergeState === 'Merged' ? '#c4a5ff' : mergeState === 'Closed' ? TONE.bad.text : TONE.ok.text }}>{mergeState}</dd>
+              </div>
+              <div>
+                <dt className="pv-faint text-[12px]">Verified at</dt>
+                <dd className="mt-1 text-white">{proof.source_verified_at ? new Date(proof.source_verified_at).toLocaleString() : 'N/A'}</dd>
+              </div>
+            </dl>
+          </section>
+        )}
 
-        <div style={{ background: '#060709', border: '1px solid #141824', borderRadius: '6px', padding: '12px', fontSize: '11px' }}>
-          <div style={{ color: '#aaa', marginBottom: '6px' }}>
-            Verify offline using the standalone open-source PROVN CLI:
+        <section className="pv-card p-6" aria-labelledby="signature-heading">
+          <h2 id="signature-heading" className="pv-h2">Signature and record details</h2>
+          <dl className="mt-4 divide-y divide-[#1c222c] border-y border-[#1c222c] text-[13px]">
+            {details.map((d) => (
+              <div key={d.label} className="grid gap-1 py-3 sm:grid-cols-[170px_minmax(0,1fr)] sm:gap-4">
+                <dt className="pv-muted">{d.label}</dt>
+                <dd className="pv-mono min-w-0 break-all text-[12px] leading-relaxed text-[#c3cad6]">{d.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {reconstructedMessage && (
+            <div className="mt-5">
+              <h3 className="pv-faint text-[12px]">Canonical message that was signed</h3>
+              <pre className="pv-mono mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded-lg border border-[#1c222c] bg-[#080a0e] p-4 text-[12px] leading-relaxed text-[#c3cad6]">
+                {reconstructedMessage}
+              </pre>
+            </div>
+          )}
+        </section>
+
+        <section className="pv-card p-6" aria-labelledby="verify-heading">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h2 id="verify-heading" className="pv-h2">Verify it yourself</h2>
+              <p className="pv-muted mt-1 text-[13px] leading-relaxed">
+                Download the portable proof envelope and check it offline, without trusting the PROVN server or database.
+              </p>
+            </div>
+            <a href={`/api/proof/${proof.id}/export?download=true`} download={`provn-proof-${proof.id}.json`} className="pv-btn no-print">
+              Download proof envelope
+            </a>
           </div>
-          <pre
-            style={{
-              color: '#00ff88',
-              margin: '0 0 8px 0',
-              padding: '8px',
-              background: '#0a0d14',
-              borderRadius: '4px',
-              fontSize: '11px',
-              overflowX: 'auto',
-            }}
-          >
+          <p className="pv-faint mt-5 text-[12px]">Verify the downloaded file with the open-source PROVN CLI</p>
+          <pre className="pv-mono mt-2 overflow-x-auto rounded-lg border border-[#1c222c] bg-[#080a0e] p-4 text-[12.5px] text-[#2ee59d]">
             npx provn verify ./provn-proof-{proof.id}.json
           </pre>
-          <div style={{ color: '#666', fontSize: '10px' }}>
-            Or fetch and independently verify live: <code style={{ color: '#ffb800' }}>npx provn verify {proof.id}</code>
-          </div>
-        </div>
-      </div>
-    </main>
+          <p className="pv-faint mt-4 text-[12px]">Or fetch and verify the live record by ID</p>
+          <pre className="pv-mono mt-2 overflow-x-auto rounded-lg border border-[#1c222c] bg-[#080a0e] p-4 text-[12.5px] text-[#c3cad6]">
+            npx provn verify {proof.id}
+          </pre>
+        </section>
+      </main>
+    </div>
   )
 }
