@@ -2,7 +2,7 @@
 
 import { track } from '@vercel/analytics'
 
-type AnalyticsEvent = 'profile_view' | 'resume_download' | 'share_click' | 'readme_card_copy' | 'waitlist_join'
+type AnalyticsEvent = 'profile_view' | 'resume_download' | 'share_click' | 'readme_card_copy' | 'waitlist_join' | 'resume_tailor'
 type EventProperties = { network?: 'x' | 'linkedin'; source?: 'profile' | 'resume' | 'year'; theme?: 'light' | 'dark' }
 
 export function trackEvent(event: AnalyticsEvent, properties?: EventProperties) {
