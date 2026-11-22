@@ -1,5 +1,8 @@
 BEGIN;
 
+ALTER TABLE public.agent_projects
+ADD COLUMN quota_period_start TIMESTAMPTZ NOT NULL DEFAULT date_trunc('month', now());
+
 CREATE OR REPLACE FUNCTION public.consume_agent_event_quota(
     p_project_id UUID,
     p_count INT DEFAULT 1
@@ -18,10 +21,14 @@ BEGIN
     END IF;
 
     UPDATE public.agent_projects AS p
-    SET monthly_events_used = p.monthly_events_used + p_count,
+    SET monthly_events_used = CASE WHEN p.quota_period_start < date_trunc('month', now())
+            THEN 0 ELSE p.monthly_events_used END + p_count,
+        quota_period_start = CASE WHEN p.quota_period_start < date_trunc('month', now())
+            THEN date_trunc('month', now()) ELSE p.quota_period_start END,
         updated_at = now()
     WHERE p.id = p_project_id
-      AND p.monthly_events_used::BIGINT + p_count <= p.monthly_event_limit
+      AND (CASE WHEN p.quota_period_start < date_trunc('month', now())
+            THEN 0 ELSE p.monthly_events_used END)::BIGINT + p_count <= p.monthly_event_limit
     RETURNING p.monthly_events_used, p.monthly_event_limit INTO v_used, v_limit;
 
     IF FOUND THEN
