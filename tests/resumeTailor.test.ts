@@ -49,6 +49,7 @@ const grounded = groundTailoredResume(profile, {
     { repo: 'solana-labs/solana', reason: 'Duplicate.' },
     { repo: 'octo/ferris', reason: 'Own Rust tool.' },
     { repo: 'google/made-up', reason: 'Invented.' },
+    { repo: 'other/ferris', reason: 'Wrong owner.' },
   ],
   matchedSkills: ['Rust', 'rust ', 'Rust', 'Solana'],
   gaps: ['Kubernetes'],

@@ -99,7 +99,8 @@ export function groundTailoredResume(profile: BuilderProfile, raw: TailoredResum
   const highlights: TailoredHighlight[] = []
   for (const h of raw.highlights) {
     const key = h.repo.trim().toLowerCase()
-    const match = known.get(key) ?? known.get(key.split('/').pop() ?? '')
+    const [owner, name] = key.includes('/') ? key.split('/', 2) : [profile.login.toLowerCase(), key]
+    const match = known.get(key) ?? (owner === profile.login.toLowerCase() ? known.get(name) : undefined)
     if (!match || seen.has(match.repo) || highlights.length >= 5) continue
     seen.add(match.repo)
     highlights.push({ ...match, reason: clip(h.reason.trim(), 240) })
