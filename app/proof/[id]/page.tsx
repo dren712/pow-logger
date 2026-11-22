@@ -35,7 +35,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
     return (
       <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ff4444', fontFamily: 'monospace' }}>
         <h1>Invalid Proof ID</h1>
-        <Link href="/" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
+        <Link href="/log" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
       </main>
     )
   }
@@ -51,7 +51,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
       <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ff4444', fontFamily: 'monospace' }}>
         <h1>Proof #{proofId} Not Found</h1>
         <p style={{ color: '#888' }}>No proof record exists with this identifier.</p>
-        <Link href="/" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
+        <Link href="/log" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
       </main>
     )
   }
@@ -65,7 +65,7 @@ export default async function ProofDetailPage({ params }: ProofPageProps) {
       <main style={{ maxWidth: '720px', margin: '80px auto', textAlign: 'center', color: '#ffb800', fontFamily: 'monospace' }}>
         <h1 style={{ color: '#ffb800' }}>🔒 Private Proof Record</h1>
         <p style={{ color: '#888' }}>Proof #{proofId} was submitted with private visibility and is accessible only to the author wallet.</p>
-        <Link href="/" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
+        <Link href="/log" style={{ color: '#00ff88' }}>← Back to Terminal</Link>
       </main>
     )
   }
