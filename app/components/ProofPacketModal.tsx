@@ -110,6 +110,8 @@ export default function ProofPacketModal({
         evidenceUrl: p.evidence_url || null,
         signature: p.signature,
         nonce: p.nonce,
+        challenge: p.challenge,
+        protocolVersion: p.protocol_version,
         domain: p.domain,
         skills: p.skills,
         protocols: p.protocols,

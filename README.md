@@ -26,7 +26,7 @@ PROVN is a Solana-native cryptographic provenance protocol that turns human deve
 > **3-Tier Layered Trust Architecture**
 > - **Layer 1 (Solana Consensus)**: Stores immutable proof commitments in Program Derived Addresses (PDAs) with on-chain CPI composability for DAOs, grant escrows, and bounty payouts.
 > - **Layer 2 (Irys / Arweave)**: Provides permanent data availability for complete evidence envelopes via an automatic, single-signature background archival pipeline.
-> - **Layer 3 (PROVN Gateway & Indexer)**: High-speed cryptographic validation, SIWS OAuth GitHub author attribution, deterministic policy evaluation, and visual exploration.
+> - **Layer 3 (PROVN Gateway & Indexer)**: High-speed cryptographic validation, wallet-bound GitHub OAuth author attribution, deterministic policy evaluation, and visual exploration.
 > - **Autonomous AI Agent Extension**: Dedicated agent keypairs sign execution traces (tool calls, PRs, contracts) producing verifiable `PROVN Agent Receipts`.
 
 In Web3, developer contributions and AI agent actions are fragmented across repositories, pull requests, hackathons, and execution logs. Traditional resumes and unauthenticated portfolios can be fabricated, backdated, or deleted.
@@ -49,7 +49,7 @@ PROVN evaluates proof validity across five independent, non-fungible layers:
 | **Signature** | **Author Authenticity** | ✅ **Guaranteed** — The Ed25519 signature proves that the holder of the Solana private key authored the canonical payload. |
 | **Protocol** | **Server-Bounded Timestamp & Challenge** | ✅ **Guaranteed** — Signed timestamp is bounded within ±15 min observation window (`900,000ms`) of server clock, with single-use transactional challenge consumption. |
 | **Protocol** | **Proof Submission Replay Defense** | ✅ **Guaranteed** — Single-use transactional challenge consumption (`atomic_insert_log`) and database-level `UNIQUE INDEX` on signatures. |
-| **Source** | **Author Identity Verification** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via SIWS OAuth, verifying commit author identity matches wallet owner. |
+| **Source** | **Author Identity Verification** | ✅ **Guaranteed (if linked)** — Strict cryptographic binding of `github_id` to `wallet_address` via wallet-signed GitHub OAuth, verifying commit author identity matches wallet owner. |
 | **Solana Anchor** | **On-Chain Cryptographic Commitment** | ✅ **Guaranteed (PDA)** — Deterministic Solana PDA committing `payload_hash` and `proof_id` for on-chain CPI composability. |
 | **Archive** | **Archival Availability** | ✅ **Confirmed when archived** — Decentralized Arweave storage via confirmed Irys receipts (`receipt_obtained`). |
 | **Inference** | **Tag Classification** | ℹ️ **Heuristic** — Skill, protocol, and category tags are extracted via deterministic regex rules on signed text. |
@@ -74,7 +74,7 @@ The protocol test suite rigorously verifies resistance against active attacks ac
 | **Key Epoch Expiry** | Signing with an expired/retired server key | ❌ Rejected — `resolveTrustedKey` enforces `valid_until` temporal bounds |
 | **Untrusted Domain** | Submitting proof on unauthorized origin | ❌ Rejected — Domain checked against `protocol/trust-manifest.json` |
 | **Unknown KID Injection** | Specifying arbitrary Key ID in challenge | ❌ Rejected — Key not found in published trust registry |
-| **Identity Impersonation** | Claiming another author's commit | ❌ Rejected — SIWS OAuth numeric GitHub ID mismatch (`source_verified` denied) |
+| **Identity Impersonation** | Claiming another author's commit | ❌ Rejected — OAuth numeric GitHub ID mismatch (`source_verified` denied) |
 
 ---
 
@@ -83,7 +83,7 @@ The protocol test suite rigorously verifies resistance against active attacks ac
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            1. Client Attestation                            │
-│   Solana Wallet ──► Signs Canonical SIWS-Inspired Proof Payload (Ed25519)   │
+│   Solana Wallet ──► Signs Canonical Plain-Text Proof Payload (Ed25519)      │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ POST /api/log-submit
                                        ▼
@@ -99,7 +99,7 @@ The protocol test suite rigorously verifies resistance against active attacks ac
                        ▼                              ▼
 ┌──────────────────────────────┐ ┌────────────────────────────────────────────┐
 │ 3. Supabase PostgreSQL       │ │ 4. Arweave Permanent Archival              │
-│ • Canonical `logs` table     │ │ • Standardized JSON Proof Envelope (v2)    │
+│ • Canonical `logs` table     │ │ • Standardized JSON Proof Envelope (v3)    │
 │ • Public SELECT read-only    │ │ • Irys Gateway Node #1                     │
 │ • service_role write-only    │ │ • Zero-fee free tier (<100KB)              │
 │ • Unique Signature Index     │ │ • Multi-decade data availability           │
@@ -127,28 +127,30 @@ The protocol test suite rigorously verifies resistance against active attacks ac
 | **TypeScript SDK (`@provn/sdk` - Experimental Internal Package)** | 🧪 **Labs** | The SDK provides a typed interface for retrieving and validating PROVN proof packets. Note: This is currently an internal experimental workspace package that directly consumes the Next.js application core; it is not yet published to npm. |
 | **CLI Utility** | 🧪 **Labs** | Terminal utility for passports, proofs, packets, and policy evaluation in [`cli/provn.mjs`](cli/provn.mjs). |
 | **Bounty Policy Demo** | 🧪 **Labs** | Interactive reference demo illustrating programmatic policy gating (`/demo/bounty`). |
-| **GitHub OAuth & Identity Binding** | ✅ **Shipped** | Strict cryptographic binding of GitHub accounts to wallets via SIWS OAuth with `source_verified` provenance. |
+| **GitHub OAuth & Identity Binding** | ✅ **Shipped** | Strict cryptographic binding of GitHub accounts to wallets via wallet signatures and OAuth with `source_verified` provenance. |
 | **On-Chain Compressed NFTs** | 🔮 **Roadmap** | Metaplex Bubblegum Merkle tree minting for earned achievements (Phase 3). |
 
 ---
 
 ## 5. Canonical Message Specification
 
-Every proof submission requires the wallet to sign a human-readable, tamper-evident prompt:
+New proof submissions use protocol v3 and require the wallet to sign a plain-text prompt:
 
 ```text
-provn-sol.vercel.app wants you to sign in with your Solana account:
-<WALLET_ADDRESS>
-
-PROVN Protocol Version: 2
+PROVN — Submit Proof
+Domain: provn-sol.vercel.app
+Wallet: <WALLET_ADDRESS>
+PROVN Protocol Version: 3
 Challenge: <SERVER_ISSUED_CHALLENGE>
-Timestamp: <ISO_8601_TIMESTAMP>
+Timestamp: <ISO_8601_UTC_TIMESTAMP_WITH_MILLISECONDS>
 Content: <WORK_DESCRIPTION>
 GitHub URL: <NORMALIZED_GITHUB_URL_OR_NONE>
 Evidence URL: <NORMALIZED_EVIDENCE_URL_OR_NONE>
 ```
 
 Modifying any character in the content, links, timestamp, or challenge breaks the Ed25519 signature, preventing client tampering or unauthorized modification.
+
+Existing v1 and v2 proofs continue to verify using their original signed formats. GitHub identity, archive, visibility, and archival-retry requests use a separate plain-text authorization prompt binding the domain, wallet, action, challenge, and timestamp.
 
 ---
 

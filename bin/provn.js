@@ -174,14 +174,18 @@ function reconstructCanonicalSubmitMessage(claim, protocolVersion = 2) {
   if (!wallet || !timestamp || !content) return null
 
   const chal = challenge || nonce
-  if (protocolVersion === 2) {
+  if (protocolVersion === 2 || protocolVersion === 3) {
     if (!domain || typeof domain !== 'string' || domain.trim() === '') return null
     if (!chal || typeof chal !== 'string' || chal.trim() === '') return null
   }
 
   // Restore ISO timestamp format if normalized by database
   let fixedTimestamp = timestamp
-  if (fixedTimestamp.endsWith('+00:00')) {
+  if (protocolVersion === 3) {
+    const date = new Date(fixedTimestamp)
+    if (isNaN(date.getTime())) return null
+    fixedTimestamp = date.toISOString()
+  } else if (fixedTimestamp.endsWith('+00:00')) {
     fixedTimestamp = fixedTimestamp.replace('+00:00', 'Z')
     const msMatch = fixedTimestamp.match(/\.(\d+)Z$/)
     if (msMatch) {
@@ -196,7 +200,17 @@ function reconstructCanonicalSubmitMessage(claim, protocolVersion = 2) {
   const cleanGithubUrl = validateAndNormalizeUrl(github_url, 'github') || 'none'
   const cleanEvidenceUrl = validateAndNormalizeUrl(evidence_url, 'evidence') || 'none'
 
-  if (protocolVersion === 2) {
+  if (protocolVersion === 3) {
+    return `PROVN — Submit Proof
+Domain: ${dom}
+Wallet: ${wallet}
+PROVN Protocol Version: 3
+Challenge: ${chal}
+Timestamp: ${fixedTimestamp}
+Content: ${cleanContent}
+GitHub URL: ${cleanGithubUrl}
+Evidence URL: ${cleanEvidenceUrl}`
+  } else if (protocolVersion === 2) {
     return `${dom} wants you to sign in with your Solana account:
 ${wallet}
 
@@ -268,6 +282,7 @@ function verifyProofPacket(packet) {
   const sigValue = isWrapped ? (packet.signature?.value || packet.signature) : packet.signature
   const submissionReceipt = isWrapped ? packet.server_attestations?.submission_receipt : packet.submission_receipt
   const protocolVersion = packet.version || packet.protocol_version || (claim.nonce && !claim.challenge ? 1 : 2)
+  const usesChallenge = protocolVersion === 2 || protocolVersion === 3
   results.wallet = claim.wallet
 
   // 1. Domain Policy Check (Strict protocol domain verification)
@@ -307,10 +322,10 @@ function verifyProofPacket(packet) {
   let challengeValid = false
   let timestampValid = false
 
-  if (protocolVersion === 2) {
+  if (usesChallenge) {
     if (!isDomainValid) {
-      results.layers.layer2_challenge.message = 'Untrusted or missing domain for Protocol V2 proof'
-      results.errors.push('Protocol V2 requires trusted domain in canonical message')
+      results.layers.layer2_challenge.message = `Untrusted or missing domain for Protocol V${protocolVersion} proof`
+      results.errors.push(`Protocol V${protocolVersion} requires trusted domain in canonical message`)
     } else if (challengeStr && typeof challengeStr === 'string' && challengeStr.includes('.')) {
       try {
         const [chalPayloadB58, chalSigB58] = challengeStr.split('.')
@@ -355,8 +370,8 @@ function verifyProofPacket(packet) {
         results.errors.push('Challenge token is malformed')
       }
     } else {
-      results.layers.layer2_challenge.message = 'Missing server challenge token for Protocol V2 proof'
-      results.errors.push('Protocol V2 requires signed server challenge token')
+      results.layers.layer2_challenge.message = `Missing server challenge token for Protocol V${protocolVersion} proof`
+      results.errors.push(`Protocol V${protocolVersion} requires signed server challenge token`)
     }
   } else {
     // V1 legacy
@@ -371,7 +386,7 @@ function verifyProofPacket(packet) {
 
   // 5. Layer 2.5: Verify Submission Receipt & Exact Canonical Hash
   let submissionReceiptValid = false
-  if (protocolVersion === 2) {
+  if (usesChallenge) {
     if (submissionReceipt && typeof submissionReceipt === 'string' && submissionReceipt.includes('.')) {
       try {
         const [subPayloadB58, subSigB58] = submissionReceipt.split('.')
@@ -413,8 +428,8 @@ function verifyProofPacket(packet) {
         results.errors.push('Submission receipt is malformed')
       }
     } else {
-      results.layers.layer2_5_receipt.message = 'Missing server submission receipt (mandatory for V2)'
-      results.errors.push('Protocol V2 requires signed PROVN_SUBMISSION_RECEIPT')
+      results.layers.layer2_5_receipt.message = `Missing server submission receipt (mandatory for V${protocolVersion})`
+      results.errors.push(`Protocol V${protocolVersion} requires signed PROVN_SUBMISSION_RECEIPT`)
     }
   } else {
     submissionReceiptValid = true
