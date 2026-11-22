@@ -117,7 +117,8 @@ function canonicalizePayload(val) {
     return JSON.stringify(val)
   }
   if (Array.isArray(val)) {
-    const items = val.map(v => {
+    const items = Array.from({ length: val.length }, (_, index) => {
+      const v = val[index]
       if (v === undefined || typeof v === 'function' || typeof v === 'symbol') return 'null'
       return canonicalizePayload(v)
     })
