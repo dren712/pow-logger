@@ -1,13 +1,45 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import SiteNav from '@/app/components/SiteNav'
+import StatusPill from '@/app/components/agent-console/StatusPill'
+import { formatUtc, sentenceCase, shortHash, type Tone } from '@/app/components/agent-console/format'
+import '@/app/styles/agent-console.css'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export const metadata: Metadata = {
-  title: 'PROVN Agent Infrastructure Console — Verifiable AI Workloads',
-  description: 'Inspect verifiable execution provenance, on-chain Merkle commitments, and permanent evidence archives for autonomous software.'
+  title: 'Agent console — PROVN',
+  description: 'Inspect signed agent executions: per-event signatures, hash chains, Merkle commitments on Solana and policy audits.',
+}
+
+const FLOW = [
+  { title: 'Sign every action', body: 'The agent signs each tool call, file write, shell command and git operation with its own Ed25519 key.' },
+  { title: 'Chain the events', body: 'Each event includes the hash of the one before it, so events cannot be removed or reordered unnoticed.' },
+  { title: 'Commit the batch', body: 'Event hashes roll up into a Merkle root that is committed to Solana, with the evidence archived on Irys.' },
+  { title: 'Verify the receipt', body: 'Anyone can check the exported receipt offline, then audit the actions against a policy.' },
+]
+
+const PRINCIPLES = [
+  {
+    title: 'The database is only an index',
+    body: 'Stored rows are used to find executions. What counts as proof is the agent-signed hash chain and the committed Merkle root.',
+  },
+  {
+    title: 'Commits survive outages',
+    body: 'Anchoring and archiving run through a transactional outbox with leases and idempotent retries, then reconcile.',
+  },
+  {
+    title: 'Receipts are portable',
+    body: 'A receipt can be verified with TweetNaCl and SHA-256 alone, without calling the PROVN backend.',
+  },
+]
+
+function statusTone(status: string): Tone {
+  if (status === 'completed') return 'ok'
+  if (status === 'failed') return 'bad'
+  return 'warn'
 }
 
 export default async function AgentConsolePage() {
@@ -15,173 +47,124 @@ export default async function AgentConsolePage() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const supabase = createClient(supabaseUrl, serviceKey || 'placeholder')
 
-  const { data: executions } = await supabase
+  const { data: executions, error } = await supabase
     .from('agent_executions')
     .select('*')
     .order('started_at', { ascending: false })
     .limit(10)
 
+  const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && serviceKey)
+  const count = executions?.length || 0
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#060709', color: '#f0f3f8', padding: '40px 24px', fontFamily: 'var(--font-geist-mono, monospace)' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', paddingBottom: '20px', borderBottom: '1px solid #1a1e28' }}>
-          <div>
-            <div style={{ color: '#00ff88', fontSize: '12px', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>
-              PROVN // CONTROL & DATA PLANE
-            </div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, margin: 0 }}>
-              Agent Provenance Console
+    <div className="pv flex flex-1 flex-col">
+      <SiteNav cta={false} />
+      <main className="pv-main mx-auto flex w-full max-w-5xl flex-1 flex-col gap-12 px-5 py-10 sm:py-14">
+        <header className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="pv-eyebrow">Agent console</p>
+            <h1 className="mt-3 text-[32px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[40px]">
+              Proof of what an AI agent did
             </h1>
-            <p style={{ color: '#94a3b8', fontSize: '14px', margin: '6px 0 0 0' }}>
-              Verifiable cryptographic infrastructure for autonomous software agents, CI/CD, and DevOps workflows.
+            <p className="pv-muted mt-4 text-[16px] leading-relaxed">
+              Every action an agent takes is signed, chained and committed, so a run can be checked later by anyone. Open an execution to
+              inspect its events, verify it and audit it against a policy.
             </p>
           </div>
+          <Link href="/agent-proof/demo" className="pv-btn">Open the example execution</Link>
+        </header>
 
-          <Link
-            href="/agent-proof/demo"
-            style={{
-              backgroundColor: '#00ff88',
-              color: '#060709',
-              padding: '10px 20px',
-              borderRadius: '6px',
-              fontWeight: 800,
-              fontSize: '13px',
-              textDecoration: 'none',
-              boxShadow: '0 0 20px rgba(0, 255, 136, 0.2)'
-            }}
-          >
-            Launch Killer Demo ↗
-          </Link>
-        </div>
+        <section aria-labelledby="ac-flow-title">
+          <h2 id="ac-flow-title" className="pv-eyebrow">How it works</h2>
+          <ol className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {FLOW.map((s, i) => (
+              <li key={s.title} className="pv-card p-5">
+                <span className="pv-mono flex h-8 w-8 items-center justify-center rounded-lg border border-[#1c222c] bg-[#11151c] text-[13px] font-semibold text-[#2ee59d]">{i + 1}</span>
+                <h3 className="mt-4 text-[15px] font-semibold text-white">{s.title}</h3>
+                <p className="pv-muted mt-2 text-[13.5px] leading-relaxed">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-        {/* Featured Killer Demo Banner */}
-        <div style={{ backgroundColor: '#0d0f14', border: '1px solid #00ff88', borderRadius: '12px', padding: '24px', marginBottom: '32px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, width: '300px', height: '100%', background: 'radial-gradient(circle, rgba(0,255,136,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <div style={{ color: '#00e5ff', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
-                FEATURED VERIFICATION WALKTHROUGH
+        <section aria-labelledby="ac-recent-title">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="ac-recent-title" className="text-[20px] font-semibold tracking-tight text-white">Recent executions</h2>
+            {count > 0 ? <span className="pv-faint text-[13px]">Latest {count}</span> : null}
+          </div>
+
+          <div className="pv-card mt-4 overflow-hidden">
+            {count === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <p className="text-[16px] font-semibold text-white">
+                  {!configured ? 'Execution index not connected' : error ? 'Executions could not be loaded' : 'No executions recorded yet'}
+                </p>
+                <p className="pv-muted mx-auto mt-2 max-w-lg text-[14px] leading-relaxed">
+                  {!configured ? (
+                    'This deployment has no database configured, so stored executions cannot be listed. The example execution works without one.'
+                  ) : error ? (
+                    'The execution index did not respond. Reload the page to try again.'
+                  ) : (
+                    <>
+                      Record a first run with{' '}
+                      <code className="pv-mono ac-break rounded bg-[#080a0e] px-1.5 py-0.5 text-[12.5px] text-[#c3cad6]">npx tsx scripts/agent-demo/demo-phase2.ts</code>, or
+                      send events through the Agent SDK.
+                    </>
+                  )}
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  <Link href="/agent-proof/demo" className="pv-btn-ghost">View the example</Link>
+                  <Link href="/docs/agent-sdk" className="pv-btn-ghost">Agent SDK docs</Link>
+                </div>
               </div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0' }}>
-                Execution #8f92c10b — Claude 3.5 Sonnet (CI/CD Pipeline & PR #42)
-              </h2>
-              <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0, maxWidth: '750px' }}>
-                Inspect 47 signed actions across 3 batches, validated via Ed25519 signatures, hash chains, odd-leaf promoted Merkle trees, and on-chain Solana commitments. Includes an interactive live database intrusion simulator.
-              </p>
-            </div>
-
-            <Link
-              href="/agent-proof/demo"
-              style={{
-                backgroundColor: '#131720',
-                color: '#00ff88',
-                border: '1px solid #00ff88',
-                padding: '10px 18px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 700,
-                textDecoration: 'none'
-              }}
-            >
-              Open Proof Console →
-            </Link>
-          </div>
-        </div>
-
-        {/* Recent Executions in Database */}
-        <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#f0f3f8' }}>
-              Persisted Executions (PostgreSQL Index)
-            </h2>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>
-              {executions?.length || 0} recorded runs
-            </span>
-          </div>
-
-          {(!executions || executions.length === 0) ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-              No database executions logged yet. Run <code style={{ color: '#00ff88' }}>npx tsx scripts/agent-demo/demo-phase2.ts</code> to ingest real events.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {executions.map(exec => (
-                <Link
-                  key={exec.execution_id}
-                  href={`/agent-proof/${exec.execution_id}`}
-                  style={{
-                    backgroundColor: '#131720',
-                    border: '1px solid #1e2430',
-                    borderRadius: '8px',
-                    padding: '14px 18px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    transition: 'border-color 0.15s ease'
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#f0f3f8' }}>
-                        #{exec.execution_id.slice(0, 8)}
+            ) : (
+              <ul className="divide-y divide-[#1c222c]">
+                {(executions || []).map((exec) => (
+                  <li key={exec.execution_id}>
+                    <Link href={`/agent-proof/${exec.execution_id}`} className="pv-row flex items-center justify-between gap-4 px-5 py-4 text-inherit no-underline">
+                      <span className="min-w-0">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="pv-mono text-[14px] font-semibold text-white">{String(exec.execution_id).slice(0, 8)}</span>
+                          <StatusPill tone={statusTone(exec.status)}>{sentenceCase(String(exec.status || 'unknown'))}</StatusPill>
+                        </span>
+                        <span className="pv-muted mt-1 block text-[13px]">
+                          {formatUtc(exec.started_at)} · {exec.event_count || 0} {exec.event_count === 1 ? 'event' : 'events'} · agent{' '}
+                          <span className="pv-mono text-[12px]">{shortHash(String(exec.agent_public_key || ''), 8, 4)}</span>
+                        </span>
                       </span>
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                        {exec.agent_public_key.slice(0, 10)}...{exec.agent_public_key.slice(-4)}
-                      </span>
-                      <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(0,255,136,0.1)', color: '#00ff88' }}>
-                        {exec.status}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                      Started {new Date(exec.started_at).toLocaleString()} • {exec.event_count || 0} Events
-                    </div>
-                  </div>
-
-                  <span style={{ color: '#00ff88', fontSize: '12px' }}>
-                    Inspect Proof →
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Architecture Principles Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', padding: '20px', borderRadius: '8px' }}>
-            <div style={{ color: '#00ff88', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
-              Control vs Data Plane Split
-            </div>
-            <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
-              The database is an operational index, never the source of cryptographic truth. All provenance stems from agent-signed hash chains and on-chain Merkle roots.
-            </div>
+                      <span className="pv-muted flex-none text-[13px]" aria-hidden="true">Inspect →</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+        </section>
 
-          <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', padding: '20px', borderRadius: '8px' }}>
-            <div style={{ color: '#00e5ff', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
-              Transactional Outbox Engine
-            </div>
-            <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
-              Asynchronous worker claiming, lease expirations, idempotent retries, and reconciliation ensure Solana and Irys commits survive network outages.
-            </div>
+        <section className="pv-card flex flex-wrap items-center justify-between gap-5 p-6" aria-labelledby="ac-example-title">
+          <div className="max-w-2xl">
+            <span className="pv-chip !text-[11px]">Example</span>
+            <h2 id="ac-example-title" className="mt-3 text-[18px] font-semibold text-white">A coding agent runs the tests, commits and opens a pull request</h2>
+            <p className="pv-muted mt-2 text-[14px] leading-relaxed">
+              A generated sample run. Step through its signed events and the six verification checks, then simulate a tampered record and a
+              hostile agent to see how each failure is reported.
+            </p>
           </div>
+          <Link href="/agent-proof/demo" className="pv-btn-ghost">Open the example</Link>
+        </section>
 
-          <div style={{ backgroundColor: '#0d0f14', border: '1px solid #1a1e28', padding: '20px', borderRadius: '8px' }}>
-            <div style={{ color: '#ffb800', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
-              Self-Contained Portable Receipts
-            </div>
-            <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.6' }}>
-              Any independent verifier can validate a receipt offline using TweetNaCl and SHA-256 without ever communicating with the PROVN backend.
-            </div>
+        <section aria-labelledby="ac-design-title">
+          <h2 id="ac-design-title" className="pv-eyebrow">Design principles</h2>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {PRINCIPLES.map((p) => (
+              <div key={p.title} className="pv-card p-5">
+                <h3 className="text-[15px] font-semibold text-white">{p.title}</h3>
+                <p className="pv-muted mt-2 text-[13.5px] leading-relaxed">{p.body}</p>
+              </div>
+            ))}
           </div>
-        </div>
-
-      </div>
+        </section>
+      </main>
     </div>
   )
 }
