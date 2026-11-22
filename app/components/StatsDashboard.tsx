@@ -11,8 +11,10 @@ interface StatsDashboardProps {
   totalLogsCount: number
   todayLogsCount: number
   isDailyLimitReached: boolean
-  /** e.g. "Level 2 · Shipper". Adds a level tile when given. */
+  /** e.g. "Level 2". Adds a level tile when given. */
   levelLabel?: string
+  /** Level name shown under the level, e.g. "Shipper". */
+  levelTitle?: string
   /** Share of proofs archived to Arweave, 0-100. Shown under the proof count when given. */
   archivedPercent?: number
   dailyLimit?: number
@@ -26,6 +28,7 @@ export default function StatsDashboard({
   todayLogsCount,
   isDailyLimitReached,
   levelLabel,
+  levelTitle,
   archivedPercent,
   dailyLimit = 3,
 }: StatsDashboardProps) {
@@ -34,7 +37,7 @@ export default function StatsDashboard({
   const today = connected ? todayLogsCount : 0
 
   const tiles: { label: string; value: string; note?: string; warn?: boolean }[] = []
-  if (levelLabel) tiles.push({ label: 'Level', value: levelLabel })
+  if (levelLabel) tiles.push({ label: 'Builder level', value: levelLabel, note: levelTitle })
   tiles.push({ label: 'Current streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}` })
   tiles.push({
     label: 'Proofs logged',

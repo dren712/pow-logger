@@ -215,7 +215,8 @@ export default function LoggerApp() {
               totalLogsCount={displayReputation.totalProofs}
               todayLogsCount={todayLogsCount}
               isDailyLimitReached={isDailyLimitReached}
-              levelLabel={`${displayReputation.builderLevel.level} · ${displayReputation.builderLevel.title}`}
+              levelLabel={`Level ${displayReputation.builderLevel.level}`}
+              levelTitle={displayReputation.builderLevel.title}
               archivedPercent={displayReputation.archivalSuccessRate}
             />
           </section>
@@ -267,7 +268,7 @@ export default function LoggerApp() {
                 <div className="px-5 py-10 text-center sm:px-6" role="alert">
                   <p className="text-[15px] font-medium text-white">Your proofs could not be loaded</p>
                   <p className="pv-muted mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed">
-                    The proof database did not respond. You can still try again in a moment.
+                    The proof database did not respond. Try again in a moment.
                   </p>
                   <button type="button" className="pv-btn-ghost mt-4" onClick={() => setReloadKey((k) => k + 1)}>
                     Try again
