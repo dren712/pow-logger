@@ -503,13 +503,21 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
     dim: '\x1b[2m',
   }
 
-  if (!receipt || receipt.protocol !== 'PROVN' || !receipt.execution || !Array.isArray(receipt.events)) {
+  if (!receipt || receipt.protocol !== 'PROVN' || receipt.version !== 'agent/1' || !receipt.execution || !Array.isArray(receipt.events)) {
     console.error(`\n${c.bold}${c.red}❌ ERROR: Malformed Agent Receipt. Missing protocol header, execution metadata, or events.${c.reset}\n`)
     return false
   }
 
   const events = [...receipt.events].sort((a, b) => a.sequence - b.sequence)
   const exec = receipt.execution
+
+  try {
+    if (!events.length || typeof exec.executionId !== 'string' || !exec.executionId.trim() || decodeBase58(exec.agentPublicKey).length !== 32) {
+      return false
+    }
+  } catch {
+    return false
+  }
 
   if (isInspectOnly) {
     console.log('\n' + c.bold + c.cyan + '=================================================================================' + c.reset)
@@ -557,8 +565,27 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
   let merkleRootPass = true
   let solanaAnchorPass = true
 
+  if (events[0].sequence !== 0) {
+    hashChainPass = false
+    errors.push('Event sequence must start at 0')
+  }
+  for (const count of [exec.eventCount, receipt.batch?.eventCount, receipt.merkle?.leafCount]) {
+    if (count !== undefined && count !== events.length) {
+      hashChainPass = false
+      errors.push('Declared event count does not match receipt events')
+    }
+  }
+
   // 1. Event Hash & Signature Verification
   events.forEach((event, idx) => {
+    if (event.agentPublicKey !== exec.agentPublicKey) {
+      signaturesPass = false
+      errors.push(`Event #${event.sequence} signer does not match execution agent identity`)
+    }
+    if (event.executionId !== exec.executionId) {
+      hashChainPass = false
+      errors.push(`Event #${event.sequence} belongs to a different execution`)
+    }
     const canonical = [
       'PROVN-AGENT-EVENT-V1',
       `execution:${event.executionId}`,
