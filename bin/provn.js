@@ -744,7 +744,9 @@ function verifyAgentReceiptCli(receipt, isInspectOnly = false) {
         errors.push(pdaStatusMessage)
       }
     } catch (pdaErr) {
-      pdaStatusMessage = `PDA derivation skipped: ${pdaErr.message}`
+      solanaAnchorPass = false
+      pdaStatusMessage = `PDA derivation failed: ${pdaErr.message}`
+      errors.push(pdaStatusMessage)
     }
   }
 
