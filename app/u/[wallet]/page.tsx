@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import ProfileClient, { LogItem } from './ProfileClient'
+import SiteNav from '@/app/components/SiteNav'
 import { getBuilderLevel, calculateStreak, fetchAllWalletLogs } from '@/app/lib/milestones'
 import { isConfiguredSupabaseUrl } from '@/app/lib/canonicalMessage'
 
@@ -37,8 +38,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const createdAts = (logs || []).map((l) => l.created_at)
   const streak = calculateStreak(createdAts)
 
-  const ogTitle = `${walletShort} — ${builderLevel.emoji} ${builderLevel.title} • ${streak}d streak 🔥`
-  const ogDesc = `Level ${builderLevel.level} builder with ${count} signed proof logs on PROVN protocol. Builder reputation on Solana.`
+  const ogTitle = `${walletShort} — ${builderLevel.title}, ${streak}-day streak`
+  const ogDesc = `Level ${builderLevel.level} builder with ${count} signed proof ${count === 1 ? 'log' : 'logs'} on PROVN. Every entry is signed by this Solana wallet.`
 
   return {
     title: ogTitle,
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     twitter: {
       card: 'summary_large_image',
       title: ogTitle,
-      description: `${builderLevel.emoji} ${builderLevel.title} • ${count} signed proof logs on PROVN protocol 🗿`,
+      description: ogDesc,
     },
   }
 }
@@ -74,5 +75,10 @@ export default async function ProfilePage({ params }: PageProps) {
     }
   }
 
-  return <ProfileClient wallet={wallet} initialLogs={logs} />
+  return (
+    <div className="pv flex flex-1 flex-col">
+      <SiteNav />
+      <ProfileClient wallet={wallet} initialLogs={logs} />
+    </div>
+  )
 }
