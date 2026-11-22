@@ -80,6 +80,8 @@ export interface BuilderProfile {
   languages: { name: string; repos: number }[]
   topRepos: ProfileRepo[]
   contributions: ProfileContribution[]
+  // True when GitHub search returned fewer PRs than exist, so externalRepos is a minimum.
+  contributionsCapped: boolean
   score: number
   tier: string
   fingerprint: string
@@ -206,6 +208,7 @@ export function buildProfile(
     languages,
     topRepos,
     contributions,
+    contributionsCapped: mergedPrTotal > mergedPrs.length,
     score,
     tier: getTier(score),
     fingerprint,
@@ -244,33 +247,42 @@ const MAX_REPO_PAGES = 30
 // GitHub search never returns more than 1,000 results.
 const MAX_PR_PAGES = 10
 
-async function fetchAllRepos(login: string): Promise<GithubRepo[] | FetchFailure> {
-  const all: GithubRepo[] = []
-  for (let page = 1; page <= MAX_REPO_PAGES; page++) {
-    const res = await githubGet(`/users/${login}/repos?per_page=${PAGE_SIZE}&type=owner&sort=pushed&page=${page}`)
+// Pages are fetched together in a stable order; dedupe covers a row that shifts pages mid-fetch.
+async function fetchAllRepos(login: string, publicRepos: number): Promise<GithubRepo[] | FetchFailure> {
+  const pages = Math.min(MAX_REPO_PAGES, Math.max(1, Math.ceil(publicRepos / PAGE_SIZE)))
+  const responses = await Promise.all(
+    Array.from({ length: pages }, (_, i) =>
+      githubGet(`/users/${login}/repos?per_page=${PAGE_SIZE}&type=owner&sort=full_name&page=${i + 1}`)
+    )
+  )
+  const byName = new Map<string, GithubRepo>()
+  for (const res of responses) {
     if (!res.ok) return failureFor(res)
-    const batch = (await res.json()) as GithubRepo[]
-    all.push(...batch)
-    if (batch.length < PAGE_SIZE) break
+    for (const repo of (await res.json()) as GithubRepo[]) byName.set(repo.full_name, repo)
   }
-  return all
+  return [...byName.values()]
 }
 
 async function fetchMergedPrs(
   query: string
 ): Promise<{ items: GithubMergedPr[]; total: number } | { reason: FetchFailure }> {
-  const items: GithubMergedPr[] = []
-  let total = 0
-  for (let page = 1; page <= MAX_PR_PAGES; page++) {
-    const res = await githubGet(`/search/issues?q=${query}&per_page=${PAGE_SIZE}&sort=updated&order=desc&page=${page}`)
+  const pageUrl = (page: number) =>
+    `/search/issues?q=${query}&per_page=${PAGE_SIZE}&sort=created&order=desc&page=${page}`
+  const first = await githubGet(pageUrl(1))
+  if (!first.ok) return { reason: failureFor(first) }
+  const firstBody = (await first.json()) as { total_count?: number; items?: GithubMergedPr[] }
+  const total = firstBody.total_count || 0
+  const byUrl = new Map<string, GithubMergedPr>()
+  for (const pr of firstBody.items || []) byUrl.set(pr.html_url, pr)
+
+  const pages = Math.min(MAX_PR_PAGES, Math.ceil(total / PAGE_SIZE))
+  const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => githubGet(pageUrl(i + 2))))
+  for (const res of rest) {
     if (!res.ok) return { reason: failureFor(res) }
-    const body = (await res.json()) as { total_count?: number; items?: GithubMergedPr[] }
-    const batch = body.items || []
-    items.push(...batch)
-    total = body.total_count || 0
-    if (batch.length < PAGE_SIZE || items.length >= total) break
+    const body = (await res.json()) as { items?: GithubMergedPr[] }
+    for (const pr of body.items || []) byUrl.set(pr.html_url, pr)
   }
-  return { items, total }
+  return { items: [...byUrl.values()], total }
 }
 
 export async function fetchBuilderProfile(login: string): Promise<ProfileResult> {
@@ -285,7 +297,7 @@ export async function fetchBuilderProfile(login: string): Promise<ProfileResult>
     if (user.type && user.type !== 'User') return { ok: false, reason: 'not_found' }
 
     const query = encodeURIComponent(`author:${user.login} type:pr is:merged is:public -user:${user.login}`)
-    const [repos, prs] = await Promise.all([fetchAllRepos(user.login), fetchMergedPrs(query)])
+    const [repos, prs] = await Promise.all([fetchAllRepos(user.login, user.public_repos || 0), fetchMergedPrs(query)])
     // Missing evidence is a failure, never a zero: a wrong score would be cached and ranked.
     if (!Array.isArray(repos)) return { ok: false, reason: repos }
     if ('reason' in prs) return { ok: false, reason: prs.reason }

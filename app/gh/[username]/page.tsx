@@ -59,10 +59,10 @@ export default async function BuilderProfilePage({ params }: PageProps) {
   const profileUrl = `${SITE}/gh/${p.login}`
   const badgeMarkdown = `[![Verified builder](${SITE}/api/gh-badge/${p.login})](${profileUrl})`
   const stats = [
-    { label: 'Merged PRs in other projects', value: p.stats.mergedExternalPrs },
-    { label: 'Projects contributed to', value: p.stats.externalRepos },
-    { label: 'Stars on own repos', value: p.stats.stars },
-    { label: 'Public repos', value: p.stats.ownRepos },
+    { label: 'Merged PRs in other projects', value: p.stats.mergedExternalPrs, suffix: '' },
+    { label: 'Projects contributed to', value: p.stats.externalRepos, suffix: p.contributionsCapped ? '+' : '' },
+    { label: 'Stars on own repos', value: p.stats.stars, suffix: '' },
+    { label: 'Public repos', value: p.stats.ownRepos, suffix: '' },
   ]
 
   return (
@@ -102,7 +102,7 @@ export default async function BuilderProfilePage({ params }: PageProps) {
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Summary">
         {stats.map((s) => (
           <div key={s.label} className="stat-card">
-            <div className="text-2xl font-extrabold text-white">{s.value.toLocaleString('en-US')}</div>
+            <div className="text-2xl font-extrabold text-white">{s.value.toLocaleString('en-US')}{s.suffix}</div>
             <div className="mt-1 text-[11px] leading-snug text-gray-400">{s.label}</div>
           </div>
         ))}
