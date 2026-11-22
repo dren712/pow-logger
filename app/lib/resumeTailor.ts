@@ -40,8 +40,8 @@ export function validateTailorInput(body: unknown): TailorInput {
   return { ok: true, username: username.toLowerCase(), jobPost: text }
 }
 
-export function buildTailorPrompt(profile: BuilderProfile, jobPost: string): { system: string; prompt: string } {
-  const evidence = {
+function tailorEvidence(profile: BuilderProfile) {
+  return {
     login: profile.login,
     name: profile.name,
     bio: profile.bio,
@@ -54,6 +54,10 @@ export function buildTailorPrompt(profile: BuilderProfile, jobPost: string): { s
     })),
     ownProjects: profile.topRepos.map((r) => ({ repo: r.name, description: r.description, language: r.language, stars: r.stars })),
   }
+}
+
+export function buildTailorPrompt(profile: BuilderProfile, jobPost: string): { system: string; prompt: string } {
+  const evidence = tailorEvidence(profile)
   return {
     system: [
       'You tailor a developer résumé to a job post using only verified public GitHub evidence.',
@@ -82,10 +86,21 @@ export interface TailoredResult {
 }
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s)
-const cleanList = (items: string[], max: number) =>
-  Array.from(new Set(items.map((s) => clip(s.trim(), 40)).filter(Boolean))).slice(0, max)
+function cleanList(items: string[], max: number, keep: (item: string) => boolean = () => true): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of items) {
+    const item = clip(raw.trim(), 40)
+    const key = item.toLowerCase()
+    if (!item || seen.has(key) || !keep(key)) continue
+    seen.add(key)
+    out.push(item)
+  }
+  return out.slice(0, max)
+}
 
-// Drops anything the model named that is not in the verified profile, and links what remains.
+// Drops repositories and matched skills the verified profile does not show, and links what remains.
+// The headline, summary and reasons stay model-written text, labelled as AI output in the UI.
 export function groundTailoredResume(profile: BuilderProfile, raw: TailoredResume): TailoredResult {
   const known = new Map<string, Omit<TailoredHighlight, 'reason'>>()
   for (const c of profile.contributions) {
@@ -95,6 +110,7 @@ export function groundTailoredResume(profile: BuilderProfile, raw: TailoredResum
     const key = r.name.toLowerCase()
     if (!known.has(key)) known.set(key, { repo: r.name, url: r.url, detail: r.stars > 0 ? `own project · ${r.stars} stars` : 'own project' })
   }
+  const evidenceText = JSON.stringify(tailorEvidence(profile)).toLowerCase()
   const seen = new Set<string>()
   const highlights: TailoredHighlight[] = []
   for (const h of raw.highlights) {
@@ -109,7 +125,7 @@ export function groundTailoredResume(profile: BuilderProfile, raw: TailoredResum
     headline: clip(raw.headline.trim(), 100),
     summary: clip(raw.summary.trim(), 600),
     highlights,
-    matchedSkills: cleanList(raw.matchedSkills, 12),
+    matchedSkills: cleanList(raw.matchedSkills, 12, (skill) => evidenceText.includes(skill)),
     gaps: cleanList(raw.gaps, 8),
   }
 }

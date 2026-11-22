@@ -51,7 +51,7 @@ const grounded = groundTailoredResume(profile, {
     { repo: 'google/made-up', reason: 'Invented.' },
     { repo: 'other/ferris', reason: 'Wrong owner.' },
   ],
-  matchedSkills: ['Rust', 'rust ', 'Rust', 'Solana'],
+  matchedSkills: ['Rust', 'rust ', 'Rust', 'Solana', 'Kubernetes'],
   gaps: ['Kubernetes'],
 })
 assert.strictEqual(grounded.headline, 'Rust engineer')
@@ -59,7 +59,7 @@ assert.deepStrictEqual(grounded.highlights.map((h) => h.repo), ['solana-labs/sol
 assert.strictEqual(grounded.highlights[0].url, 'https://github.com/solana-labs/solana')
 assert.strictEqual(grounded.highlights[0].detail, '2 merged PRs')
 assert.strictEqual(grounded.highlights[1].detail, 'own project · 12 stars')
-assert.deepStrictEqual(grounded.matchedSkills, ['Rust', 'rust', 'Solana'])
+assert.deepStrictEqual(grounded.matchedSkills, ['Rust', 'Solana'], 'skills missing from the evidence dropped')
 console.log('  ✓ grounding keeps only verified repositories and links them')
 
 const secret = 'test-secret'
