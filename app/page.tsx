@@ -73,11 +73,11 @@ export default async function Home() {
       <SiteNav />
       <main className="pv-main flex-1">
         <section id="start" className="hero-glow scroll-mt-20">
-          <div className="mx-auto grid w-full max-w-5xl items-center gap-12 px-5 py-16 lg:grid-cols-[minmax(0,1fr)_380px] lg:py-24">
+          <div className="mx-auto grid w-full max-w-5xl items-center gap-10 px-5 py-12 sm:gap-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_380px] lg:py-24">
             <div className="flex flex-col items-start gap-6">
-              <span className="pv-chip"><span className="pv-accent" aria-hidden="true">●</span> Free · no sign-up</span>
-              <h1 className="text-[40px] font-bold leading-[1.05] tracking-[-0.035em] text-white sm:text-[56px]">
-                The developer résumé <span className="pv-accent">nobody can fake</span>
+              <span className="pv-chip"><span className="h-1.5 w-1.5 rounded-full bg-[#2ee59d]" aria-hidden="true" /> Free · no sign-up</span>
+              <h1 className="text-[38px] font-bold leading-[1.05] tracking-[-0.035em] text-white sm:text-[56px]">
+                The developer résumé <span className="pv-accent sm:whitespace-nowrap">nobody can fake</span>
               </h1>
               <p className="pv-muted max-w-xl text-[17px] leading-relaxed">
                 Anyone can write &ldquo;contributed to open source&rdquo;. PROVN builds your résumé from work that was actually merged,
@@ -86,7 +86,7 @@ export default async function Home() {
               <UsernameForm />
               <p className="pv-faint text-[13px]">
                 Built from public GitHub data only. See an example:{' '}
-                <Link href="/gh/torvalds" className="text-[#aab2c0] underline decoration-[#3a4250] underline-offset-4 hover:text-white">torvalds</Link>
+                <Link href="/gh/torvalds" className="pv-underline">torvalds</Link>
               </p>
             </div>
             <div className="flex justify-center lg:justify-end">
@@ -110,18 +110,24 @@ export default async function Home() {
 
         <section className="mx-auto w-full max-w-5xl px-5 py-12">
           <p className="pv-eyebrow">Claims versus proof</p>
-          <h2 className="mt-3 max-w-2xl text-[28px] font-bold leading-tight tracking-tight text-white">
+          <h2 className="mt-3 max-w-2xl text-balance text-[24px] font-bold leading-tight tracking-tight text-white sm:text-[28px]">
             Recruiters read hundreds of résumés that say the same thing. Yours shows the receipts.
           </h2>
           <div className="pv-card mt-6 overflow-hidden">
-            <div className="pv-mono pv-faint grid grid-cols-2 border-b border-[#1c222c] px-6 py-3 text-[11px] uppercase tracking-[0.12em]">
+            <div className="pv-mono pv-faint hidden grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6 border-b border-[#1c222c] px-6 py-3 text-[11px] uppercase tracking-[0.12em] sm:grid" aria-hidden="true">
               <span>A normal résumé says</span>
               <span>Yours says</span>
             </div>
             {COMPARE.map((c) => (
-              <div key={c.claim} className="grid grid-cols-2 gap-4 border-b border-[#1c222c] px-6 py-4 text-[14px] last:border-b-0">
-                <span className="pv-muted">{c.claim}</span>
-                <span className="flex gap-2 text-[#d9dee6]"><span className="pv-accent" aria-hidden="true">✓</span>{c.proof}</span>
+              <div key={c.claim} className="grid gap-x-6 gap-y-2 border-b border-[#1c222c] px-5 py-4 text-[14px] leading-relaxed last:border-b-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:px-6">
+                <span className="pv-muted">
+                  <span className="sr-only">A normal résumé says: </span>
+                  {c.claim}
+                </span>
+                <span className="flex gap-2 text-[#d9dee6]">
+                  <span className="pv-accent" aria-hidden="true">✓</span>
+                  <span><span className="sr-only">Yours says: </span>{c.proof}</span>
+                </span>
               </div>
             ))}
           </div>
@@ -130,12 +136,12 @@ export default async function Home() {
 
         {top.length > 0 && (
           <section className="mx-auto w-full max-w-5xl px-5 py-12">
-            <div className="flex items-end justify-between">
+            <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="pv-eyebrow">Leaderboard</p>
-                <h2 className="mt-3 text-[28px] font-bold tracking-tight text-white">Top builders right now</h2>
+                <h2 className="mt-3 text-[24px] font-bold tracking-tight text-white sm:text-[28px]">Top builders right now</h2>
               </div>
-              <Link href="/leaderboard" className="pv-muted text-[14px] hover:text-white">See all →</Link>
+              <Link href="/leaderboard" className="pv-muted shrink-0 text-[14px] hover:text-white">See all →</Link>
             </div>
             <ol className="pv-card mt-6 overflow-hidden">
               {top.map((r, i) => (
@@ -144,11 +150,11 @@ export default async function Home() {
                     <span className="pv-mono pv-faint w-5 text-right text-[13px]">{i + 1}</span>
                     {r.avatar_url && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.avatar_url} alt="" width={32} height={32} loading="lazy" className="h-8 w-8 rounded-full" />
+                      <img src={r.avatar_url} alt="" width={32} height={32} loading="lazy" className="h-8 w-8 shrink-0 rounded-full bg-[#1c222c]" />
                     )}
                     <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-white">{r.name || r.login}</span>
                     <span className={`pv-tier pv-tier-${r.tier} hidden sm:inline-flex`}>{r.tier}</span>
-                    <span className="w-8 text-right text-[16px] font-bold text-[#2ee59d]">{r.score}</span>
+                    <span className="w-8 shrink-0 text-right text-[16px] font-bold tabular-nums text-[#2ee59d]">{r.score}</span>
                   </Link>
                 </li>
               ))}
@@ -170,9 +176,9 @@ export default async function Home() {
 
         <section className="mx-auto w-full max-w-5xl px-5 pb-8 pt-12">
           <div className="pv-card flex flex-col items-center gap-5 px-6 py-12 text-center">
-            <h2 className="text-[28px] font-bold tracking-tight text-white">See what your work adds up to</h2>
+            <h2 className="text-balance text-[24px] font-bold leading-tight tracking-tight text-white sm:text-[28px]">See what your work adds up to</h2>
             <UsernameForm />
-            <Link href="/log" className="pv-muted text-[13px] hover:text-white">
+            <Link href="/log" className="pv-muted text-balance text-[13px] hover:text-white">
               Building on Solana? Log signed proofs with a wallet →
             </Link>
           </div>
