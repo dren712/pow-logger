@@ -270,6 +270,20 @@ export function buildAnchorLink(receipt: AgentReceipt): AnchorLink | null {
  * Verifies a PROVN Verify receipt offline: the existing agent checks (signatures, event hashes, hash chain,
  * Merkle) plus a replay of every mandate decision and evidence hash. Needs nothing but the receipt.
  */
+/**
+ * A rejection is still valid when the agent counted budget held by an in-flight payment that later
+ * failed: its recorded spentBefore is at least the replayed spend and the mandate rejects at that amount.
+ */
+function isReservationRejection(mandate: AgentMandate, req: RequestCommitment, replayedSpent: bigint): boolean {
+  if (req.decision !== 'reject' || typeof req.spentBefore !== 'string') return false
+  try {
+    if (parseAmount(req.spentBefore) < replayedSpent) return false
+    return evaluateMandate(mandate, req.request, req.spentBefore).decision === 'reject'
+  } catch {
+    return false
+  }
+}
+
 export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyReport {
   if (!receipt || typeof receipt !== 'object' || !Array.isArray(receipt.events) || receipt.events.some((e) => !e || typeof e !== 'object')) {
     receipt = { ...(receipt && typeof receipt === 'object' ? receipt : {}), events: [] } as unknown as AgentReceipt
@@ -320,7 +334,7 @@ export function verifyProvnVerifyReceipt(receipt: AgentReceipt): ProvnVerifyRepo
       } catch (err) {
         actionProblems.push(`Mandate could not be evaluated: ${(err as Error).message}`)
       }
-      if (recomputed && recomputed.decision !== req.decision) {
+      if (recomputed && recomputed.decision !== req.decision && !isReservationRejection(commitment.mandate, req, spent)) {
         actionProblems.push(`Recorded decision "${req.decision}" but the mandate gives "${recomputed.decision}"`)
       }
 
