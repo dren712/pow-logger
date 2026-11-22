@@ -109,6 +109,28 @@ async function run() {
     }
   })
 
+  await test('reserves budget so overlapping payments cannot overspend', async () => {
+    const par = await ProvnVerify.start({ intent: 'parallel', mandate, client: { gatewayUrl: '' } })
+    let calls = 0
+    const slowPay = async () => { calls++; await new Promise((r) => setTimeout(r, 10)); return { txSignature: 's' } }
+    const [a, b] = await Promise.all([
+      par.pay({ resource: 'r', payTo: 'R1', amount: '300.00', asset: 'USDC' }, slowPay),
+      par.pay({ resource: 'r', payTo: 'R1', amount: '300.00', asset: 'USDC' }, slowPay),
+    ])
+    assert.deepStrictEqual([a.decision, b.decision].sort(), ['allow', 'reject'])
+    assert.strictEqual(calls, 1)
+  })
+  await test('receipts a payer failure and releases its budget', async () => {
+    const f = await ProvnVerify.start({ intent: 'fail', mandate, client: { gatewayUrl: '' } })
+    await assert.rejects(f.pay({ resource: 'r', payTo: 'R1', amount: '400.00', asset: 'USDC' }, async () => { throw new Error('declined') }), /declined/)
+    assert.strictEqual(f.spentSoFar, '0.00')
+    const report = verifyProvnVerifyReceipt(await f.complete())
+    assert.strictEqual(report.verified, true, report.problems.join('\n'))
+  })
+  await test('rejects secrets in start metadata', async () => {
+    await assert.rejects(ProvnVerify.start({ intent: 'x', mandate, metadata: { note: 'Bearer abcdefghijklmnopqrstuvwxyz' }, client: { gatewayUrl: '' } }), /SENSITIVE_DATA_DETECTED/)
+  })
+
   console.log('► Receipt verification')
   await test('verifies a valid receipt end to end', () => {
     const report = verifyProvnVerifyReceipt(receipt)
@@ -158,6 +180,30 @@ async function run() {
     assert.strictEqual(report.checks.signatures, 'pass')
     assert.strictEqual(report.checks.mandate, 'fail')
     assert.ok(report.problems.some((p) => /rejected action was executed/.test(p)))
+  })
+  await test('flags executed payment terms that differ from the approved request', async () => {
+    const bad = await ProvnVerify.start({ intent: 'swap', mandate, client: { gatewayUrl: '' } })
+    const exec = (bad as unknown as { execution: { action: (p: unknown) => Promise<{ payloadHash: string }> } }).execution
+    await exec.action({
+      type: 'payment.intent',
+      metadata: { provnVerify: { actionId: 'a1', mandateHash: bad.mandateHash, request: pay('10.00'), decision: 'allow', reasons: [], spentBefore: '0.00' } },
+    })
+    await exec.action({ type: 'payment.executed', metadata: { recipient: 'R1', amount: '450.00', asset: 'USDC', provnVerify: { actionId: 'a1', resultHash: null, evidenceHash: 'x' } } })
+    const report = verifyProvnVerifyReceipt(await bad.complete())
+    assert.strictEqual(report.checks.mandate, 'fail')
+    assert.ok(report.problems.some((p) => /payment terms/.test(p)))
+  })
+  await test('flags mandate events whose payload was stripped', () => {
+    const r = clone(receipt)
+    const ev = r.events.find((e) => e.eventType === 'payment.intent')!
+    delete (ev as { payload?: unknown }).payload
+    const report = verifyProvnVerifyReceipt(r)
+    assert.strictEqual(report.verified, false)
+    assert.strictEqual(report.checks.mandate, 'fail')
+  })
+  await test('reports malformed events instead of throwing', () => {
+    assert.strictEqual(verifyProvnVerifyReceipt({ events: { a: 1 } } as unknown as AgentReceipt).verified, false)
+    assert.strictEqual(verifyProvnVerifyReceipt({ events: [null] } as unknown as AgentReceipt).verified, false)
   })
   await test('handles receipts without a mandate and garbage input', () => {
     assert.strictEqual(verifyProvnVerifyReceipt({} as AgentReceipt).verified, false)
