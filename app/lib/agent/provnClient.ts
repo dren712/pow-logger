@@ -134,6 +134,7 @@ export class ProvnAgentSession {
   }
 
   private syncQueue: Promise<void> = Promise.resolve()
+  private syncFailed = false
 
   /** Pushes events in sequence order without blocking the caller; seal() waits for the queue. */
   private enqueueSync(event: AgentEvent): void {
@@ -141,6 +142,7 @@ export class ProvnAgentSession {
     this.syncQueue = this.syncQueue
       .then(() => this.pushEventToGateway(event))
       .catch(err => {
+        this.syncFailed = true
         console.warn(`[PROVN SDK] Background gateway sync warning:`, (err as Error).message)
       })
   }
@@ -169,12 +171,21 @@ export class ProvnAgentSession {
    * triggers asynchronous outbox anchoring, and returns the self-contained receipt.
    */
   async seal(summary?: string): Promise<AgentReceipt & { proofUrl: string }> {
+    if (!this.allowRawSecrets && summary) {
+      const sensitiveIssue = scanForSensitiveData({ summary })
+      if (sensitiveIssue) throw new Error(`SENSITIVE_DATA_DETECTED: ${sensitiveIssue}`)
+    }
     const receipt = this.runtime.finalizeExecution(this.state, summary)
 
     // Finalize in gateway
     if (this.gatewayUrl) {
       this.enqueueSync(receipt.events[receipt.events.length - 1])
       await this.syncQueue
+    }
+    // A partial chain on the gateway would be anchored as if it were the whole run, so only finalize a complete sync.
+    if (this.gatewayUrl && this.syncFailed) {
+      console.warn('[PROVN SDK] Skipping gateway finalize: not every event reached the gateway')
+    } else if (this.gatewayUrl) {
       try {
         await fetch(`${this.gatewayUrl}/api/agent/finalize`, {
           method: 'POST',
@@ -187,6 +198,7 @@ export class ProvnAgentSession {
             terminalEventHash: receipt.execution.terminalEventHash,
             batchId: receipt.batch.batchId,
             merkleRoot: receipt.merkle.root,
+            expectedMerkleRoot: receipt.merkle.root,
             eventCount: receipt.events.length,
             firstSequence: receipt.batch.firstSequence,
             lastSequence: receipt.batch.lastSequence
@@ -253,6 +265,10 @@ export class ProvnAgent {
    * Starts a new verifiable execution session.
    */
   async startSession(params: StartSessionParams): Promise<ProvnAgentSession> {
+    if (!this.allowRawSecrets) {
+      const sensitiveIssue = scanForSensitiveData({ taskDescription: params.taskDescription, metadata: params.metadata ?? null })
+      if (sensitiveIssue) throw new Error(`SENSITIVE_DATA_DETECTED: ${sensitiveIssue}`)
+    }
     const state = this.runtime.startExecution({
       taskDescription: params.taskDescription,
       agentName: params.agentName || this.defaultAgentName,
