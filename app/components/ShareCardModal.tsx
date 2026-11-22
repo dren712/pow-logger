@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import ModalShell, { CheckIcon } from './modals-cards/ModalShell'
 
 interface ShareCardModalProps {
   isOpen: boolean
@@ -16,7 +17,7 @@ export default function ShareCardModal({
   isOpen,
   onClose,
   svgString,
-  title = 'PROVN Proof Card 🗿',
+  title = 'Proof card',
   logId,
   logContent = '',
   irysTxId,
@@ -137,141 +138,62 @@ export default function ShareCardModal({
     setTimeout(() => setCopiedSvg(false), 2000)
   }
 
+  const displayTitle = title.replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').trim() || 'Proof card'
+  const shareLabel = copiedImage ? 'Image copied. Opening X' : canWebShareFiles ? 'Share image' : 'Share on X'
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(6, 7, 9, 0.88)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '20px',
-        zIndex: 99999,
-      }}
-      onClick={onClose}
+    <ModalShell
+      title={displayTitle}
+      description="A shareable image of this proof entry."
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" onClick={handleCopySvg} className={`pv-btn-ghost${copiedSvg ? ' pvm-ok' : ''}`}>
+            {copiedSvg ? (
+              <>
+                <CheckIcon /> SVG copied
+              </>
+            ) : (
+              'Copy SVG'
+            )}
+          </button>
+          <button type="button" onClick={handleShareSeamless} className="pv-btn" disabled={!svgString}>
+            {shareLabel}
+          </button>
+        </>
+      }
     >
-      <div
-        style={{
-          background: '#0c0e12',
-          border: '1px solid #00ff88',
-          borderRadius: '16px',
-          padding: '24px',
-          maxWidth: '680px',
-          width: '100%',
-          boxShadow: '0 0 40px rgba(0, 255, 136, 0.18)',
-          fontFamily: 'var(--font-geist-mono), monospace',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ color: '#00ff88', margin: 0, fontSize: '15px', fontWeight: 800 }}>
-            🖼️ {title}
-          </h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#888',
-              fontSize: '20px',
-              cursor: 'pointer',
-              padding: '4px',
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Seamless Share Guidance Banner */}
-        <div
-          style={{
-            background: 'rgba(0, 255, 136, 0.08)',
-            border: '1px solid rgba(0, 255, 136, 0.25)',
-            color: '#00ff88',
-            borderRadius: '8px',
-            padding: '10px 14px',
-            marginBottom: '16px',
-            fontSize: '11px',
-            lineHeight: '1.5',
-            textAlign: 'center',
-          }}
-        >
-          {canWebShareFiles ? (
-            <>📲 <strong>Mobile Web Share:</strong> Tapping <strong>Share Badge Card to X</strong> auto-attaches your PNG card image directly to your post on X!</>
-          ) : copiedImage ? (
-            <>✓ <strong>PNG Card Copied to Clipboard!</strong> Press <strong>Cmd+V (or Ctrl+V)</strong> in the X composer to paste your proof image instantly.</>
-          ) : (
-            <>✨ <strong>Seamless 1-Click Sharing:</strong> Tapping <strong>Share Badge Card to X</strong> auto-copies the PNG proof card to your clipboard and opens X!</>
-          )}
-        </div>
-
-        {/* Display Image (Converted PNG or SVG) */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            background: '#060709',
-            borderRadius: '12px',
-            padding: '12px',
-            border: '1px solid #1a202c',
-            marginBottom: '20px',
-            overflow: 'hidden',
-          }}
-        >
+      {svgString ? (
+        <div className="pvm-preview pvm-preview-card">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={displayImage}
-            alt="PROVN Proof Card"
-            style={{
-              maxWidth: '100%',
-              height: 'auto',
-              borderRadius: '8px',
-            }}
-          />
+          <img src={displayImage} alt="Preview of the proof card image" />
         </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button
-            onClick={handleShareSeamless}
-            className="btn-primary"
-            style={{
-              flex: 2,
-              fontSize: '12px',
-              padding: '12px',
-              background: '#00ff88',
-              color: '#060709',
-              fontWeight: 800,
-              justifyContent: 'center',
-            }}
-          >
-            {canWebShareFiles ? '📲 Share Card to X (Auto-Attach PNG) 🗿' : copiedImage ? '✓ PNG Copied! Opening X...' : '🚀 Share Proof Card to X 🗿'}
-          </button>
-
-          <button
-            onClick={handleCopySvg}
-            className="btn-primary"
-            style={{
-              flex: 1,
-              fontSize: '12px',
-              padding: '12px',
-              borderColor: '#00e5ff',
-              color: '#00e5ff',
-              justifyContent: 'center',
-            }}
-          >
-            {copiedSvg ? '✓ SVG Copied!' : '📋 Copy SVG Code'}
-          </button>
+      ) : (
+        <div className="pvm-empty">
+          <strong>No card to preview</strong>
+          The card image could not be generated for this entry.
         </div>
+      )}
+
+      <div className={`pvm-note${copiedImage ? ' pvm-note-ok' : ''}`} role="status" aria-live="polite">
+        {copiedImage ? <CheckIcon size={16} /> : <InfoIcon />}
+        <span>
+          {canWebShareFiles
+            ? 'Share image opens your device share sheet with the PNG attached.'
+            : copiedImage
+            ? 'The PNG is on your clipboard. Paste it into the X composer with Ctrl+V or Cmd+V.'
+            : 'Share on X copies the PNG to your clipboard and opens the X composer, so you can paste the image into your post. If your browser blocks image copying, the file is downloaded instead.'}
+        </span>
       </div>
-    </div>
+    </ModalShell>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 7.25v4M8 4.75v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
   )
 }
