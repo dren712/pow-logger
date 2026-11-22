@@ -68,7 +68,8 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         // Auto-dismiss after 5 seconds
         setTimeout(() => setIdentityLinkStatus(null), 5000)
       } else if (identityLinked === 'false') {
-        if (params.get('error') === 'relink_required') {
+        const relinkRequired = params.get('error') === 'relink_required'
+        if (relinkRequired) {
           setIdentityRelinkRequired(true)
           setIdentityLinkError('This wallet is already linked to a different GitHub account.')
         }
@@ -77,7 +78,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
         cleanUrl.searchParams.delete('identity_linked')
         cleanUrl.searchParams.delete('error')
         window.history.replaceState({}, '', cleanUrl.toString())
-        setTimeout(() => setIdentityLinkStatus(null), 8000)
+        if (!relinkRequired) setTimeout(() => setIdentityLinkStatus(null), 8000)
       }
     }
   }, [])
@@ -282,6 +283,7 @@ export default function ProfileClient({ wallet, initialLogs }: ProfileClientProp
             onDismiss={() => {
               setIdentityLinkStatus(null)
               setIdentityLinkError(null)
+              setIdentityRelinkRequired(false)
             }}
           >
             {identityLinkError || 'Please try again. If it keeps failing, the GitHub OAuth app may not be configured for this deployment.'}
