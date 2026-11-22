@@ -6,6 +6,7 @@ import RichText, { cleanText } from '@/app/components/builder-qa/RichText'
 import PrintButton from '@/app/components/PrintButton'
 import SiteNav from '@/app/components/SiteNav'
 import UsernameForm from '@/app/components/UsernameForm'
+import ProWaitlist from '@/app/components/ProWaitlist'
 
 export const dynamic = 'force-dynamic'
 
@@ -167,6 +168,9 @@ export default async function ResumePage({ params }: PageProps) {
           </div>
         </article>
       </main>
+      <div className="no-print mx-auto mb-12 w-full max-w-[820px] px-5">
+        <ProWaitlist source="resume" githubUsername={p.login} />
+      </div>
     </div>
   )
 }

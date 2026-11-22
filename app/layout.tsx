@@ -3,6 +3,7 @@ import "./globals.css";
 import Footer from "./components/Footer";
 import WalletContextProvider from "./providers/WalletProvider";
 import { SITE } from "./lib/profileFormat";
+import AppAnalytics from "./components/AppAnalytics";
 
 const TITLE = "PROVN — The developer résumé nobody can fake";
 const DESCRIPTION =
@@ -62,6 +63,7 @@ export default function RootLayout({
         <WalletContextProvider>
           {children}
           <Footer />
+          <AppAnalytics />
         </WalletContextProvider>
       </body>
     </html>

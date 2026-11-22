@@ -228,7 +228,7 @@ export function normalizeWebsite(blog: string | null): string | null {
   }
 }
 
-async function githubGet(path: string): Promise<Response> {
+export async function githubGet(path: string): Promise<Response> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'User-Agent': 'PROVN-Builder-Profile',
