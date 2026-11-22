@@ -15,8 +15,7 @@ const COLUMNS = [
     links: [
       { label: 'Solana proof logger', href: '/log' },
       { label: 'Agent console', href: '/agent-proof' },
-      { label: 'API docs', href: '/docs/api' },
-      { label: 'Agent SDK', href: '/docs/agent-sdk' },
+      { label: 'Docs', href: '/docs' },
     ],
   },
   {
@@ -24,8 +23,8 @@ const COLUMNS = [
     links: [
       { label: 'GitHub', href: 'https://github.com/dren712/pow-logger' },
       { label: 'Solana Explorer', href: 'https://explorer.solana.com' },
-      { label: 'Irys Gateway', href: 'https://gateway.irys.xyz' },
       { label: 'Privacy', href: '/privacy' },
+      { label: 'Terms', href: '/terms' },
     ],
   },
 ]

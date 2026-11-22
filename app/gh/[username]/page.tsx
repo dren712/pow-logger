@@ -56,8 +56,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
-    openGraph: { title, description, url: `${SITE}/gh/${p.login}`, siteName: 'PROVN', type: 'profile', images: [p.avatarUrl] },
-    twitter: { card: 'summary', title, description, images: [p.avatarUrl] },
+    openGraph: { title, description, url: `${SITE}/gh/${p.login}`, siteName: 'PROVN', type: 'profile' },
+    twitter: { card: 'summary_large_image', title, description },
   }
 }
 
