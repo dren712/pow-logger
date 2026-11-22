@@ -14,7 +14,8 @@ const COLUMNS = [
     title: 'Proof protocol',
     links: [
       { label: 'Solana proof logger', href: '/log' },
-      { label: 'Agent console', href: '/agent-proof' },
+      { label: 'PROVN Verify', href: '/agent-proof' },
+      { label: 'Verify a receipt', href: '/verify' },
       { label: 'Docs', href: '/docs' },
     ],
   },

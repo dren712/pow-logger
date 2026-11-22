@@ -259,3 +259,17 @@ export class ProvnClient {
     })
   }
 }
+
+// PROVN Verify: mandate-checked tool calls and x402-style devnet payments
+export { ProvnVerify, X402_DEVNET_NETWORK } from './verify'
+export type { X402PaymentRequirements, X402Settlement, McpToolCaller, ActionOutcome, ProvnVerifyStartParams } from './verify'
+export {
+  evaluateMandate,
+  verifyProvnVerifyReceipt,
+  computeEvidenceHash,
+  hashMandate,
+  hashEvidence,
+  buildAnchorLink,
+  PROVN_VERIFY_VERSION,
+} from '../app/lib/agent/mandate'
+export type { AgentMandate, MandateActionRequest, MandateEvaluation, ProvnVerifyReport, VerifiedAction } from '../app/lib/agent/mandate'
