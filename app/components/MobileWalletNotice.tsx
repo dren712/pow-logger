@@ -14,7 +14,7 @@ export default function MobileWalletNotice() {
 
   if (!isMobile) return null
 
-  const currentHost = typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : 'https%3A%2F%2Fprovn-sol.vercel.app'
+  const currentHost = typeof window !== 'undefined' ? encodeURIComponent(`${window.location.origin}/log`) : 'https%3A%2F%2Fprovn-sol.vercel.app%2Flog'
 
   return (
     <section
