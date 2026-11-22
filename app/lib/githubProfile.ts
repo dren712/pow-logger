@@ -233,6 +233,46 @@ async function githubGet(path: string): Promise<Response> {
   return fetch(`${GITHUB_API}${path}`, { headers, cache: 'no-store' })
 }
 
+type FetchFailure = 'rate_limited' | 'unavailable'
+
+function failureFor(res: Response): FetchFailure {
+  return res.status === 403 || res.status === 429 ? 'rate_limited' : 'unavailable'
+}
+
+const PAGE_SIZE = 100
+const MAX_REPO_PAGES = 30
+// GitHub search never returns more than 1,000 results.
+const MAX_PR_PAGES = 10
+
+async function fetchAllRepos(login: string): Promise<GithubRepo[] | FetchFailure> {
+  const all: GithubRepo[] = []
+  for (let page = 1; page <= MAX_REPO_PAGES; page++) {
+    const res = await githubGet(`/users/${login}/repos?per_page=${PAGE_SIZE}&type=owner&sort=pushed&page=${page}`)
+    if (!res.ok) return failureFor(res)
+    const batch = (await res.json()) as GithubRepo[]
+    all.push(...batch)
+    if (batch.length < PAGE_SIZE) break
+  }
+  return all
+}
+
+async function fetchMergedPrs(
+  query: string
+): Promise<{ items: GithubMergedPr[]; total: number } | { reason: FetchFailure }> {
+  const items: GithubMergedPr[] = []
+  let total = 0
+  for (let page = 1; page <= MAX_PR_PAGES; page++) {
+    const res = await githubGet(`/search/issues?q=${query}&per_page=${PAGE_SIZE}&sort=updated&order=desc&page=${page}`)
+    if (!res.ok) return { reason: failureFor(res) }
+    const body = (await res.json()) as { total_count?: number; items?: GithubMergedPr[] }
+    const batch = body.items || []
+    items.push(...batch)
+    total = body.total_count || 0
+    if (batch.length < PAGE_SIZE || items.length >= total) break
+  }
+  return { items, total }
+}
+
 export async function fetchBuilderProfile(login: string): Promise<ProfileResult> {
   if (!isValidGithubLogin(login)) return { ok: false, reason: 'invalid' }
 
@@ -245,19 +285,11 @@ export async function fetchBuilderProfile(login: string): Promise<ProfileResult>
     if (user.type && user.type !== 'User') return { ok: false, reason: 'not_found' }
 
     const query = encodeURIComponent(`author:${user.login} type:pr is:merged is:public -user:${user.login}`)
-    const [reposRes, prsRes] = await Promise.all([
-      githubGet(`/users/${user.login}/repos?per_page=100&type=owner&sort=pushed`),
-      githubGet(`/search/issues?q=${query}&per_page=100&sort=updated&order=desc`),
-    ])
-
-    const repos = reposRes.ok ? ((await reposRes.json()) as GithubRepo[]) : []
-    let mergedPrs: GithubMergedPr[] = []
-    let mergedPrTotal = 0
-    if (prsRes.ok) {
-      const body = (await prsRes.json()) as { total_count?: number; items?: GithubMergedPr[] }
-      mergedPrs = body.items || []
-      mergedPrTotal = body.total_count || 0
-    }
+    const [repos, prs] = await Promise.all([fetchAllRepos(user.login), fetchMergedPrs(query)])
+    // Missing evidence is a failure, never a zero: a wrong score would be cached and ranked.
+    if (!Array.isArray(repos)) return { ok: false, reason: repos }
+    if ('reason' in prs) return { ok: false, reason: prs.reason }
+    const { items: mergedPrs, total: mergedPrTotal } = prs
 
     return { ok: true, profile: buildProfile(user, repos, mergedPrs, mergedPrTotal) }
   } catch {
