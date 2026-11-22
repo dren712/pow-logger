@@ -244,7 +244,7 @@ export async function fetchBuilderProfile(login: string): Promise<ProfileResult>
     const user = (await userRes.json()) as GithubUser
     if (user.type && user.type !== 'User') return { ok: false, reason: 'not_found' }
 
-    const query = encodeURIComponent(`author:${user.login} type:pr is:merged -user:${user.login}`)
+    const query = encodeURIComponent(`author:${user.login} type:pr is:merged is:public -user:${user.login}`)
     const [reposRes, prsRes] = await Promise.all([
       githubGet(`/users/${user.login}/repos?per_page=100&type=owner&sort=pushed`),
       githubGet(`/search/issues?q=${query}&per_page=100&sort=updated&order=desc`),
