@@ -6,7 +6,7 @@
     "provn": "./bin/provn.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "next dev -p 3000",
