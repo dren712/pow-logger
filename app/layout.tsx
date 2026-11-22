@@ -9,20 +9,20 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "PROVN — Proof-of-Work Logger 🗿",
-  description: "Solana-native, wallet-authenticated proof-of-work protocol with optional Arweave archival.",
+  title: "PROVN — The developer résumé nobody can fake",
+  description: "A verified developer profile and résumé built from your merged GitHub work. Every claim links to proof.",
   metadataBase: new URL('https://provn-sol.vercel.app'),
   openGraph: {
-    title: 'PROVN — Proof-of-Work Logger 🗿',
-    description: 'Solana-native, wallet-authenticated proof-of-work protocol with optional Arweave archival.',
+    title: 'PROVN — The developer résumé nobody can fake',
+    description: 'A verified developer profile and résumé built from your merged GitHub work. Every claim links to proof.',
     url: 'https://provn-sol.vercel.app',
     siteName: 'PROVN',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PROVN — Proof-of-Work Logger 🗿',
-    description: 'Your work, cryptographically verified with optional Arweave archival. 🗿',
+    title: 'PROVN — The developer résumé nobody can fake',
+    description: 'A verified developer profile and résumé built from your merged GitHub work.',
   },
   other: {
     'theme-color': '#060709',

@@ -450,3 +450,32 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
     display: none !important;
   }
 }
+
+/* Printable résumé: profile pages print as a clean white document */
+@media print {
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .no-print,
+  footer {
+    display: none !important;
+  }
+  .glass-card,
+  .stat-card {
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    backdrop-filter: none !important;
+    break-inside: avoid;
+  }
+  .stat-card::before {
+    display: none;
+  }
+  .print-dark,
+  .print-dark * {
+    color: #111 !important;
+  }
+  a {
+    text-decoration: none !important;
+  }
+}
