@@ -129,6 +129,20 @@ export class ProvnAgentSession {
     this.executionId = state.execution.executionId
     this.agentPublicKey = state.execution.agentPublicKey
     this.allowRawSecrets = allowRawSecrets
+    // The runtime signs agent.started before the session exists; the gateway needs it to rebuild the chain.
+    for (const event of state.events) this.enqueueSync(event)
+  }
+
+  private syncQueue: Promise<void> = Promise.resolve()
+
+  /** Pushes events in sequence order without blocking the caller; seal() waits for the queue. */
+  private enqueueSync(event: AgentEvent): void {
+    if (!this.gatewayUrl) return
+    this.syncQueue = this.syncQueue
+      .then(() => this.pushEventToGateway(event))
+      .catch(err => {
+        console.warn(`[PROVN SDK] Background gateway sync warning:`, (err as Error).message)
+      })
   }
 
   /**
@@ -145,12 +159,7 @@ export class ProvnAgentSession {
 
     const signedEvent = this.runtime.logAction(this.state, eventType, payload)
 
-    // Asynchronously push to gateway (non-blocking)
-    if (this.gatewayUrl) {
-      this.pushEventToGateway(signedEvent).catch(err => {
-        console.warn(`[PROVN SDK] Background gateway sync warning:`, err.message)
-      })
-    }
+    this.enqueueSync(signedEvent)
 
     return signedEvent
   }
@@ -164,6 +173,8 @@ export class ProvnAgentSession {
 
     // Finalize in gateway
     if (this.gatewayUrl) {
+      this.enqueueSync(receipt.events[receipt.events.length - 1])
+      await this.syncQueue
       try {
         await fetch(`${this.gatewayUrl}/api/agent/finalize`, {
           method: 'POST',
