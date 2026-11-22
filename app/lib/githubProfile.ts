@@ -155,7 +155,8 @@ export function buildProfile(
     }))
 
   const byRepo = new Map<string, ProfileContribution>()
-  for (const pr of mergedPrs) {
+  const newestFirst = [...mergedPrs].sort((a, b) => (b.closed_at || '').localeCompare(a.closed_at || ''))
+  for (const pr of newestFirst) {
     const repo = pr.repository_url.replace(`${GITHUB_API}/repos/`, '')
     const entry = byRepo.get(repo) || { repo, repoUrl: `https://github.com/${repo}`, mergedPrs: 0, latest: [] }
     entry.mergedPrs += 1
