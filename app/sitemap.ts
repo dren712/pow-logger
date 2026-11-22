@@ -9,6 +9,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: 'daily' 
   { path: '/leaderboard', priority: 0.9, changeFrequency: 'daily' },
   { path: '/log', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/agent-proof', priority: 0.5, changeFrequency: 'monthly' },
+  { path: '/verify', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/docs/api', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/docs/agent-sdk', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/privacy', priority: 0.2, changeFrequency: 'monthly' },

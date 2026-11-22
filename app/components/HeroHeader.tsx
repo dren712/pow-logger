@@ -16,7 +16,7 @@ interface HeroHeaderProps {
 }
 
 const RELATED = [
-  { href: '/agent-proof', label: 'Agent console' },
+  { href: '/agent-proof', label: 'PROVN Verify' },
   { href: '/docs/agent-sdk', label: 'Agent SDK' },
   { href: '/docs/api', label: 'API docs' },
   { href: '/demo/bounty', label: 'Bounty demo' },

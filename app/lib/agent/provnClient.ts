@@ -129,6 +129,22 @@ export class ProvnAgentSession {
     this.executionId = state.execution.executionId
     this.agentPublicKey = state.execution.agentPublicKey
     this.allowRawSecrets = allowRawSecrets
+    // The runtime signs agent.started before the session exists; the gateway needs it to rebuild the chain.
+    for (const event of state.events) this.enqueueSync(event)
+  }
+
+  private syncQueue: Promise<void> = Promise.resolve()
+  private syncFailed = false
+
+  /** Pushes events in sequence order without blocking the caller; seal() waits for the queue. */
+  private enqueueSync(event: AgentEvent): void {
+    if (!this.gatewayUrl) return
+    this.syncQueue = this.syncQueue
+      .then(() => this.pushEventToGateway(event))
+      .catch(err => {
+        this.syncFailed = true
+        console.warn(`[PROVN SDK] Background gateway sync warning:`, (err as Error).message)
+      })
   }
 
   /**
@@ -145,12 +161,7 @@ export class ProvnAgentSession {
 
     const signedEvent = this.runtime.logAction(this.state, eventType, payload)
 
-    // Asynchronously push to gateway (non-blocking)
-    if (this.gatewayUrl) {
-      this.pushEventToGateway(signedEvent).catch(err => {
-        console.warn(`[PROVN SDK] Background gateway sync warning:`, err.message)
-      })
-    }
+    this.enqueueSync(signedEvent)
 
     return signedEvent
   }
@@ -159,11 +170,22 @@ export class ProvnAgentSession {
    * Finalizes the execution session, seals the batch Merkle root,
    * triggers asynchronous outbox anchoring, and returns the self-contained receipt.
    */
-  async seal(summary?: string): Promise<AgentReceipt & { proofUrl: string }> {
+  async seal(summary?: string, summaryChecked = false): Promise<AgentReceipt & { proofUrl: string }> {
+    if (!this.allowRawSecrets && summary && !summaryChecked) {
+      const sensitiveIssue = scanForSensitiveData({ summary })
+      if (sensitiveIssue) throw new Error(`SENSITIVE_DATA_DETECTED: ${sensitiveIssue}`)
+    }
     const receipt = this.runtime.finalizeExecution(this.state, summary)
 
     // Finalize in gateway
     if (this.gatewayUrl) {
+      this.enqueueSync(receipt.events[receipt.events.length - 1])
+      await this.syncQueue
+    }
+    // A partial chain on the gateway would be anchored as if it were the whole run, so only finalize a complete sync.
+    if (this.gatewayUrl && this.syncFailed) {
+      console.warn('[PROVN SDK] Skipping gateway finalize: not every event reached the gateway')
+    } else if (this.gatewayUrl) {
       try {
         await fetch(`${this.gatewayUrl}/api/agent/finalize`, {
           method: 'POST',
@@ -176,6 +198,7 @@ export class ProvnAgentSession {
             terminalEventHash: receipt.execution.terminalEventHash,
             batchId: receipt.batch.batchId,
             merkleRoot: receipt.merkle.root,
+            expectedMerkleRoot: receipt.merkle.root,
             eventCount: receipt.events.length,
             firstSequence: receipt.batch.firstSequence,
             lastSequence: receipt.batch.lastSequence
@@ -242,6 +265,10 @@ export class ProvnAgent {
    * Starts a new verifiable execution session.
    */
   async startSession(params: StartSessionParams): Promise<ProvnAgentSession> {
+    if (!this.allowRawSecrets) {
+      const sensitiveIssue = scanForSensitiveData({ taskDescription: params.taskDescription, metadata: params.metadata ?? null })
+      if (sensitiveIssue) throw new Error(`SENSITIVE_DATA_DETECTED: ${sensitiveIssue}`)
+    }
     const state = this.runtime.startExecution({
       taskDescription: params.taskDescription,
       agentName: params.agentName || this.defaultAgentName,
@@ -683,7 +710,9 @@ export class ProvnExecution {
    * Emits the definitive `agent.completed` event.
    */
   async complete(summary?: string): Promise<AgentReceipt & { proofUrl: string }> {
-    return this.session.seal(summary || `Execution completed: ${this.intent}`)
+    // The default summary only repeats the intent, which was already scanned at start.
+    if (!summary) return this.session.seal(`Execution completed: ${this.intent}`, true)
+    return this.session.seal(summary)
   }
 }
 
