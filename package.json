@@ -13,7 +13,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --import ./tests/setup.ts tests/protocol.test.ts && tsx --import ./tests/setup.ts tests/githubProfile.test.ts && tsx --import ./tests/setup.ts tests/yearStats.test.ts && tsx --import ./tests/setup.ts tests/rankCard.test.ts && tsx --import ./tests/setup.ts tests/proWaitlist.test.ts"
+    "test": "tsx --import ./tests/setup.ts tests/protocol.test.ts && tsx --import ./tests/setup.ts tests/githubProfile.test.ts && tsx --import ./tests/setup.ts tests/yearStats.test.ts && tsx --import ./tests/setup.ts tests/rankCard.test.ts && tsx --import ./tests/setup.ts tests/proWaitlist.test.ts && tsx --import ./tests/setup.ts tests/resumeTailor.test.ts"
   },
   "dependencies": {
     "@irys/upload": "^0.0.15",
@@ -24,12 +24,14 @@
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.48.0",
     "@vercel/analytics": "^2.0.1",
+    "ai": "^7.0.179",
     "bs58": "^6.0.0",
     "next": "^15.5.29",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

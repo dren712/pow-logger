@@ -7,6 +7,7 @@ import PrintButton from '@/app/components/PrintButton'
 import SiteNav from '@/app/components/SiteNav'
 import UsernameForm from '@/app/components/UsernameForm'
 import ProWaitlist from '@/app/components/ProWaitlist'
+import ResumeTailor from '@/app/components/ResumeTailor'
 
 export const dynamic = 'force-dynamic'
 
@@ -168,7 +169,8 @@ export default async function ResumePage({ params }: PageProps) {
           </div>
         </article>
       </main>
-      <div className="no-print mx-auto mb-12 w-full max-w-[820px] px-5">
+      <div className="no-print mx-auto mb-12 flex w-full max-w-[820px] flex-col gap-6 px-5">
+        <ResumeTailor githubUsername={p.login} />
         <ProWaitlist source="resume" githubUsername={p.login} />
       </div>
     </div>
