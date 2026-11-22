@@ -20,7 +20,11 @@ export default function SiteNav({ cta = true }: { cta?: boolean }) {
         <div className="flex items-center gap-1 text-sm sm:gap-2">
           <Link href="/leaderboard" className="rounded-md px-2.5 py-1.5 text-[#aab2c0] hover:text-white">Leaderboard</Link>
           <Link href="/log" className="rounded-md px-2.5 py-1.5 text-[#aab2c0] hover:text-white">Logger</Link>
-          {cta && <Link href="/#start" className="pv-btn ml-1 hidden !px-3 !py-1.5 !text-[13px] sm:inline-flex">Get your profile</Link>}
+          {cta && (
+            <span className="ml-1 hidden sm:block">
+              <Link href="/#start" className="pv-btn !px-3 !py-1.5 !text-[13px]">Get your profile</Link>
+            </span>
+          )}
         </div>
       </div>
     </nav>
