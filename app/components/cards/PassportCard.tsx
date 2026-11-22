@@ -5,6 +5,10 @@ import MetalCard from './MetalCard'
 import { CardTheme, DEFAULT_CARD_THEME } from '@/app/lib/cardThemes'
 import { BuilderReputation } from '@/app/lib/types'
 import { useQRCode } from '@/app/lib/qrcode'
+import '@/app/styles/modals-cards.css'
+
+const SANS = "'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif"
+const MONO = 'var(--font-geist-mono), monospace'
 
 export interface PassportCardProps {
   reputation: BuilderReputation
@@ -30,177 +34,153 @@ export default function PassportCard({
 
   const serialId = `PRV-${reputation.wallet.slice(0, 4).toUpperCase()}-${reputation.totalProofs.toString().padStart(4, '0')}`
 
+  const label: React.CSSProperties = {
+    fontFamily: MONO,
+    fontSize: 'clamp(7px, 1.7vw, 8.5px)',
+    fontWeight: 600,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    color: theme.technicalTextColor,
+  }
+  const statValue: React.CSSProperties = {
+    fontFamily: SANS,
+    fontSize: 'clamp(14px, 3.6vw, 19px)',
+    fontWeight: 650,
+    letterSpacing: '-0.02em',
+    lineHeight: 1.15,
+    color: theme.textColorPrimary,
+    fontVariantNumeric: 'tabular-nums',
+  }
+  const stats = [
+    { label: 'Proofs', value: String(reputation.totalProofs), accent: true },
+    { label: 'Streak', value: `${reputation.currentStreak}d` },
+    { label: 'Archived', value: `${reputation.archivalSuccessRate}%` },
+  ]
+
   // ================= FRONT CONTENT =================
   const frontContent = (
     <>
-      {/* Top Bar: Brand & Chip / Status */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: 'clamp(15px, 3.8vw, 18px)' }}>🗿</span>
-            <span
-              style={{
-                fontFamily: 'var(--font-geist-mono), monospace',
-                fontSize: 'clamp(13px, 3.5vw, 16px)',
-                fontWeight: 900,
-                letterSpacing: '1.5px',
-                color: theme.textColorPrimary,
-                textShadow: `0 1px 2px ${theme.engraveTone}`,
-              }}
-            >
-              PROVN
-            </span>
-          </div>
-          <div
+      {/* Brand and level */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1.6vw, 8px)', minWidth: 0 }}>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ width: 'clamp(16px, 4vw, 20px)', height: 'clamp(16px, 4vw, 20px)', flexShrink: 0 }}>
+            <rect x="1" y="1" width="22" height="22" rx="6" fill={theme.accentTone} />
+            <path d="M7 12.5l3.2 3.2L17 8.8" stroke="#06080b" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span
             style={{
-              fontSize: 'clamp(7.5px, 1.8vw, 9px)',
-              fontFamily: 'var(--font-geist-mono), monospace',
-              color: theme.technicalTextColor,
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-              marginTop: '2px',
+              fontFamily: SANS,
+              fontSize: 'clamp(13px, 3.4vw, 16px)',
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              color: theme.textColorPrimary,
+              textShadow: `0 1px 2px ${theme.engraveTone}`,
             }}
           >
-            BUILDER PASSPORT // SPEC-01
-          </div>
+            PROVN
+          </span>
+          <span style={{ ...label, marginLeft: '2px', whiteSpace: 'nowrap' }}>Builder passport</span>
         </div>
 
+        <div
+          style={{
+            background: theme.badgeBg,
+            border: `1px solid ${theme.borderTone}`,
+            color: theme.badgeText,
+            padding: '2px clamp(6px, 1.8vw, 9px)',
+            borderRadius: '999px',
+            fontFamily: SANS,
+            fontSize: 'clamp(8.5px, 2.2vw, 11px)',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Level {reputation.builderLevel.level}
+        </div>
       </div>
 
-      {/* Middle Bar: Identity & Core Stats */}
+      {/* Identity and stats */}
       <div style={{ margin: 'auto 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '6px' }}>
-          <div>
-            <div
-              style={{
-                fontSize: 'clamp(7.5px, 1.8vw, 9px)',
-                fontFamily: 'var(--font-geist-mono), monospace',
-                color: theme.technicalTextColor,
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-              }}
-            >
-              SOLANA SIGNER WALLET
-            </div>
-            <div
-              style={{
-                fontSize: 'clamp(15px, 4.2vw, 20px)',
-                fontFamily: 'var(--font-geist-mono), monospace',
-                fontWeight: 800,
-                color: theme.textColorPrimary,
-                letterSpacing: '1px',
-                textShadow: `0 1px 2px ${theme.engraveTone}`,
-              }}
-            >
-              {walletShort}
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: theme.badgeBg,
-              border: `1px solid ${theme.borderTone}`,
-              color: theme.badgeText,
-              padding: '2px 6px',
-              borderRadius: '4px',
-              fontSize: 'clamp(8.5px, 2.2vw, 10px)',
-              fontFamily: 'var(--font-geist-mono), monospace',
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {reputation.builderLevel.emoji} LVL {reputation.builderLevel.level}
-          </div>
+        <div style={label}>Solana wallet</div>
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 'clamp(16px, 4.6vw, 23px)',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            color: theme.textColorPrimary,
+            textShadow: `0 1px 2px ${theme.engraveTone}`,
+            marginTop: '1px',
+          }}
+        >
+          {walletShort}
         </div>
 
-        {/* Proof Stats Row */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
-            gap: 'clamp(4px, 1.5vw, 8px)',
-            background: 'rgba(0, 0, 0, 0.35)',
-            border: `1px solid ${theme.innerBorderTone}`,
-            borderRadius: '8px',
-            padding: 'clamp(6px, 1.8vw, 8px) clamp(8px, 2.5vw, 12px)',
+            gridTemplateColumns: 'repeat(3, auto) 1fr',
+            columnGap: 'clamp(14px, 4.5vw, 28px)',
+            marginTop: 'clamp(6px, 2vw, 12px)',
+            paddingTop: 'clamp(6px, 1.8vw, 10px)',
+            borderTop: `1px solid ${theme.innerBorderTone}`,
           }}
         >
-          <div>
-            <div style={{ fontSize: 'clamp(7px, 1.8vw, 8px)', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              PROOFS
+          {stats.map((s) => (
+            <div key={s.label}>
+              <div style={label}>{s.label}</div>
+              <div style={{ ...statValue, color: s.accent ? theme.accentTone : theme.textColorPrimary }}>{s.value}</div>
             </div>
-            <div style={{ fontSize: 'clamp(13px, 3.4vw, 16px)', fontWeight: 900, color: theme.accentTone }}>
-              {reputation.totalProofs}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 'clamp(7px, 1.8vw, 8px)', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              STREAK
-            </div>
-            <div style={{ fontSize: 'clamp(13px, 3.4vw, 16px)', fontWeight: 900, color: '#ffb800' }}>
-              🔥 {reputation.currentStreak}d
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 'clamp(7px, 1.8vw, 8px)', color: theme.technicalTextColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              ARWEAVE
-            </div>
-            <div style={{ fontSize: 'clamp(13px, 3.4vw, 16px)', fontWeight: 900, color: '#00e5ff' }}>
-              {reputation.archivalSuccessRate}%
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Bottom Bar: Skills & Scannable QR */}
+      {/* Skills and QR */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '8px' }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', maxWidth: '280px', marginBottom: '3px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '300px', marginBottom: '4px' }}>
             {reputation.skills.slice(0, 3).map((s) => (
               <span
                 key={s.name}
                 style={{
-                  fontSize: 'clamp(7.5px, 1.8vw, 9px)',
-                  fontFamily: 'var(--font-geist-mono), monospace',
+                  fontFamily: SANS,
+                  fontSize: 'clamp(7.5px, 1.9vw, 10px)',
+                  fontWeight: 500,
                   color: theme.textColorSecondary,
                   background: 'rgba(255, 255, 255, 0.05)',
-                  border: `0.5px solid ${theme.innerBorderTone}`,
-                  padding: '1px 4px',
-                  borderRadius: '3px',
+                  border: `1px solid ${theme.innerBorderTone}`,
+                  padding: '1px 6px',
+                  borderRadius: '999px',
                   whiteSpace: 'nowrap',
                 }}
               >
-                #{s.name}
+                {s.name}
               </span>
             ))}
           </div>
-          <div style={{ fontSize: 'clamp(6.5px, 1.6vw, 8px)', fontFamily: 'var(--font-geist-mono), monospace', color: theme.technicalTextColor, letterSpacing: '0.5px' }}>
-            WALLET-SIGNED // ED25519
-          </div>
+          <div style={label}>Wallet-signed · Ed25519</div>
         </div>
 
-        {/* Embedded QR Code Cutout */}
         <div
           style={{
             width: 'clamp(36px, 8.5vw, 46px)',
             height: 'clamp(36px, 8.5vw, 46px)',
             background: '#06070a',
             border: `1px solid ${theme.borderTone}`,
-            borderRadius: '6px',
-            padding: '2px',
+            borderRadius: '7px',
+            padding: '3px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.8)',
             flexShrink: 0,
           }}
-          title="Scan to verify passport"
+          title="Scan to open this passport"
         >
           {qrUrl ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={qrUrl}
-              alt="Passport QR"
+              alt="QR code linking to this passport"
               width={38}
               height={38}
               style={{ display: 'block', borderRadius: '3px', width: '100%', height: '100%', objectFit: 'contain' }}
@@ -214,56 +194,42 @@ export default function PassportCard({
   )
 
   // ================= BACK CONTENT =================
+  const backLabel: React.CSSProperties = { ...label, fontSize: 'clamp(6.5px, 1.6vw, 8px)' }
+  const backStats = [
+    { label: 'Longest streak', value: `${reputation.longestStreak} days` },
+    { label: 'Active days', value: `${reputation.activeDaysCount}` },
+    {
+      label: 'Achievements',
+      value: `${reputation.achievements.filter((a) => a.earned).length} / ${reputation.achievements.length}`,
+    },
+  ]
   const backContent = (
-    <div style={{ fontSize: '10px', fontFamily: 'var(--font-geist-mono), monospace', color: theme.textColorSecondary }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
-        <div>
-          <div style={{ fontSize: '8px', color: theme.technicalTextColor, textTransform: 'uppercase' }}>
-            FULL WALLET ADDRESS
-          </div>
-          <div style={{ color: theme.textColorPrimary, wordBreak: 'break-all', fontSize: '9px' }}>
-            {reputation.wallet}
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: '8px', color: theme.technicalTextColor, textTransform: 'uppercase' }}>
-            PROTOCOL ATTRIBUTION
-          </div>
-          <div style={{ color: theme.accentTone, fontWeight: 700 }}>
-            SOLANA · IRYS · ARWEAVE
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', fontFamily: SANS, color: theme.textColorSecondary }}>
+      <div>
+        <div style={backLabel}>Wallet address</div>
+        <div style={{ fontFamily: MONO, color: theme.textColorPrimary, wordBreak: 'break-all', fontSize: 'clamp(7.5px, 2vw, 10px)', lineHeight: 1.4, marginTop: '1px' }}>
+          {reputation.wallet}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
-        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '4px', border: `0.5px solid ${theme.innerBorderTone}` }}>
-          <div style={{ fontSize: '7px', color: theme.technicalTextColor }}>LONGEST STREAK</div>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: theme.textColorPrimary }}>{reputation.longestStreak} Days</div>
-        </div>
-        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '4px', border: `0.5px solid ${theme.innerBorderTone}` }}>
-          <div style={{ fontSize: '7px', color: theme.technicalTextColor }}>ACTIVE DAYS</div>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: theme.textColorPrimary }}>{reputation.activeDaysCount} Days</div>
-        </div>
-        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '4px', border: `0.5px solid ${theme.innerBorderTone}` }}>
-          <div style={{ fontSize: '7px', color: theme.technicalTextColor }}>ACHIEVEMENTS</div>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: theme.textColorPrimary }}>{reputation.achievements.filter((a) => a.earned).length} / {reputation.achievements.length}</div>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'clamp(6px, 2vw, 14px)', borderTop: `1px solid ${theme.innerBorderTone}`, paddingTop: 'clamp(4px, 1.4vw, 8px)' }}>
+        {backStats.map((s) => (
+          <div key={s.label}>
+            <div style={backLabel}>{s.label}</div>
+            <div style={{ fontSize: 'clamp(10px, 2.6vw, 13px)', fontWeight: 600, color: theme.textColorPrimary }}>{s.value}</div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ borderTop: `1px dashed ${theme.innerBorderTone}`, paddingTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '8px', color: theme.technicalTextColor }}>
-          Cryptographically attributable. Immutable provenance.
-        </span>
-        <span style={{ color: theme.accentTone, fontWeight: 700, fontSize: '9px' }}>
-          provn-sol.vercel.app ↗
-        </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', fontSize: 'clamp(7px, 1.8vw, 9.5px)' }}>
+        <span style={{ color: theme.technicalTextColor }}>Solana · Irys · Arweave</span>
+        <span style={{ fontFamily: MONO, color: theme.accentTone, fontWeight: 600 }}>provn-sol.vercel.app</span>
       </div>
     </div>
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
       <MetalCard
         theme={theme}
         frontContent={frontContent}
@@ -274,34 +240,23 @@ export default function PassportCard({
       />
 
       {showControls && (
-        <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={() => setIsFlipped(!isFlipped)}
-            className="btn-primary"
-            style={{
-              padding: '6px 12px',
-              fontSize: '11px',
-              background: '#0d111a',
-              border: `1px solid ${theme.borderTone}`,
-              color: theme.textColorPrimary,
-            }}
-          >
-            🔄 Flip Card ({isFlipped ? 'Back' : 'Front'})
+        <div className="pvc-controls">
+          <button type="button" onClick={() => setIsFlipped(!isFlipped)} className="pvc-control" aria-pressed={isFlipped}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2.5 8a5.5 5.5 0 019.6-3.6M13.5 8a5.5 5.5 0 01-9.6 3.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M12.4 1.8v2.8H9.6M3.6 14.2v-2.8h2.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {isFlipped ? 'Show front' : 'Show back'}
           </button>
 
           {onCustomizeClick && (
-            <button
-              onClick={onCustomizeClick}
-              className="btn-primary"
-              style={{
-                padding: '6px 12px',
-                fontSize: '11px',
-                background: '#0d111a',
-                border: `1px solid ${theme.borderTone}`,
-                color: theme.accentTone,
-              }}
-            >
-              🎨 Customize Metal ({theme.name})
+            <button type="button" onClick={onCustomizeClick} className="pvc-control">
+              <span
+                aria-hidden="true"
+                style={{ width: '12px', height: '12px', borderRadius: '50%', background: theme.surfaceGradient, border: `1px solid ${theme.borderTone}` }}
+              />
+              Change finish
+              <span style={{ color: '#5c6473', fontWeight: 500 }}>{theme.name}</span>
             </button>
           )}
         </div>
