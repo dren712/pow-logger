@@ -61,7 +61,7 @@ export async function validateApiKey(authHeader: string | null): Promise<AuthCon
   try {
     const { data: keyRecord, error: keyErr } = await supabase
       .from('agent_api_keys')
-      .select('id, project_id, is_active, agent_projects(id, tier, network_target, monthly_event_limit, monthly_events_used)')
+      .select('id, project_id, is_active, agent_projects(id, tier, network_target)')
       .eq('key_hash', keyHash)
       .eq('is_active', true)
       .maybeSingle()
@@ -88,20 +88,7 @@ export async function validateApiKey(authHeader: string | null): Promise<AuthCon
       id: string
       tier: 'developer' | 'team' | 'enterprise'
       network_target: 'devnet' | 'mainnet-beta'
-      monthly_event_limit: number
-      monthly_events_used: number
     } | null
-
-    if (project && project.monthly_events_used >= project.monthly_event_limit) {
-      return {
-        valid: false,
-        projectId: keyRecord.project_id,
-        tier: project.tier,
-        networkTarget: project.network_target,
-        error: `Monthly event quota exceeded (${project.monthly_events_used}/${project.monthly_event_limit}). Upgrade tier for more capacity.`,
-        statusCode: 403,
-      }
-    }
 
     // Touch last_used_at non-blockingly
     supabase.from('agent_api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', keyRecord.id).then(() => {})
