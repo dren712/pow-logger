@@ -170,8 +170,8 @@ export class ProvnAgentSession {
    * Finalizes the execution session, seals the batch Merkle root,
    * triggers asynchronous outbox anchoring, and returns the self-contained receipt.
    */
-  async seal(summary?: string): Promise<AgentReceipt & { proofUrl: string }> {
-    if (!this.allowRawSecrets && summary) {
+  async seal(summary?: string, summaryChecked = false): Promise<AgentReceipt & { proofUrl: string }> {
+    if (!this.allowRawSecrets && summary && !summaryChecked) {
       const sensitiveIssue = scanForSensitiveData({ summary })
       if (sensitiveIssue) throw new Error(`SENSITIVE_DATA_DETECTED: ${sensitiveIssue}`)
     }
@@ -710,7 +710,9 @@ export class ProvnExecution {
    * Emits the definitive `agent.completed` event.
    */
   async complete(summary?: string): Promise<AgentReceipt & { proofUrl: string }> {
-    return this.session.seal(summary || `Execution completed: ${this.intent}`)
+    // The default summary only repeats the intent, which was already scanned at start.
+    if (!summary) return this.session.seal(`Execution completed: ${this.intent}`, true)
+    return this.session.seal(summary)
   }
 }
 
