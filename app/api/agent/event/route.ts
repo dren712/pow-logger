@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
           'consume_agent_event_quota',
           { p_project_id: auth.projectId, p_count: 1 }
         )
-        if (quotaErr || !quotaRows || !quotaRows[0]) {
+        if (quotaErr || !Array.isArray(quotaRows) || quotaRows.length !== 1 || typeof quotaRows[0]?.allowed !== 'boolean') {
           console.error('Atomic quota check failed:', quotaErr)
           return NextResponse.json(
             { error: 'Usage quota service unavailable; event was not accepted' },
@@ -79,7 +79,11 @@ export async function POST(req: NextRequest) {
           )
         }
       } catch (qErr) {
-        console.warn('Atomic quota check warning:', qErr)
+        console.error('Atomic quota check failed:', qErr)
+        return NextResponse.json(
+          { error: 'Usage quota service unavailable; event was not accepted' },
+          { status: 503 }
+        )
       }
     }
 
